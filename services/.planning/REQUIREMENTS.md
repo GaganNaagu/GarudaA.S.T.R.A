@@ -193,13 +193,113 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (populated during roadmap creation) | | |
+| DBFN-01 | Phase 1 | Pending |
+| DBFN-02 | Phase 1 | Pending |
+| DBFN-03 | Phase 1 | Pending |
+| DBFN-04 | Phase 1 | Pending |
+| DBFN-05 | Phase 1 | Pending |
+| DBFN-06 | Phase 1 | Pending |
+| DBFN-07 | Phase 1 | Pending |
+| APIS-04 | Phase 1 | Pending |
+| APIS-05 | Phase 1 | Pending |
+| APIS-07 | Phase 1 | Pending |
+| AUTH-01 | Phase 2 | Pending |
+| AUTH-02 | Phase 2 | Pending |
+| AUTH-03 | Phase 2 | Pending |
+| AUTH-04 | Phase 2 | Pending |
+| AUTH-05 | Phase 2 | Pending |
+| AUTH-06 | Phase 2 | Pending |
+| AUTH-07 | Phase 2 | Pending |
+| AUTH-08 | Phase 2 | Pending |
+| AUTH-09 | Phase 2 | Pending |
+| INCI-01 | Phase 2 | Pending |
+| INCI-02 | Phase 2 | Pending |
+| INCI-03 | Phase 2 | Pending |
+| INCI-04 | Phase 2 | Pending |
+| INCI-05 | Phase 2 | Pending |
+| INCI-06 | Phase 2 | Pending |
+| INCI-07 | Phase 2 | Pending |
+| INCI-08 | Phase 2 | Pending |
+| ALRT-02 | Phase 2 | Pending |
+| ALRT-03 | Phase 2 | Pending |
+| ALRT-04 | Phase 2 | Pending |
+| ALRT-05 | Phase 2 | Pending |
+| ALRT-07 | Phase 2 | Pending |
+| MISS-01 | Phase 2 | Pending |
+| MISS-02 | Phase 2 | Pending |
+| MISS-03 | Phase 2 | Pending |
+| MISS-04 | Phase 2 | Pending |
+| MISS-05 | Phase 2 | Pending |
+| MISS-06 | Phase 2 | Pending |
+| OFCR-01 | Phase 2 | Pending |
+| OFCR-02 | Phase 2 | Pending |
+| OFCR-03 | Phase 2 | Pending |
+| OFCR-04 | Phase 2 | Pending |
+| OFCR-05 | Phase 2 | Pending |
+| OFCR-06 | Phase 2 | Pending |
+| APIS-01 | Phase 2 | Pending |
+| APIS-02 | Phase 2 | Pending |
+| APIS-03 | Phase 2 | Pending |
+| APIS-06 | Phase 2 | Pending |
+| RTWS-01 | Phase 3 | Pending |
+| RTWS-02 | Phase 3 | Pending |
+| RTWS-03 | Phase 3 | Pending |
+| RTWS-04 | Phase 3 | Pending |
+| RTWS-05 | Phase 3 | Pending |
+| RTWS-06 | Phase 3 | Pending |
+| RTWS-07 | Phase 3 | Pending |
+| RTWS-08 | Phase 3 | Pending |
+| ALRT-01 | Phase 4 | Pending |
+| ALRT-06 | Phase 4 | Pending |
+| MISS-07 | Phase 4 | Pending |
+| AIEV-01 | Phase 4 | Pending |
+| AIEV-02 | Phase 4 | Pending |
+| AIEV-03 | Phase 4 | Pending |
+| AIEV-04 | Phase 4 | Pending |
+| AIEV-05 | Phase 4 | Pending |
+| AIEV-06 | Phase 4 | Pending |
+| MOCK-01 | Phase 4 | Pending |
+| MOCK-02 | Phase 4 | Pending |
+| MOCK-03 | Phase 4 | Pending |
+| MOCK-04 | Phase 4 | Pending |
+| MOCK-05 | Phase 4 | Pending |
+| MOCK-06 | Phase 4 | Pending |
+| HLTH-03 | Phase 4 | Pending |
+| HLTH-05 | Phase 4 | Pending |
+| NOTF-01 | Phase 5 | Pending |
+| NOTF-02 | Phase 5 | Pending |
+| NOTF-03 | Phase 5 | Pending |
+| NOTF-04 | Phase 5 | Pending |
+| EVID-01 | Phase 5 | Pending |
+| EVID-02 | Phase 5 | Pending |
+| EVID-03 | Phase 5 | Pending |
+| ACTV-01 | Phase 5 | Pending |
+| ACTV-02 | Phase 5 | Pending |
+| ACTV-03 | Phase 5 | Pending |
+| FINT-01 | Phase 6 | Pending |
+| FINT-02 | Phase 6 | Pending |
+| FINT-03 | Phase 6 | Pending |
+| FINT-04 | Phase 6 | Pending |
+| FINT-05 | Phase 6 | Pending |
+| FINT-06 | Phase 6 | Pending |
+| FINT-07 | Phase 6 | Pending |
+| FINT-08 | Phase 6 | Pending |
+| MINT-01 | Phase 6 | Pending |
+| MINT-02 | Phase 6 | Pending |
+| MINT-03 | Phase 6 | Pending |
+| MINT-04 | Phase 6 | Pending |
+| MINT-05 | Phase 6 | Pending |
+| MINT-06 | Phase 6 | Pending |
+| MINT-07 | Phase 6 | Pending |
+| HLTH-01 | Phase 7 | Pending |
+| HLTH-02 | Phase 7 | Pending |
+| HLTH-04 | Phase 7 | Pending |
 
 **Coverage:**
 - v1 requirements: 82 total
-- Mapped to phases: 0
-- Unmapped: 82 ⚠️
+- Mapped to phases: 82
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-05-31*
-*Last updated: 2026-05-31 after initial definition*
+*Last updated: 2026-05-31 after roadmap creation*

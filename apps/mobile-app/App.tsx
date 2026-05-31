@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Alert, SafeAreaView } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { MaterialIcons } from '@expo/vector-icons';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 // Theme & Mock Data
 import { COLORS, TYPOGRAPHY, SPACING, ROUNDED } from './src/constants/theme';
@@ -173,101 +174,105 @@ export default function App() {
 
   if (!isAuthorized) {
     return (
-      <View style={styles.rootContainer}>
-        <StatusBar style="light" />
-        <LoginScreen onLoginSuccess={handleLoginSuccess} />
-      </View>
+      <SafeAreaProvider>
+        <View style={styles.rootContainer}>
+          <StatusBar style="light" />
+          <LoginScreen onLoginSuccess={handleLoginSuccess} />
+        </View>
+      </SafeAreaProvider>
     );
   }
 
   // Render full application with top header and bottom tabs navigation
   return (
-    <View style={styles.rootContainer}>
-      <StatusBar style="light" />
-      
-      {/* Active Screen Rendering */}
-      <View style={styles.screenContainer}>{renderScreen()}</View>
+    <SafeAreaProvider>
+      <View style={styles.rootContainer}>
+        <StatusBar style="light" />
+        
+        {/* Active Screen Rendering */}
+        <View style={styles.screenContainer}>{renderScreen()}</View>
 
-      {/* Standardized Bottom Navigation Shell (hidden in details view) */}
-      {currentScreen !== 'details' && (
-        <View style={styles.bottomNav}>
-          <TouchableOpacity
-            style={styles.navItem}
-            onPress={() => setCurrentScreen('alerts')}
-          >
-            <View style={[styles.navItemInner, currentScreen === 'alerts' && styles.navItemActive]}>
-              <MaterialIcons
-                name="notifications-active"
-                size={22}
-                color={currentScreen === 'alerts' ? COLORS.primary : COLORS.onSurfaceVariant}
-                style={{ opacity: currentScreen === 'alerts' ? 1 : 0.6 }}
-              />
-              <Text style={[styles.navLabel, currentScreen === 'alerts' && styles.navLabelActive]}>ALERTS</Text>
-            </View>
-          </TouchableOpacity>
+        {/* Standardized Bottom Navigation Shell (hidden in details view) */}
+        {currentScreen !== 'details' && (
+          <View style={styles.bottomNav}>
+            <TouchableOpacity
+              style={styles.navItem}
+              onPress={() => setCurrentScreen('alerts')}
+            >
+              <View style={[styles.navItemInner, currentScreen === 'alerts' && styles.navItemActive]}>
+                <MaterialIcons
+                  name="notifications-active"
+                  size={22}
+                  color={currentScreen === 'alerts' ? COLORS.primary : COLORS.onSurfaceVariant}
+                  style={{ opacity: currentScreen === 'alerts' ? 1 : 0.6 }}
+                />
+                <Text style={[styles.navLabel, currentScreen === 'alerts' && styles.navLabelActive]}>ALERTS</Text>
+              </View>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.navItem}
-            onPress={() => setCurrentScreen('cases')}
-          >
-            <View style={[styles.navItemInner, currentScreen === 'cases' && styles.navItemActive]}>
-              <MaterialIcons
-                name="folder-shared"
-                size={22}
-                color={currentScreen === 'cases' ? COLORS.primary : COLORS.onSurfaceVariant}
-                style={{ opacity: currentScreen === 'cases' ? 1 : 0.6 }}
-              />
-              <Text style={[styles.navLabel, currentScreen === 'cases' && styles.navLabelActive]}>CASES</Text>
-            </View>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.navItem}
+              onPress={() => setCurrentScreen('cases')}
+            >
+              <View style={[styles.navItemInner, currentScreen === 'cases' && styles.navItemActive]}>
+                <MaterialIcons
+                  name="folder-shared"
+                  size={22}
+                  color={currentScreen === 'cases' ? COLORS.primary : COLORS.onSurfaceVariant}
+                  style={{ opacity: currentScreen === 'cases' ? 1 : 0.6 }}
+                />
+                <Text style={[styles.navLabel, currentScreen === 'cases' && styles.navLabelActive]}>CASES</Text>
+              </View>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.navItem}
-            onPress={() => setCurrentScreen('logs')}
-          >
-            <View style={[styles.navItemInner, currentScreen === 'logs' && styles.navItemActive]}>
-              <MaterialIcons
-                name="history"
-                size={22}
-                color={currentScreen === 'logs' ? COLORS.primary : COLORS.onSurfaceVariant}
-                style={{ opacity: currentScreen === 'logs' ? 1 : 0.6 }}
-              />
-              <Text style={[styles.navLabel, currentScreen === 'logs' && styles.navLabelActive]}>LOGS</Text>
-            </View>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.navItem}
+              onPress={() => setCurrentScreen('logs')}
+            >
+              <View style={[styles.navItemInner, currentScreen === 'logs' && styles.navItemActive]}>
+                <MaterialIcons
+                  name="history"
+                  size={22}
+                  color={currentScreen === 'logs' ? COLORS.primary : COLORS.onSurfaceVariant}
+                  style={{ opacity: currentScreen === 'logs' ? 1 : 0.6 }}
+                />
+                <Text style={[styles.navLabel, currentScreen === 'logs' && styles.navLabelActive]}>LOGS</Text>
+              </View>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.navItem}
-            onPress={() => setCurrentScreen('map')}
-          >
-            <View style={[styles.navItemInner, currentScreen === 'map' && styles.navItemActive]}>
-              <MaterialIcons
-                name="explore"
-                size={22}
-                color={currentScreen === 'map' ? COLORS.primary : COLORS.onSurfaceVariant}
-                style={{ opacity: currentScreen === 'map' ? 1 : 0.6 }}
-              />
-              <Text style={[styles.navLabel, currentScreen === 'map' && styles.navLabelActive]}>MAP</Text>
-            </View>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.navItem}
+              onPress={() => setCurrentScreen('map')}
+            >
+              <View style={[styles.navItemInner, currentScreen === 'map' && styles.navItemActive]}>
+                <MaterialIcons
+                  name="explore"
+                  size={22}
+                  color={currentScreen === 'map' ? COLORS.primary : COLORS.onSurfaceVariant}
+                  style={{ opacity: currentScreen === 'map' ? 1 : 0.6 }}
+                />
+                <Text style={[styles.navLabel, currentScreen === 'map' && styles.navLabelActive]}>MAP</Text>
+              </View>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.navItem}
-            onPress={() => setCurrentScreen('profile')}
-          >
-            <View style={[styles.navItemInner, currentScreen === 'profile' && styles.navItemActive]}>
-              <MaterialIcons
-                name="account-circle"
-                size={22}
-                color={currentScreen === 'profile' ? COLORS.primary : COLORS.onSurfaceVariant}
-                style={{ opacity: currentScreen === 'profile' ? 1 : 0.6 }}
-              />
-              <Text style={[styles.navLabel, currentScreen === 'profile' && styles.navLabelActive]}>PROFILE</Text>
-            </View>
-          </TouchableOpacity>
-        </View>
-      )}
-    </View>
+            <TouchableOpacity
+              style={styles.navItem}
+              onPress={() => setCurrentScreen('profile')}
+            >
+              <View style={[styles.navItemInner, currentScreen === 'profile' && styles.navItemActive]}>
+                <MaterialIcons
+                  name="account-circle"
+                  size={22}
+                  color={currentScreen === 'profile' ? COLORS.primary : COLORS.onSurfaceVariant}
+                  style={{ opacity: currentScreen === 'profile' ? 1 : 0.6 }}
+                />
+                <Text style={[styles.navLabel, currentScreen === 'profile' && styles.navLabelActive]}>PROFILE</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    </SafeAreaProvider>
   );
 }
 

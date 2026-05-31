@@ -6,12 +6,12 @@ import {
   TextInput,
   TouchableOpacity,
   Image,
-  SafeAreaView,
   ActivityIndicator,
   Switch,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SPACING, ROUNDED } from '../constants/theme';
 import ScanLine from '../components/ScanLine';
