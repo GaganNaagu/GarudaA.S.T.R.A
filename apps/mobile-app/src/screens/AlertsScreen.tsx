@@ -57,36 +57,28 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
 
         {/* Alerts Feed */}
         {alerts.map((alert) => {
-          const isVikram = alert.id === 'vikram-singh';
-          const isVehicle = alert.id === 'govt-vehicle';
+          const hasImage = !!alert.mugshotUrl;
+          const accentColor =
+            alert.status === 'ALERT'
+              ? alert.threatLevel === 'HIGH'
+                ? COLORS.primary
+                : COLORS.secondary
+              : COLORS.outlineVariant;
 
           return (
             <TacticalCard
               key={alert.id}
-              accentColor={
-                alert.status === 'ALERT'
-                  ? alert.threatLevel === 'HIGH'
-                    ? COLORS.primary
-                    : COLORS.secondary
-                  : COLORS.outlineVariant
-              }
+              accentColor={accentColor}
               containerStyle={styles.cardContainer}
             >
               <View style={styles.cardPadding}>
                 {/* Header */}
                 <View style={styles.cardHeader}>
-                  <View>
+                  <View style={{ flex: 1 }}>
                     <Text
                       style={[
                         styles.cardSubtitle,
-                        {
-                          color:
-                            alert.status === 'ALERT'
-                              ? alert.threatLevel === 'HIGH'
-                                ? COLORS.primary
-                                : COLORS.secondary
-                              : COLORS.outline,
-                        },
+                        { color: alert.status === 'ALERT' ? accentColor : COLORS.outline },
                       ]}
                     >
                       {alert.subtitle}
@@ -105,142 +97,142 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
                 </View>
 
                 {/* Details Section */}
-                {alert.mugshotUrl ? (
-                  <View style={styles.gridRow}>
-                    {/* Mugshot with Scanner */}
-                    <View style={styles.mugshotWrapper}>
+                <View style={styles.gridRow}>
+                  {/* Mugshot with Scanner */}
+                  <View style={styles.mugshotWrapper}>
+                    {hasImage ? (
                       <Image source={{ uri: alert.mugshotUrl }} style={styles.mugshot} />
-                      {alert.status === 'ALERT' && isVikram && (
-                        <ScanLine color={COLORS.secondary} duration={2500} />
-                      )}
-                      <View style={styles.mugshotBadge}>
-                        <MaterialIcons name="gps-fixed" size={10} color={COLORS.onSurface} style={{ marginRight: 4 }} />
-                        <Text style={styles.mugshotBadgeText}>FACE ID VERIFIED</Text>
+                    ) : (
+                      <View style={styles.avatarPlaceholder}>
+                        <MaterialIcons name="person" size={48} color={COLORS.outline} />
+                      </View>
+                    )}
+                    {alert.status === 'ALERT' && (
+                      <ScanLine color={COLORS.secondary} duration={2500} />
+                    )}
+                    <View style={styles.mugshotBadge}>
+                      <MaterialIcons name="gps-fixed" size={10} color={COLORS.onSurface} style={{ marginRight: 4 }} />
+                      <Text style={styles.mugshotBadgeText}>FACE ID VERIFIED</Text>
+                    </View>
+                  </View>
+
+                  {/* Meta info */}
+                  <View style={styles.infoCol}>
+                    <View style={styles.metaRow}>
+                      <Text style={styles.metaLabel}>LAST SEEN LOCATION</Text>
+                      <Text style={styles.metaValue}>
+                        <MaterialIcons name="place" size={14} color={COLORS.primary} /> {alert.lastSeenLocation}
+                      </Text>
+                    </View>
+                    <View style={styles.metaRow}>
+                      <Text style={styles.metaLabel}>THREAT LEVEL</Text>
+                      <Text
+                        style={[
+                          styles.metaValue,
+                          {
+                            color:
+                              alert.threatLevel === 'HIGH'
+                                ? COLORS.error
+                                : COLORS.onSurface,
+                          },
+                        ]}
+                      >
+                        <MaterialIcons
+                          name="warning"
+                          size={14}
+                          color={alert.threatLevel === 'HIGH' ? COLORS.error : COLORS.onSurface}
+                        /> {alert.threatLevel}
+                      </Text>
+                    </View>
+                    <View style={styles.metaRow}>
+                      <Text style={styles.metaLabel}>FILE NO.</Text>
+                      <Text style={styles.metaValueMono}>{alert.fileNo}</Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Unified Action Buttons — every alert gets both */}
+                <View style={styles.actionRow}>
+                  <TouchableOpacity
+                    onPress={() => onRespondAlert(alert.id)}
+                    style={[
+                      styles.actionButton,
+                      styles.actionButtonPrimary,
+                      alert.status !== 'ALERT' && styles.actionButtonDisabled,
+                    ]}
+                    disabled={alert.status !== 'ALERT'}
+                  >
+                    <MaterialIcons
+                      name="notifications-active"
+                      size={16}
+                      color={alert.status === 'ALERT' ? COLORS.onPrimary : COLORS.outline}
+                      style={{ marginRight: 6 }}
+                    />
+                    <Text style={[styles.actionButtonText, { color: alert.status === 'ALERT' ? COLORS.onPrimary : COLORS.outline }]}>
+                      RESPOND
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => onSelectAlert(alert)}
+                    style={[styles.actionButton, styles.actionButtonSecondary]}
+                  >
+                    <MaterialIcons name="info" size={16} color={COLORS.primary} style={{ marginRight: 6 }} />
+                    <Text style={[styles.actionButtonText, { color: COLORS.primary }]}>
+                      DETAILS
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Assigned Officer Info Strip */}
+                {alert.assignedOfficer && (
+                  <View style={styles.officerStrip}>
+                    <View style={styles.officerStripLeft}>
+                      <View style={styles.officerAvatar}>
+                        <MaterialIcons name="person" size={14} color={COLORS.primary} />
+                      </View>
+                      <View>
+                        <Text style={styles.officerName}>{alert.assignedOfficer.name}</Text>
+                        <Text style={styles.officerMeta}>
+                          {alert.assignedOfficer.unitId} • {alert.assignedOfficer.rank}
+                        </Text>
                       </View>
                     </View>
-
-                    {/* Meta info */}
-                    <View style={styles.infoCol}>
-                      {isVehicle && alert.vehicleDetails && (
-                        <>
-                          <View style={styles.metaRow}>
-                            <Text style={styles.metaLabel}>PLATE NUMBER</Text>
-                            <View style={styles.plateBadge}>
-                              <Text style={styles.plateText}>
-                                {alert.vehicleDetails.plateNumber}
-                              </Text>
-                            </View>
-                          </View>
-                          <View style={styles.metaRow}>
-                            <Text style={styles.metaLabel}>MODEL</Text>
-                            <Text style={styles.metaValue}>
-                              {alert.vehicleDetails.model}
-                            </Text>
-                          </View>
-                          <View style={styles.metaRow}>
-                            <Text style={styles.metaLabel}>COLORS</Text>
-                            <Text style={styles.metaValue}>
-                              {alert.vehicleDetails.colors}
-                            </Text>
-                          </View>
-                        </>
-                      )}
-
-                      {!isVehicle && (
-                        <>
-                          <View style={styles.metaRow}>
-                            <Text style={styles.metaLabel}>LAST SEEN LOCATION</Text>
-                            <Text style={styles.metaValue}>
-                              <MaterialIcons name="place" size={14} color={COLORS.primary} /> {alert.lastSeenLocation}
-                            </Text>
-                          </View>
-                          <View style={styles.metaRow}>
-                            <Text style={styles.metaLabel}>THREAT LEVEL</Text>
-                            <Text
-                              style={[
-                                styles.metaValue,
-                                {
-                                  color:
-                                    alert.threatLevel === 'HIGH'
-                                      ? COLORS.error
-                                      : COLORS.onSurface,
-                                },
-                              ]}
-                            >
-                              <MaterialIcons
-                                name="warning"
-                                size={14}
-                                color={alert.threatLevel === 'HIGH' ? COLORS.error : COLORS.onSurface}
-                              /> {alert.threatLevel}
-                            </Text>
-                          </View>
-                          <View style={styles.metaRow}>
-                            <Text style={styles.metaLabel}>FILE NO.</Text>
-                            <Text style={styles.metaValueMono}>{alert.fileNo}</Text>
-                          </View>
-                        </>
-                      )}
+                    <View style={[
+                      styles.statusChip,
+                      {
+                        backgroundColor: alert.status === 'ALERT'
+                          ? 'rgba(246, 190, 57, 0.12)'
+                          : alert.status === 'COMPLETED'
+                            ? 'rgba(76, 215, 246, 0.12)'
+                            : 'rgba(155, 143, 122, 0.12)',
+                        borderColor: alert.status === 'ALERT'
+                          ? COLORS.primary
+                          : alert.status === 'COMPLETED'
+                            ? COLORS.secondary
+                            : COLORS.outline,
+                      },
+                    ]}>
+                      <View style={[
+                        styles.statusDot,
+                        {
+                          backgroundColor: alert.status === 'ALERT'
+                            ? COLORS.primary
+                            : alert.status === 'COMPLETED'
+                              ? COLORS.secondary
+                              : COLORS.outline,
+                        },
+                      ]} />
+                      <Text style={[
+                        styles.statusChipText,
+                        {
+                          color: alert.status === 'ALERT'
+                            ? COLORS.primary
+                            : alert.status === 'COMPLETED'
+                              ? COLORS.secondary
+                              : COLORS.outline,
+                        },
+                      ]}>{alert.status}</Text>
                     </View>
-                  </View>
-                ) : (
-                  // Simple alert with no image Still (e.g. Signal Spike)
-                  <View style={styles.simpleAlertRow}>
-                    <View style={styles.simpleAlertIconBox}>
-                      <MaterialIcons name="radio" size={20} color={COLORS.primary} />
-                    </View>
-                    <View style={styles.simpleAlertText}>
-                      <Text style={styles.metaLabel}>TELEMETRY SIGNAL</Text>
-                      <Text style={styles.cardTitle}>Waterfront radio frequency anomaly</Text>
-                    </View>
-                  </View>
-                )}
-
-                {/* Bottom Status bar for vehicle if present */}
-                {isVehicle && alert.vehicleDetails && (
-                  <View style={styles.vehicleStatusBar}>
-                    <Text style={styles.vehicleStatusBarText}>
-                      <MaterialIcons name="directions-car" size={12} color={COLORS.onSurfaceVariant} /> SCO-V4
-                    </Text>
-                    <Text style={styles.vehicleStatusBarDivider}>•</Text>
-                    <Text style={styles.vehicleStatusBarText}>WHITE/BLACK</Text>
-                    <View style={styles.authBadge}>
-                      <MaterialIcons name="check-circle" size={10} color={COLORS.secondary} style={{ marginRight: 4 }} />
-                      <Text style={styles.authText}>AUTHENTICATED</Text>
-                    </View>
-                  </View>
-                )}
-
-                {/* Action buttons */}
-                {isVikram && (
-                  <View style={styles.actionRow}>
-                    <TouchableOpacity
-                      onPress={() => onRespondAlert(alert.id)}
-                      style={[
-                        styles.actionButton,
-                        styles.actionButtonPrimary,
-                        alert.status !== 'ALERT' && styles.actionButtonDisabled,
-                      ]}
-                      disabled={alert.status !== 'ALERT'}
-                    >
-                      <MaterialIcons
-                        name="notifications-active"
-                        size={16}
-                        color={alert.status === 'ALERT' ? COLORS.onPrimary : COLORS.outline}
-                        style={{ marginRight: 6 }}
-                      />
-                      <Text style={[styles.actionButtonText, { color: alert.status === 'ALERT' ? COLORS.onPrimary : COLORS.outline }]}>
-                        RESPOND NOW
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => onSelectAlert(alert)}
-                      style={[styles.actionButton, styles.actionButtonSecondary]}
-                    >
-                      <MaterialIcons name="info" size={16} color={COLORS.primary} style={{ marginRight: 6 }} />
-                      <Text style={[styles.actionButtonText, { color: COLORS.primary }]}>
-                        VERIFY DETAILS
-                      </Text>
-                    </TouchableOpacity>
                   </View>
                 )}
               </View>
@@ -461,70 +453,12 @@ const styles = StyleSheet.create({
     color: COLORS.onSurface,
     fontWeight: '700',
   },
-  simpleAlertRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  simpleAlertIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: ROUNDED.DEFAULT,
-    backgroundColor: 'rgba(79, 70, 52, 0.3)',
+  avatarPlaceholder: {
+    width: '100%',
+    height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
-  },
-  simpleAlertIcon: {
-    fontSize: 20,
-  },
-  simpleAlertText: {
-    flex: 1,
-  },
-  plateBadge: {
-    backgroundColor: COLORS.surfaceLow,
-    borderColor: COLORS.outlineVariant,
-    borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-    alignSelf: 'flex-start',
-    marginTop: 2,
-  },
-  plateText: {
-    ...TYPOGRAPHY.dataMono,
-    color: COLORS.onSurface,
-    fontSize: 11,
-  },
-  vehicleStatusBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.surfaceLow,
-    padding: 10,
-    borderRadius: ROUNDED.DEFAULT,
-    borderWidth: 1,
-    borderColor: 'rgba(79, 70, 52, 0.2)',
-    marginTop: 12,
-  },
-  vehicleStatusBarText: {
-    ...TYPOGRAPHY.labelCaps,
-    fontSize: 10,
-    color: COLORS.onSurfaceVariant,
-  },
-  vehicleStatusBarDivider: {
-    marginHorizontal: 8,
-    color: COLORS.outlineVariant,
-  },
-  authBadge: {
-    marginLeft: 'auto',
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  authText: {
-    ...TYPOGRAPHY.labelCaps,
-    fontSize: 9,
-    color: COLORS.secondary,
-    fontWeight: '700',
+    backgroundColor: COLORS.surfaceVariant,
   },
   sosFab: {
     position: 'absolute',
@@ -550,6 +484,59 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
     zIndex: 10,
+  },
+  officerStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.outlineVariant,
+  },
+  officerStripLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  officerAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(246, 190, 57, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  officerName: {
+    ...TYPOGRAPHY.labelCaps,
+    fontSize: 10,
+    color: COLORS.onSurface,
+    fontWeight: '700',
+  },
+  officerMeta: {
+    ...TYPOGRAPHY.dataMono,
+    fontSize: 8,
+    color: COLORS.onSurfaceVariant,
+    marginTop: 1,
+  },
+  statusChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: ROUNDED.full,
+    borderWidth: 1,
+  },
+  statusDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    marginRight: 5,
+  },
+  statusChipText: {
+    ...TYPOGRAPHY.labelCaps,
+    fontSize: 8,
+    fontWeight: '700',
   },
 });
 export default AlertsScreen;

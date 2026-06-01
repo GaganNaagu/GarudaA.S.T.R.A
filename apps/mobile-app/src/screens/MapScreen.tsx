@@ -20,9 +20,10 @@ interface MapScreenProps {
 export const MapScreen: React.FC<MapScreenProps> = ({ alerts }) => {
   const radarAnim = useRef(new Animated.Value(0)).current;
 
-  const vikramAlert = alerts.find((a) => a.id === 'vikram-singh');
-  const govtAlert = alerts.find((a) => a.id === 'govt-vehicle');
-  const signalAlert = alerts.find((a) => a.id === 'signal-spike');
+  const aaravAlert = alerts.find((a) => a.id === 'missing-aarav');
+  const vikramAlert = alerts.find((a) => a.id === 'wanted-vikram');
+  const priyaAlert = alerts.find((a) => a.id === 'missing-priya');
+  const raviAlert = alerts.find((a) => a.title.toLowerCase().includes('ravi') || a.id.includes('ravi') || a.id.includes('884'));
 
   useEffect(() => {
     const animation = Animated.loop(
@@ -121,30 +122,44 @@ export const MapScreen: React.FC<MapScreenProps> = ({ alerts }) => {
             </View>
           )}
 
-          {/* Target 3: Govt Vehicle */}
-          {govtAlert && (
-            <View style={[styles.targetNode, { top: '65%', left: '25%' }]}>
-              <PulseIndicator
-                color={getPulseColor(govtAlert, COLORS.secondary)}
-                size={10}
-                pulseSize={2.5}
-              />
-              <Text style={styles.targetLabelSecondary}>
-                VEH-9042 ({govtAlert.status})
-              </Text>
-            </View>
-          )}
-
-          {/* Target 4: Radio Anomaly */}
-          {signalAlert && (
+          {/* Target 3: Aarav Mehta Match */}
+          {aaravAlert && (
             <View style={[styles.targetNode, { top: '22%', left: '42%' }]}>
               <PulseIndicator
-                color={getPulseColor(signalAlert, COLORS.primary)}
+                color={getPulseColor(aaravAlert, COLORS.primary)}
                 size={10}
                 pulseSize={2.5}
               />
               <Text style={styles.targetLabelPrimary}>
-                FREQ SPIKE ({signalAlert.status})
+                AARAV ({aaravAlert.status})
+              </Text>
+            </View>
+          )}
+
+          {/* Target 4: Priya Sharma Match */}
+          {priyaAlert && (
+            <View style={[styles.targetNode, { top: '65%', left: '25%' }]}>
+              <PulseIndicator
+                color={getPulseColor(priyaAlert, COLORS.secondary)}
+                size={10}
+                pulseSize={2.5}
+              />
+              <Text style={styles.targetLabelSecondary}>
+                PRIYA ({priyaAlert.status})
+              </Text>
+            </View>
+          )}
+
+          {/* Target 5: Ravi Kumar Match */}
+          {raviAlert && (
+            <View style={[styles.targetNode, { top: '48%', left: '78%' }]}>
+              <PulseIndicator
+                color={getPulseColor(raviAlert, COLORS.secondary)}
+                size={10}
+                pulseSize={2.5}
+              />
+              <Text style={styles.targetLabelSecondary}>
+                RAVI ({raviAlert.status})
               </Text>
             </View>
           )}

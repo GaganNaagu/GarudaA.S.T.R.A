@@ -70,9 +70,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
             <View style={styles.portraitBorder}>
               <ScanLine color={COLORS.secondary} duration={2500} />
               <Image
-                source={{
-                  uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDv915T66OGD0yrX_nnf23c0n2XAnsWog4Lf6Ayi_mv3DRNxdvmRobdUBvVo1DKNUOxNHnXTwXU_4SJKokTsTjIyE27TF5ApxXTGLEiOfDgo3dsucHBj0nsqLokj1rCB72rvgEIOH2VEKvLoTFcyf8oawETOECywnanIHZfgwEqLlcaZhaKN3xX1dFaY-gRXYrN3c1h--MTfmFwvwGDr0ve92ZCsdgQR9rQK1OT1wE1d1SwvRqKZDDEBzsF0J2N-iHfHh9OJ504FvY',
-                }}
+                source={require('../../assets/icon.png')}
                 style={styles.portrait}
               />
             </View>

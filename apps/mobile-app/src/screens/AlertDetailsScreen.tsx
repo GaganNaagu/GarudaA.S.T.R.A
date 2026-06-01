@@ -88,17 +88,19 @@ export const AlertDetailsScreen: React.FC<AlertDetailsScreenProps> = ({
           <TacticalCard containerStyle={styles.feedCard}>
             <View style={styles.feedHeader}>
               <Text style={styles.feedLabelPrimary}>DATABASE MATCH</Text>
-              <Text style={styles.feedValue}>REC-ID: 23854</Text>
+              <Text style={styles.feedValue}>REC: {alert.fileNo}</Text>
             </View>
             <View style={styles.feedImageWrapper}>
               <Image
                 source={{
-                  uri: 'https://lh3.googleusercontent.com/aida/ADBb0uizPUY6M_NlroyBqrX5XTPrN0cAjgzKywTPXwHQWwQ4zA06Po3-JnMNNdtOhOLMxSytUYg5li2uaxpYU5_NcwI4j50Fc_a_Knk4u9pQJfI_Nw3qg_hFLFpJ17aPM7YTx4fepcZP_0MqSsGWTIFlhK9po3Q-346m9vSIp_ykkX1HIQUXjLcBYlCnrevXWqEUOf5-bmLT45mAvS5-fMTWEjWIWwW5O2fW3CC71vV_fsIA0VH6rIzZDxlvPg',
+                  uri: alert.mugshotUrl || 'https://via.placeholder.com/150',
                 }}
                 style={styles.feedImageColor}
               />
               <View style={styles.confidenceBadge}>
-                <Text style={styles.confidenceNumber}>91.4%</Text>
+                <Text style={styles.confidenceNumber}>
+                  {alert.confidence || (alert.matchPercentage ? `${alert.matchPercentage}%` : '90.0%')}
+                </Text>
                 <Text style={styles.confidenceLabel}>CONFIDENCE</Text>
               </View>
             </View>

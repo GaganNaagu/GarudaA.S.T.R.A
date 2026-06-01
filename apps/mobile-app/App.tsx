@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -11,11 +11,30 @@ import {
   INITIAL_ALERTS,
   INITIAL_CASES,
   INITIAL_MESSAGES,
+  INITIAL_AUDIT_LOGS,
+  SIMULATED_DEMO_ALERT,
   AlertItem,
   CaseItem,
   MessageItem,
   OfficerProfile,
+  AuditLogEntry,
 } from './src/utils/mockState';
+
+import {
+  startBackgroundTracking,
+  stopBackgroundTracking,
+  checkAllPermissionsStatus,
+  requestPermissionType,
+  sendImmediateTelemetry,
+} from './src/utils/telemetryService';
+
+import {
+  registerAlertCallbacks,
+  unregisterAlertCallbacks,
+  simulateIncomingAlert,
+  // connectAlertWebSocket,    // Uncomment when backend is ready
+  // disconnectAlertWebSocket, // Uncomment when backend is ready
+} from './src/utils/alertService';
 
 // Screens
 import { LoginScreen } from './src/screens/LoginScreen';
@@ -25,6 +44,8 @@ import { CasesScreen } from './src/screens/CasesScreen';
 import { LogsScreen } from './src/screens/LogsScreen';
 import { MapScreen } from './src/screens/MapScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
+import { PermissionGuardScreen } from './src/screens/PermissionGuardScreen';
+import { TacticalAlertPopup } from './src/components/TacticalAlertPopup';
 
 type ScreenType = 'alerts' | 'details' | 'cases' | 'logs' | 'map' | 'profile';
 
@@ -32,17 +53,113 @@ export default function App() {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [currentScreen, setCurrentScreen] = useState<ScreenType>('alerts');
   const [selectedAlert, setSelectedAlert] = useState<AlertItem | null>(null);
+  const [permissionsAuthorized, setPermissionsAuthorized] = useState(false);
 
   // Live state tracking
   const [alerts, setAlerts] = useState<AlertItem[]>(INITIAL_ALERTS);
   const [cases, setCases] = useState<CaseItem[]>(INITIAL_CASES);
   const [messages, setMessages] = useState<MessageItem[]>(INITIAL_MESSAGES);
   const [officer, setOfficer] = useState<OfficerProfile>(INITIAL_OFFICER);
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>(INITIAL_AUDIT_LOGS);
+
+  // Tactical Overlay Alert State
+  const [tacticalAlertVisible, setTacticalAlertVisible] = useState(false);
+  const [incomingTacticalAlert, setIncomingTacticalAlert] = useState<AlertItem | null>(null);
+
+  // Degraded active permissions tracking (fault tolerance)
+  const [degradedPermissions, setDegradedPermissions] = useState<('foreground' | 'background' | 'notifications')[]>([]);
+
+  // Periodic Telemetry & Background Tracking Hook
+  useEffect(() => {
+    let simulatedAlertTimer: NodeJS.Timeout;
+
+    if (isAuthorized) {
+      // Start native Foreground Service tracking when officer goes ON DUTY
+      startBackgroundTracking();
+
+      // Register the unified alert service callbacks
+      registerAlertCallbacks({
+        onNewAlert: (alert) => setAlerts((prev) => [alert, ...prev]),
+        onTacticalPopup: (alert) => {
+          setIncomingTacticalAlert(alert);
+          setTacticalAlertVisible(true);
+        },
+      });
+
+      // Simulate a backend-pushed alert 8 seconds after login (demo only)
+      // In production, this would come from: connectAlertWebSocket('ws://your-server/alerts')
+      simulatedAlertTimer = simulateIncomingAlert({
+        ...SIMULATED_DEMO_ALERT,
+        assignedOfficer: {
+          name: officer.name,
+          unitId: officer.unitId,
+          rank: officer.rank,
+        },
+      }, 8000);
+    } else {
+      // Stop tracking when officer goes OFF DUTY
+      stopBackgroundTracking();
+      unregisterAlertCallbacks();
+      setTacticalAlertVisible(false);
+      setIncomingTacticalAlert(null);
+    }
+
+    return () => {
+      stopBackgroundTracking();
+      unregisterAlertCallbacks();
+      if (simulatedAlertTimer) {
+        clearTimeout(simulatedAlertTimer);
+      }
+    };
+  }, [isAuthorized]);
+
+  // Periodic Permission Monitor Hook (Fault Tolerance)
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+
+    const performCheck = async () => {
+      if (isAuthorized) {
+        const status = await checkAllPermissionsStatus();
+        const degraded: ('foreground' | 'background' | 'notifications')[] = [];
+        if (!status.foreground) degraded.push('foreground');
+        if (!status.background) degraded.push('background');
+        if (!status.notifications) degraded.push('notifications');
+        setDegradedPermissions(degraded);
+      }
+    };
+
+    if (isAuthorized) {
+      performCheck(); // Run immediate initial check
+      interval = setInterval(performCheck, 5000); // Check every 5 seconds
+    } else {
+      setDegradedPermissions([]);
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isAuthorized]);
+
+  const handleRestorePermission = async (type: 'foreground' | 'background' | 'notifications') => {
+    const granted = await requestPermissionType(type);
+    if (granted) {
+      setDegradedPermissions((prev) => prev.filter((p) => p !== type));
+    }
+  };
 
   // Authentication Callbacks
   const handleLoginSuccess = () => {
     setIsAuthorized(true);
     setCurrentScreen('alerts');
+    // Immediate telemetry broadcast on login — bypasses background interval
+    sendImmediateTelemetry('LOGIN', 'OFFICER LOGGED IN');
+  };
+
+  const handleAcknowledgeTacticalAlert = () => {
+    setTacticalAlertVisible(false);
+    if (incomingTacticalAlert) {
+      handleSelectAlert(incomingTacticalAlert);
+    }
   };
 
   const handleLogout = () => {
@@ -55,9 +172,13 @@ export default function App() {
           text: 'LOGOUT',
           style: 'destructive',
           onPress: () => {
+            // Immediate telemetry broadcast BEFORE clearing session
+            sendImmediateTelemetry('LOGOUT', 'OFFICER LOGGED OUT');
             setIsAuthorized(false);
             setCurrentScreen('alerts');
             setSelectedAlert(null);
+            setAlerts(INITIAL_ALERTS); // Reset alerts to prevent stale duplicates
+            setAuditLogs(INITIAL_AUDIT_LOGS); // Reset audit trail
           },
         },
       ]
@@ -84,15 +205,36 @@ export default function App() {
   };
 
   const handleUpdateAlertStatus = (alertId: string, status: AlertItem['status']) => {
+    // Find the alert to get previous status for audit
+    const targetAlert = alerts.find((a) => a.id === alertId);
+    const previousStatus = targetAlert?.status || 'ALERT';
+
     setAlerts((prevAlerts) =>
       prevAlerts.map((a) => (a.id === alertId ? { ...a, status } : a))
     );
     // Also update selected alert state
     setSelectedAlert((prev) => (prev && prev.id === alertId ? { ...prev, status } : prev));
+
+    // Append audit log entry
+    const newLogEntry: AuditLogEntry = {
+      id: `log-${Date.now()}`,
+      alertId,
+      alertTitle: targetAlert?.title || alertId,
+      fileNo: targetAlert?.fileNo || 'N/A',
+      officerName: officer.name,
+      unitId: officer.unitId,
+      previousStatus,
+      newStatus: status,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' UTC',
+      note: `Status changed by ${officer.name} from field.`,
+    };
+    setAuditLogs((prev) => [newLogEntry, ...prev]);
   };
 
   const handleUpdateOfficerStatus = (status: string) => {
     setOfficer((prev) => ({ ...prev, status }));
+    // Immediate telemetry broadcast on duty toggle — bypasses background interval
+    sendImmediateTelemetry('DUTY_TOGGLE', `DUTY STATUS: ${status}`);
   };
 
   const handleSendMessage = (text: string) => {
@@ -156,7 +298,7 @@ export default function App() {
       case 'cases':
         return <CasesScreen cases={cases} />;
       case 'logs':
-        return <LogsScreen alerts={alerts} onUpdateAlertStatus={handleUpdateAlertStatus} />;
+        return <LogsScreen auditLogs={auditLogs} />;
       case 'map':
         return <MapScreen alerts={alerts} />;
       case 'profile':
@@ -171,6 +313,17 @@ export default function App() {
         return <View style={styles.emptyContainer} />;
     }
   };
+
+  if (!permissionsAuthorized) {
+    return (
+      <SafeAreaProvider>
+        <View style={styles.rootContainer}>
+          <StatusBar style="light" />
+          <PermissionGuardScreen onAllPermissionsGranted={() => setPermissionsAuthorized(true)} />
+        </View>
+      </SafeAreaProvider>
+    );
+  }
 
   if (!isAuthorized) {
     return (
@@ -188,9 +341,32 @@ export default function App() {
     <SafeAreaProvider>
       <View style={styles.rootContainer}>
         <StatusBar style="light" />
-        
+
+        {/* Flashing Degraded Permissions Warning Banner (Fault Tolerance) */}
+        {degradedPermissions.length > 0 && (
+          <View style={styles.warningBanner}>
+            <MaterialIcons name="warning" size={16} color="#17130a" style={{ marginRight: 6 }} />
+            <Text style={styles.warningBannerText}>
+              TELEMETRY DEGRADED: {degradedPermissions.map((p) => p.toUpperCase()).join(' & ')} REQUIRED
+            </Text>
+            <TouchableOpacity
+              style={styles.warningBannerButton}
+              onPress={() => handleRestorePermission(degradedPermissions[0])}
+            >
+              <Text style={styles.warningBannerButtonText}>RESTORE</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Active Screen Rendering */}
         <View style={styles.screenContainer}>{renderScreen()}</View>
+
+        {/* Tactical Full-screen Attention-grabbing Popup */}
+        <TacticalAlertPopup
+          visible={tacticalAlertVisible}
+          alert={incomingTacticalAlert}
+          onAcknowledge={handleAcknowledgeTacticalAlert}
+        />
 
         {/* Standardized Bottom Navigation Shell (hidden in details view) */}
         {currentScreen !== 'details' && (
@@ -333,5 +509,34 @@ const styles = StyleSheet.create({
   navLabelActive: {
     color: COLORS.primary,
     opacity: 1,
+  },
+  warningBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F6BE39',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(23, 19, 10, 0.2)',
+  },
+  warningBannerText: {
+    ...TYPOGRAPHY.labelCaps,
+    fontSize: 9,
+    fontWeight: '900',
+    color: '#17130a',
+    flex: 1,
+    letterSpacing: 0.5,
+  },
+  warningBannerButton: {
+    backgroundColor: '#17130a',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  warningBannerButtonText: {
+    ...TYPOGRAPHY.labelCaps,
+    fontSize: 8,
+    fontWeight: '800',
+    color: '#F6BE39',
   },
 });

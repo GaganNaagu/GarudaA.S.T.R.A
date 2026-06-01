@@ -49,8 +49,39 @@ export const CasesScreen: React.FC<CasesScreenProps> = ({ cases }) => {
                 <View style={styles.detailsCol}>
                   <View style={styles.nameRow}>
                     <Text style={styles.name}>{item.name}</Text>
-                    <View style={styles.statusBadge}>
-                      <Text style={styles.statusText}>{item.status}</Text>
+                    <View style={styles.badgeRow}>
+                      <View
+                        style={[
+                          styles.typeBadge,
+                          {
+                            backgroundColor:
+                              item.caseType === 'WANTED'
+                                ? 'rgba(255, 180, 171, 0.12)'
+                                : 'rgba(76, 215, 246, 0.12)',
+                            borderColor:
+                              item.caseType === 'WANTED'
+                                ? COLORS.error
+                                : COLORS.secondary,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.typeText,
+                            {
+                              color:
+                                item.caseType === 'WANTED'
+                                  ? COLORS.error
+                                  : COLORS.secondary,
+                            },
+                          ]}
+                        >
+                          {item.caseType}
+                        </Text>
+                      </View>
+                      <View style={styles.statusBadge}>
+                        <Text style={styles.statusText}>{item.status}</Text>
+                      </View>
                     </View>
                   </View>
 
@@ -62,19 +93,27 @@ export const CasesScreen: React.FC<CasesScreenProps> = ({ cases }) => {
                       </Text>
                     </View>
                     <View style={styles.gridItem}>
-                      <Text style={styles.label}>MISSING SINCE</Text>
+                      <Text style={styles.label}>
+                        {item.caseType === 'WANTED' ? 'OUTSTANDING SINCE' : 'MISSING SINCE'}
+                      </Text>
                       <Text style={styles.value}>{item.missingSince}</Text>
                     </View>
                   </View>
 
                   <View style={styles.lastSeenRow}>
-                    <Text style={styles.label}>LAST SEEN</Text>
+                    <Text style={styles.label}>LAST SEEN AREA</Text>
                     <Text style={styles.value}>
                       <MaterialIcons name="place" size={14} color={COLORS.primary} /> {item.lastSeen}
                     </Text>
                   </View>
                 </View>
               </View>
+
+              {item.description && (
+                <Text style={styles.descriptionText} numberOfLines={2}>
+                  {item.description}
+                </Text>
+              )}
 
               <TouchableOpacity style={styles.footerButton}>
                 <Text style={styles.footerButtonText}>OPEN CASE DOSSIER</Text>
@@ -172,16 +211,42 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   statusBadge: {
-    backgroundColor: 'rgba(212, 160, 23, 0.2)',
+    backgroundColor: 'rgba(246, 190, 57, 0.12)',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: ROUNDED.sm,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
   },
   statusText: {
     ...TYPOGRAPHY.labelCaps,
     fontSize: 8,
     color: COLORS.primary,
     fontWeight: '700',
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    gap: 6,
+    alignItems: 'center',
+  },
+  typeBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: ROUNDED.sm,
+    borderWidth: 1,
+  },
+  typeText: {
+    ...TYPOGRAPHY.labelCaps,
+    fontSize: 8,
+    fontWeight: '700',
+  },
+  descriptionText: {
+    ...TYPOGRAPHY.bodyMd,
+    fontSize: 12,
+    color: COLORS.onSurfaceVariant,
+    marginTop: 10,
+    lineHeight: 16,
+    fontStyle: 'italic',
   },
   grid: {
     flexDirection: 'row',

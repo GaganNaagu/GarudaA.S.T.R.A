@@ -1,4 +1,6 @@
-import React from 'react'
+"use client"
+
+import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card"
 import { Badge } from "@/components/ui/Badge"
 import { Button } from "@/components/ui/Button"
@@ -15,16 +17,74 @@ import {
 } from 'lucide-react'
 import { cn } from "@/lib/utils"
 
-const units = [
-  { id: 'P-09', type: 'Rapid Response', location: 'Indiranagar Sector 4', status: 'En Route', battery: 88, ping: '12ms', health: 'Optimal' },
-  { id: 'P-04', type: 'Surveillance', location: 'MG Road Junction', status: 'On Site', battery: 92, ping: '24ms', health: 'Optimal' },
-  { id: 'P-12', type: 'General Patrol', location: 'Koramangala 1st Block', status: 'Standby', battery: 45, ping: '18ms', health: 'Check Required' },
-  { id: 'P-22', type: 'Interceptor', location: 'Whitefield Flyover', status: 'Patrolling', battery: 76, ping: '42ms', health: 'Optimal' },
-  { id: 'P-31', type: 'Rapid Response', location: 'Jayanagar 4th Block', status: 'Standby', battery: 98, ping: '8ms', health: 'Optimal' },
-  { id: 'P-15', type: 'Surveillance', location: 'Hebbal Flyover', status: 'En Route', battery: 62, ping: '56ms', health: 'Optimal' },
-]
+interface TelemetryRecord {
+  unitId: string;
+  latitude: number;
+  longitude: number;
+  batteryLevel: number;
+  latencyMs: number;
+  timestamp: number;
+  lastSeen?: string;
+}
+
+const STATIC_UNIT_TEMPLATES: Record<string, { type: string; location: string; status: string; health: string }> = {
+  'P-09': { type: 'Rapid Response', location: 'Indiranagar Sector 4', status: 'En Route', health: 'Optimal' },
+  'P-04': { type: 'Surveillance', location: 'MG Road Junction', status: 'On Site', health: 'Optimal' },
+  'P-12': { type: 'General Patrol', location: 'Koramangala 1st Block', status: 'Standby', health: 'Check Required' },
+  'P-22': { type: 'Interceptor', location: 'Whitefield Flyover', status: 'Patrolling', health: 'Optimal' },
+  'P-31': { type: 'Rapid Response', location: 'Jayanagar 4th Block', status: 'Standby', health: 'Optimal' },
+  'P-15': { type: 'Surveillance', location: 'Hebbal Flyover', status: 'En Route', health: 'Optimal' },
+};
 
 export default function PatrolPage() {
+  const [patrolUnits, setPatrolUnits] = useState<any[]>([]);
+
+  const fetchTelemetry = async () => {
+    try {
+      const res = await fetch('/api/telemetry');
+      if (res.ok) {
+        const liveData: TelemetryRecord[] = await res.json();
+        
+        // Merge live data with our layout templates
+        const merged = Object.keys(STATIC_UNIT_TEMPLATES).map((id) => {
+          const live = liveData.find((u) => u.unitId === id);
+          const template = STATIC_UNIT_TEMPLATES[id];
+
+          if (live) {
+            // Compute dynamic location readout based on GPS coordinates
+            const locationStr = `${live.latitude.toFixed(4)}° N, ${live.longitude.toFixed(4)}° E`;
+            return {
+              id,
+              ...template,
+              location: locationStr,
+              battery: live.batteryLevel,
+              ping: `${live.latencyMs}ms`,
+            };
+          }
+
+          // Fallback static mock defaults
+          return {
+            id,
+            ...template,
+            battery: id === 'P-09' ? 88 : id === 'P-04' ? 92 : id === 'P-12' ? 45 : id === 'P-22' ? 76 : id === 'P-31' ? 98 : 62,
+            ping: id === 'P-09' ? '12ms' : id === 'P-04' ? '24ms' : id === 'P-12' ? '18ms' : id === 'P-22' ? '42ms' : id === 'P-31' ? '8ms' : '56ms',
+          };
+        });
+
+        setPatrolUnits(merged);
+      }
+    } catch (error) {
+      console.error('Failed to pull telemetry:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchTelemetry();
+    // Poll updates every 4 seconds to be snappy
+    const timer = setInterval(fetchTelemetry, 4000);
+    return () => clearInterval(timer);
+  }, []);
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
@@ -33,9 +93,9 @@ export default function PatrolPage() {
           <p className="text-muted-foreground">Monitor and coordinate real-time deployment of tactical units.</p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={fetchTelemetry}>
             <Radio className="w-4 h-4 mr-2" />
-            Global Broadcast
+            Refresh Telemetry
           </Button>
           <Button size="sm">
             <Navigation className="w-4 h-4 mr-2" />
@@ -45,7 +105,7 @@ export default function PatrolPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {units.map((unit) => (
+        {patrolUnits.map((unit) => (
           <Card key={unit.id} className="relative overflow-hidden group">
             <div className={cn(
               "absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 rounded-full opacity-10 group-hover:scale-110 transition-transform",
@@ -54,15 +114,15 @@ export default function PatrolPage() {
             <CardHeader className="pb-2">
                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="bg-secondary/50 font-mono">{unit.id}</Badge>
-                    <span className="text-xs text-muted-foreground font-medium uppercase tracking-tighter">{unit.type}</span>
+                     <Badge variant="outline" className="bg-secondary/50 font-mono">{unit.id}</Badge>
+                     <span className="text-xs text-muted-foreground font-medium uppercase tracking-tighter">{unit.type}</span>
                   </div>
                   <Badge variant={unit.status === 'En Route' ? 'warning' : unit.status === 'On Site' ? 'success' : 'secondary'}>
-                    <div className={cn(
-                      "w-1.5 h-1.5 rounded-full mr-2",
-                      unit.status === 'En Route' ? 'bg-yellow-500 animate-pulse' : unit.status === 'On Site' ? 'bg-green-500 animate-pulse' : 'bg-muted-foreground'
-                    )}></div>
-                    {unit.status}
+                     <div className={cn(
+                       "w-1.5 h-1.5 rounded-full mr-2",
+                       unit.status === 'En Route' ? 'bg-yellow-500 animate-pulse' : unit.status === 'On Site' ? 'bg-green-500 animate-pulse' : 'bg-muted-foreground'
+                     )}></div>
+                     {unit.status}
                   </Badge>
                </div>
                <CardTitle className="mt-4 flex items-center gap-2">

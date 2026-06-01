@@ -3,16 +3,16 @@
 import React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { 
-  LayoutDashboard, 
-  Bell, 
-  Upload, 
-  History, 
-  UserSearch, 
-  ShieldAlert, 
-  CheckCircle2, 
-  Cpu, 
-  Users, 
+import {
+  LayoutDashboard,
+  Bell,
+  Upload,
+  History,
+  UserSearch,
+  ShieldAlert,
+  CheckCircle2,
+  Cpu,
+  Users,
   Settings,
   ChevronRight
 } from 'lucide-react'
@@ -39,11 +39,12 @@ export function Sidebar() {
 
   return (
     <div className="flex flex-col w-64 bg-card border-r border-border h-screen sticky top-0 overflow-y-auto">
-      <div className="p-6">
-        <div className="flex items-center gap-2 text-primary font-bold text-xl tracking-wider">
-          <ShieldAlert className="w-8 h-8" />
-          <span>GARUDA ASTRA</span>
-        </div>
+      <div className="p-4 border-b border-border/40 flex items-center justify-center bg-secondary/10">
+        <img
+          src="/GarudASTRAtransparent.png"
+          alt="Garuda ASTRA Logo"
+          className="h-16 w-auto object-contain"
+        />
       </div>
 
       <nav className="flex-1 px-4 space-y-8">
@@ -60,8 +61,8 @@ export function Sidebar() {
                     href={item.href}
                     className={cn(
                       "flex items-center justify-between px-4 py-2 text-sm font-medium rounded-md transition-all",
-                      isActive 
-                        ? "bg-primary text-primary-foreground" 
+                      isActive
+                        ? "bg-primary text-primary-foreground"
                         : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                     )}
                   >
@@ -90,8 +91,8 @@ export function Sidebar() {
                     href={item.href}
                     className={cn(
                       "flex items-center justify-between px-4 py-2 text-sm font-medium rounded-md transition-all",
-                      isActive 
-                        ? "bg-primary text-primary-foreground" 
+                      isActive
+                        ? "bg-primary text-primary-foreground"
                         : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                     )}
                   >
@@ -110,12 +111,14 @@ export function Sidebar() {
 
       <div className="p-4 border-t border-border">
         <div className="flex items-center gap-3 px-4 py-2">
-          <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-primary font-bold">
-            JD
-          </div>
+          <img
+            src="/GarudaASTRApfp.png"
+            alt="Surya Pratap Profile"
+            className="w-9 h-9 rounded-full object-cover border border-border/60"
+          />
           <div className="flex flex-col">
-            <span className="text-sm font-medium">John Doe</span>
-            <span className="text-xs text-muted-foreground">Admin</span>
+            <span className="text-sm font-medium">Surya Pratap</span>
+            <span className="text-xs text-muted-foreground">Tactical Inspector</span>
           </div>
         </div>
       </div>

@@ -4,308 +4,138 @@ import {
   Text,
   View,
   ScrollView,
-  TouchableOpacity,
-  Alert,
-  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SPACING, ROUNDED } from '../constants/theme';
-import { AlertItem } from '../utils/mockState';
+import { AuditLogEntry } from '../utils/mockState';
 import PulseIndicator from '../components/PulseIndicator';
 import TacticalCard from '../components/TacticalCard';
 
 interface LogsScreenProps {
-  alerts: AlertItem[];
-  onUpdateAlertStatus: (alertId: string, status: AlertItem['status']) => void;
+  auditLogs: AuditLogEntry[];
 }
 
-export const LogsScreen: React.FC<LogsScreenProps> = ({
-  alerts,
-  onUpdateAlertStatus,
-}) => {
-  // Find our primary dynamic alert (Vikram Singh #GA-23854)
-  const activeAlert = alerts.find((a) => a.id === 'vikram-singh') || alerts[0];
-  const activeStatus = activeAlert ? activeAlert.status : 'ALERT';
+// Helper to get visual config per status
+const getStatusStyle = (status: string) => {
+  switch (status) {
+    case 'ALERT':
+      return { color: COLORS.primary, icon: 'notifications-active' as const, bg: 'rgba(246, 190, 57, 0.12)' };
+    case 'INVESTIGATING':
+      return { color: COLORS.primary, icon: 'search' as const, bg: 'rgba(246, 190, 57, 0.12)' };
+    case 'LOCATED':
+      return { color: COLORS.secondary, icon: 'gps-fixed' as const, bg: 'rgba(76, 215, 246, 0.12)' };
+    case 'COMPLETED':
+      return { color: COLORS.secondary, icon: 'check-circle' as const, bg: 'rgba(76, 215, 246, 0.12)' };
+    case 'FALSE ALERT':
+      return { color: COLORS.outline, icon: 'cancel' as const, bg: 'rgba(155, 143, 122, 0.12)' };
+    default:
+      return { color: COLORS.onSurfaceVariant, icon: 'fiber-new' as const, bg: 'rgba(155, 143, 122, 0.12)' };
+  }
+};
 
-  // Handler for footer action triggers
-  const handleFooterAction = (action: 'EN_ROUTE' | 'ON_SCENE' | 'COPY_THAT') => {
-    if (!activeAlert) return;
-
-    let targetStatus: AlertItem['status'] = 'ALERT';
-    let message = '';
-    let title = '';
-
-    switch (action) {
-      case 'EN_ROUTE':
-        targetStatus = 'INVESTIGATING';
-        title = 'EN ROUTE BEARING LOGGED';
-        message = 'Patrol Unit-042 status updated to EN ROUTE.\nGPS telemetry locked to Sector 4 (Marine Drive). Backup notified.';
-        break;
-      case 'ON_SCENE':
-        targetStatus = 'LOCATED';
-        title = 'ON SCENE ARRIVAL RECORDED';
-        message = 'Patrol Unit-042 status updated to ON SCENE.\nCCTV facial recognition feeds synchronized. Initiating suspect scan.';
-        break;
-      case 'COPY_THAT':
-        targetStatus = 'COMPLETED';
-        title = 'SECURE COMMAND TRANSMITTED';
-        message = 'Patrol Unit-042 status updated to COMPLETED.\nThreat at Sector 4 checkpoint fully resolved and secured. Log archived.';
-        break;
-    }
-
-    onUpdateAlertStatus(activeAlert.id, targetStatus);
-
-    Alert.alert(
-      title,
-      message,
-      [{ text: 'RECEIVING L-BAND DATALINK', style: 'default' }],
-      { cancelable: true }
-    );
-  };
-
-  // Helper to render dynamic status information for the top log card
-  const getDynamicLogContent = () => {
-    switch (activeStatus) {
-      case 'ALERT':
-        return {
-          badgeText: 'PENDING',
-          badgeColor: COLORS.primary,
-          badgeBg: 'rgba(246, 190, 57, 0.12)',
-          icon: 'hourglass-empty' as const,
-          description: 'Status: PENDING. Potential weapon detected at Sector 4 checkpoint. Patrol Unit dispatch required.',
-        };
-      case 'INVESTIGATING':
-        return {
-          badgeText: 'EN ROUTE',
-          badgeColor: COLORS.primary,
-          badgeBg: 'rgba(246, 190, 57, 0.12)',
-          icon: 'directions-run' as const,
-          description: 'Status: EN ROUTE. Dispatch confirmed. Patrol Unit-042 is en route to Sector 4 checkpoint.',
-        };
-      case 'LOCATED':
-        return {
-          badgeText: 'ON SCENE',
-          badgeColor: COLORS.primary,
-          badgeBg: 'rgba(246, 190, 57, 0.12)',
-          icon: 'location-searching' as const,
-          description: 'Status: ON SCENE. Patrol Unit-042 arrived at Sector 4. Subject located and under active observation.',
-        };
-      case 'COMPLETED':
-        return {
-          badgeText: 'SECURED',
-          badgeColor: COLORS.secondary,
-          badgeBg: 'rgba(76, 215, 246, 0.12)',
-          icon: 'verified' as const,
-          description: 'Status: SECURED. Potential weapon detected at Sector 4 checkpoint. Suspect detained and area cleared.',
-        };
-      case 'FALSE ALERT':
-        return {
-          badgeText: 'DISMISSED',
-          badgeColor: COLORS.outline,
-          badgeBg: 'rgba(155, 143, 122, 0.12)',
-          icon: 'cancel' as const,
-          description: 'Status: DISMISSED. Threat analyzed. Misidentification at Sector 4 checkpoint. Code Green.',
-        };
-      default:
-        return {
-          badgeText: 'PENDING',
-          badgeColor: COLORS.primary,
-          badgeBg: 'rgba(246, 190, 57, 0.12)',
-          icon: 'hourglass-empty' as const,
-          description: 'Status: PENDING. Potential weapon detected at Sector 4 checkpoint. Patrol Unit dispatch required.',
-        };
-    }
-  };
-
-  const dynamicLog = getDynamicLogContent();
-
+export const LogsScreen: React.FC<LogsScreenProps> = ({ auditLogs }) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       {/* Top App Bar */}
       <View style={styles.header}>
         <View style={styles.headerTitleContainer}>
-          <MaterialIcons name="security" size={22} color={COLORS.primary} style={{ marginRight: 8 }} />
-          <Text style={styles.headerTitle}>PATROL UNIT-042</Text>
+          <MaterialIcons name="history" size={22} color={COLORS.primary} style={{ marginRight: 8 }} />
+          <Text style={styles.headerTitle}>AUDIT TRAIL</Text>
         </View>
         <View style={styles.headerRight}>
-          <MaterialIcons name="signal-cellular-alt" size={20} color={COLORS.primary} style={{ marginRight: 6 }} />
+          <Text style={styles.logCountBadge}>{auditLogs.length} ENTRIES</Text>
           <PulseIndicator color={COLORS.primary} size={8} pulseSize={2.5} />
         </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Emergency & Sector Headers */}
-        <View style={styles.headersRow}>
-          <View style={[styles.headerCard, styles.emergencyCard]}>
-            <Text style={styles.headerCardLabelError}>EMERGENCY</Text>
-            <View style={styles.headerCardBody}>
-              <MaterialIcons name="emergency" size={18} color={COLORS.error} style={styles.pulseIcon} />
-              <Text style={styles.headerCardValueMonoError}>PRIORITY-ALPHA</Text>
-            </View>
-          </View>
-
-          <View style={[styles.headerCard, styles.sectorCard]}>
-            <Text style={styles.headerCardLabelSecondary}>SECTOR 1</Text>
-            <View style={styles.headerCardBody}>
-              <MaterialIcons name="location-on" size={18} color={COLORS.secondary} />
-              <Text style={styles.headerCardValueMono}>MUMBAI_CENTRAL</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Response History Header */}
+        {/* Section Label */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>RESPONSE HISTORY</Text>
-          <Text style={styles.sectionMeta}>LOGS UPDATED</Text>
+          <Text style={styles.sectionTitle}>STATUS CHANGE HISTORY</Text>
+          <Text style={styles.sectionMeta}>READ-ONLY</Text>
         </View>
 
-        {/* Dynamic Log 1 (Reactive to Alert #GA-23854) */}
-        <View style={styles.logCardContainer}>
-          <TacticalCard
-            accentColor={dynamicLog.badgeColor}
-            style={styles.cardPadding}
-          >
-            <View style={styles.logCardHeader}>
-              <View style={styles.logUnitInfo}>
-                <View style={[styles.iconBox, { backgroundColor: `${dynamicLog.badgeColor}1A` }]}>
-                  <MaterialIcons name="assignment-turned-in" size={16} color={dynamicLog.badgeColor} />
+        {/* Timeline */}
+        <View style={styles.timeline}>
+          {auditLogs.map((log, index) => {
+            const fromStyle = getStatusStyle(log.previousStatus);
+            const toStyle = getStatusStyle(log.newStatus);
+            const isLast = index === auditLogs.length - 1;
+
+            return (
+              <View key={log.id} style={styles.timelineEntry}>
+                {/* Timeline dot + line */}
+                <View style={styles.timelineTrack}>
+                  <View style={[styles.timelineDot, { backgroundColor: toStyle.color }]} />
+                  {!isLast && <View style={styles.timelineLine} />}
                 </View>
-                <View>
-                  <Text style={[styles.logTitle, { color: dynamicLog.badgeColor }]}>
-                    UNIT-042 | Alert #GA-23854
-                  </Text>
-                  <Text style={styles.logTime}>RESPONDED AT 14:23:15 UTC</Text>
+
+                {/* Card */}
+                <View style={styles.logCardWrapper}>
+                  <TacticalCard
+                    accentColor={toStyle.color}
+                    style={styles.cardPadding}
+                  >
+                    {/* Header Row: Officer + Timestamp */}
+                    <View style={styles.logCardHeader}>
+                      <View style={styles.officerInfo}>
+                        <View style={[styles.officerIconBox, { backgroundColor: `${toStyle.color}1A` }]}>
+                          <MaterialIcons name="person" size={14} color={toStyle.color} />
+                        </View>
+                        <View>
+                          <Text style={[styles.officerName, { color: toStyle.color }]}>{log.officerName}</Text>
+                          <Text style={styles.officerUnit}>{log.unitId}</Text>
+                        </View>
+                      </View>
+                      <Text style={styles.logTimestamp}>{log.timestamp}</Text>
+                    </View>
+
+                    {/* Alert Reference */}
+                    <View style={styles.alertRef}>
+                      <MaterialIcons name="link" size={12} color={COLORS.onSurfaceVariant} style={{ marginRight: 4 }} />
+                      <Text style={styles.alertRefText}>
+                        {log.alertTitle} <Text style={styles.alertFileNo}>{log.fileNo}</Text>
+                      </Text>
+                    </View>
+
+                    {/* Status Transition */}
+                    <View style={styles.statusTransition}>
+                      <View style={[styles.statusBadge, { backgroundColor: fromStyle.bg }]}>
+                        <MaterialIcons name={fromStyle.icon} size={10} color={fromStyle.color} style={{ marginRight: 3 }} />
+                        <Text style={[styles.statusBadgeText, { color: fromStyle.color }]}>{log.previousStatus}</Text>
+                      </View>
+
+                      <MaterialIcons name="arrow-forward" size={14} color={COLORS.outline} style={{ marginHorizontal: 6 }} />
+
+                      <View style={[styles.statusBadge, { backgroundColor: toStyle.bg, borderWidth: 1, borderColor: `${toStyle.color}40` }]}>
+                        <MaterialIcons name={toStyle.icon} size={10} color={toStyle.color} style={{ marginRight: 3 }} />
+                        <Text style={[styles.statusBadgeText, { color: toStyle.color, fontWeight: '800' }]}>{log.newStatus}</Text>
+                      </View>
+                    </View>
+
+                    {/* Note */}
+                    {log.note && (
+                      <View style={styles.noteContainer}>
+                        <MaterialIcons name="short-text" size={14} color={COLORS.outline} style={{ marginRight: 6, marginTop: 1 }} />
+                        <Text style={styles.noteText}>{log.note}</Text>
+                      </View>
+                    )}
+                  </TacticalCard>
                 </View>
               </View>
-
-              <View style={[styles.badgeContainer, { backgroundColor: dynamicLog.badgeBg }]}>
-                <MaterialIcons name={dynamicLog.icon} size={12} color={dynamicLog.badgeColor} style={{ marginRight: 4 }} />
-                <Text style={[styles.badgeText, { color: dynamicLog.badgeColor }]}>
-                  {dynamicLog.badgeText}
-                </Text>
-              </View>
-            </View>
-
-            <View style={[styles.bodyBorder, { borderColor: `${dynamicLog.badgeColor}4D` }]}>
-              <Text style={styles.bodyText}>
-                {dynamicLog.description}
-              </Text>
-            </View>
-          </TacticalCard>
+            );
+          })}
         </View>
 
-        {/* Log Card 2 (Static Unit-075 | Alert #MH-11202) */}
-        <View style={styles.logCardContainer}>
-          <TacticalCard
-            accentColor={COLORS.secondary}
-            style={styles.cardPadding}
-          >
-            <View style={styles.logCardHeader}>
-              <View style={styles.logUnitInfo}>
-                <View style={[styles.iconBox, { backgroundColor: 'rgba(76, 215, 246, 0.1)' }]}>
-                  <MaterialIcons name="local-police" size={16} color={COLORS.secondary} />
-                </View>
-                <View>
-                  <Text style={[styles.logTitle, { color: COLORS.secondary }]}>
-                    UNIT-075 | Alert #MH-11202
-                  </Text>
-                  <Text style={styles.logTime}>RESPONDED AT 14:10:42 UTC</Text>
-                </View>
-              </View>
-
-              <View style={[styles.badgeContainer, { backgroundColor: 'rgba(246, 190, 57, 0.12)' }]}>
-                <MaterialIcons name="location-searching" size={12} color={COLORS.primary} style={{ marginRight: 4 }} />
-                <Text style={[styles.badgeText, { color: COLORS.primary }]}>ON SCENE</Text>
-              </View>
-            </View>
-
-            <View style={styles.bodyBorderSecondary}>
-              <Text style={styles.bodyText}>
-                Status: <Text style={{ color: COLORS.secondary }}>ON SCENE</Text>. Responding to reports of unauthorized firearm brandishing near Marine Drive.
-              </Text>
-            </View>
-          </TacticalCard>
-        </View>
-
-        {/* Log Card 3 (Static Unit-042 | Alert #CC-09432) */}
-        <View style={[styles.logCardContainer, { opacity: 0.8 }]}>
-          <TacticalCard
-            accentColor={COLORS.outline}
-            style={styles.cardPadding}
-          >
-            <View style={styles.logCardHeader}>
-              <View style={styles.logUnitInfo}>
-                <View style={[styles.iconBox, { backgroundColor: 'rgba(155, 143, 122, 0.1)' }]}>
-                  <MaterialIcons name="history" size={16} color={COLORS.outline} />
-                </View>
-                <View>
-                  <Text style={[styles.logTitle, { color: COLORS.onSurfaceVariant }]}>
-                    UNIT-042 | Alert #CC-09432
-                  </Text>
-                  <Text style={styles.logTime}>RESPONDED AT 13:45:02 UTC</Text>
-                </View>
-              </View>
-
-              <View style={[styles.badgeContainer, { backgroundColor: 'rgba(155, 143, 122, 0.12)' }]}>
-                <MaterialIcons name="check-circle" size={12} color={COLORS.outline} style={{ marginRight: 4 }} />
-                <Text style={[styles.badgeText, { color: COLORS.outline }]}>RECOVERED</Text>
-              </View>
-            </View>
-
-            <View style={styles.bodyBorderMuted}>
-              <Text style={[styles.bodyText, { fontStyle: 'italic', color: COLORS.onSurfaceVariant }]}>
-                Status: <Text style={{ color: COLORS.onSurface }}>RECOVERED</Text>. Missing person (Case #884) located at Dharavi transit camp and reunited with family.
-              </Text>
-            </View>
-          </TacticalCard>
-        </View>
-
-        {/* Situational Context (Bento Style) */}
-        <View style={styles.bentoRow}>
-          <View style={styles.bentoItem}>
-            <MaterialIcons name="wifi-tethering" size={24} color={COLORS.primary} style={{ marginBottom: 6 }} />
-            <Text style={styles.bentoLabel}>UAV FEED</Text>
-            <Text style={styles.bentoValueMonoPrimary}>ACTIVE</Text>
-          </View>
-
-          <View style={styles.bentoItem}>
-            <MaterialIcons name="battery-charging-full" size={24} color={COLORS.secondary} style={{ marginBottom: 6 }} />
-            <Text style={styles.bentoLabel}>EXO-SUIT</Text>
-            <Text style={styles.bentoValueMonoSecondary}>84%</Text>
-          </View>
+        {/* Bottom disclaimer */}
+        <View style={styles.disclaimerBox}>
+          <MaterialIcons name="lock" size={14} color={COLORS.outline} style={{ marginRight: 6 }} />
+          <Text style={styles.disclaimerText}>
+            All entries are immutable and cryptographically timestamped. Status changes can only be made from the Alert Details screen.
+          </Text>
         </View>
       </ScrollView>
-
-      {/* Actionable Footer (Floating Above BottomNav) */}
-      <View style={styles.floatingFooter}>
-        <TouchableOpacity
-          onPress={() => handleFooterAction('EN_ROUTE')}
-          style={[styles.footerButton, styles.footerBtnHighest, activeStatus === 'INVESTIGATING' && styles.footerBtnActive]}
-          activeOpacity={0.8}
-        >
-          <MaterialIcons name="directions-run" size={16} color={activeStatus === 'INVESTIGATING' ? COLORS.primary : COLORS.onSurface} style={{ marginRight: 4 }} />
-          <Text style={[styles.footerBtnText, activeStatus === 'INVESTIGATING' && { color: COLORS.primary }]}>EN ROUTE</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={() => handleFooterAction('ON_SCENE')}
-          style={[styles.footerButton, styles.footerBtnPrimary, activeStatus === 'LOCATED' && styles.footerBtnPrimaryActive]}
-          activeOpacity={0.8}
-        >
-          <MaterialIcons name="location-searching" size={16} color={activeStatus === 'LOCATED' ? COLORS.onPrimary : COLORS.onPrimary} style={{ marginRight: 4 }} />
-          <Text style={styles.footerBtnTextPrimary}>ON SCENE</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={() => handleFooterAction('COPY_THAT')}
-          style={[styles.footerButton, styles.footerBtnHighest, activeStatus === 'COMPLETED' && styles.footerBtnActive]}
-          activeOpacity={0.8}
-        >
-          <MaterialIcons name="check-circle" size={16} color={activeStatus === 'COMPLETED' ? COLORS.secondary : COLORS.onSurface} style={{ marginRight: 4 }} />
-          <Text style={[styles.footerBtnText, activeStatus === 'COMPLETED' && { color: COLORS.secondary }]}>COPY THAT</Text>
-        </TouchableOpacity>
-      </View>
     </SafeAreaView>
   );
 };
@@ -336,70 +166,29 @@ const styles = StyleSheet.create({
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
+  },
+  logCountBadge: {
+    ...TYPOGRAPHY.dataMono,
+    fontSize: 10,
+    color: COLORS.onSurfaceVariant,
+    backgroundColor: COLORS.surfaceContainer,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: ROUNDED.full,
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
+    overflow: 'hidden',
   },
   scrollContent: {
     padding: SPACING.gutter,
-    paddingBottom: 150, // Space for floating footer action bar
-  },
-  headersRow: {
-    flexDirection: 'row',
-    gap: SPACING.stackGap,
-    marginBottom: 16,
-  },
-  headerCard: {
-    flex: 1,
-    borderRadius: ROUNDED.DEFAULT,
-    padding: 12,
-    borderLeftWidth: 4,
-  },
-  emergencyCard: {
-    backgroundColor: 'rgba(147, 0, 10, 0.15)',
-    borderLeftColor: COLORS.error,
-  },
-  sectorCard: {
-    backgroundColor: COLORS.surfaceContainer,
-    borderLeftColor: COLORS.secondary,
-    borderColor: COLORS.outlineVariant,
-    borderWidth: 1,
-  },
-  headerCardLabelError: {
-    ...TYPOGRAPHY.labelCaps,
-    color: COLORS.error,
-    fontSize: 10,
-  },
-  headerCardLabelSecondary: {
-    ...TYPOGRAPHY.labelCaps,
-    color: COLORS.secondary,
-    fontSize: 10,
-  },
-  headerCardBody: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 8,
-  },
-  headerCardValueMonoError: {
-    ...TYPOGRAPHY.dataMono,
-    color: COLORS.onErrorContainer,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  headerCardValueMono: {
-    ...TYPOGRAPHY.dataMono,
-    color: COLORS.onSurface,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  pulseIcon: {
-    // Note: React Native does not support css keyframe animation easily without Animated wrapper.
-    // However, the red glow matches nicely.
+    paddingBottom: 100,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 8,
-    marginBottom: 12,
+    marginBottom: 16,
   },
   sectionTitle: {
     ...TYPOGRAPHY.labelCaps,
@@ -408,10 +197,41 @@ const styles = StyleSheet.create({
   sectionMeta: {
     ...TYPOGRAPHY.dataMono,
     fontSize: 10,
-    color: COLORS.primary,
+    color: COLORS.outline,
+    backgroundColor: 'rgba(155, 143, 122, 0.12)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: ROUNDED.full,
+    overflow: 'hidden',
   },
-  logCardContainer: {
-    marginBottom: 12,
+  timeline: {
+    position: 'relative',
+  },
+  timelineEntry: {
+    flexDirection: 'row',
+    marginBottom: 4,
+  },
+  timelineTrack: {
+    width: 24,
+    alignItems: 'center',
+    paddingTop: 18,
+  },
+  timelineDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    zIndex: 2,
+  },
+  timelineLine: {
+    width: 2,
+    flex: 1,
+    backgroundColor: COLORS.outlineVariant,
+    marginTop: 2,
+  },
+  logCardWrapper: {
+    flex: 1,
+    marginLeft: 8,
+    marginBottom: 8,
   },
   cardPadding: {
     padding: 14,
@@ -422,147 +242,105 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 10,
   },
-  logUnitInfo: {
+  officerInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
   },
-  iconBox: {
-    width: 32,
-    height: 32,
+  officerIconBox: {
+    width: 28,
+    height: 28,
     borderRadius: 4,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  logTitle: {
+  officerName: {
     ...TYPOGRAPHY.labelCaps,
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
   },
-  logTime: {
+  officerUnit: {
     ...TYPOGRAPHY.dataMono,
     fontSize: 9,
     color: COLORS.outline,
     marginTop: 1,
   },
-  badgeContainer: {
+  logTimestamp: {
+    ...TYPOGRAPHY.dataMono,
+    fontSize: 9,
+    color: COLORS.outline,
+  },
+  alertRef: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    backgroundColor: COLORS.surfaceLow,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
+  },
+  alertRefText: {
+    ...TYPOGRAPHY.bodyMd,
+    fontSize: 12,
+    color: COLORS.onSurface,
+    fontWeight: '600',
+  },
+  alertFileNo: {
+    ...TYPOGRAPHY.dataMono,
+    fontSize: 10,
+    color: COLORS.onSurfaceVariant,
+  },
+  statusTransition: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 4,
     borderRadius: ROUNDED.full,
   },
-  badgeText: {
+  statusBadgeText: {
     ...TYPOGRAPHY.labelCaps,
-    fontSize: 9,
+    fontSize: 8,
     fontWeight: '700',
   },
-  bodyBorder: {
-    borderLeftWidth: 1,
-    paddingLeft: 12,
-    marginTop: 2,
-  },
-  bodyBorderSecondary: {
-    borderLeftWidth: 1,
-    borderColor: 'rgba(76, 215, 246, 0.3)',
-    paddingLeft: 12,
-    marginTop: 2,
-  },
-  bodyBorderMuted: {
-    borderLeftWidth: 1,
-    borderColor: 'rgba(155, 143, 122, 0.3)',
-    paddingLeft: 12,
-    marginTop: 2,
-  },
-  bodyText: {
-    ...TYPOGRAPHY.bodyMd,
-    fontSize: 14,
-    color: COLORS.onSurface,
-    lineHeight: 20,
-  },
-  bentoRow: {
+  noteContainer: {
     flexDirection: 'row',
-    gap: SPACING.stackGap,
-    marginTop: 8,
-  },
-  bentoItem: {
-    flex: 1,
-    backgroundColor: COLORS.surfaceLow,
-    borderColor: COLORS.outlineVariant,
-    borderWidth: 1,
-    borderRadius: ROUNDED.DEFAULT,
-    padding: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bentoLabel: {
-    ...TYPOGRAPHY.labelCaps,
-    fontSize: 9,
-    color: COLORS.outline,
-    marginTop: 2,
-  },
-  bentoValueMonoPrimary: {
-    ...TYPOGRAPHY.dataMono,
-    color: COLORS.primary,
-    fontWeight: '700',
-    fontSize: 14,
-    marginTop: 2,
-  },
-  bentoValueMonoSecondary: {
-    ...TYPOGRAPHY.dataMono,
-    color: COLORS.secondary,
-    fontWeight: '700',
-    fontSize: 14,
-    marginTop: 2,
-  },
-  floatingFooter: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    gap: 8,
-    backgroundColor: COLORS.background,
-    paddingHorizontal: SPACING.gutter,
-    paddingTop: 16,
-    paddingBottom: 20,
+    alignItems: 'flex-start',
+    paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(79, 70, 52, 0.15)',
+    borderTopColor: COLORS.outlineVariant,
   },
-  footerButton: {
+  noteText: {
+    ...TYPOGRAPHY.bodyMd,
+    fontSize: 12,
+    color: COLORS.onSurfaceVariant,
     flex: 1,
-    height: 48,
-    borderRadius: 6,
+    lineHeight: 18,
+    fontStyle: 'italic',
+  },
+  disclaimerBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-  },
-  footerBtnHighest: {
-    backgroundColor: COLORS.surfaceHighest,
-    borderColor: COLORS.outlineVariant,
+    marginTop: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    backgroundColor: COLORS.surfaceLow,
+    borderRadius: ROUNDED.DEFAULT,
     borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
   },
-  footerBtnActive: {
-    borderColor: COLORS.primary,
-    borderWidth: 1.5,
-  },
-  footerBtnPrimary: {
-    backgroundColor: COLORS.primary,
-  },
-  footerBtnPrimaryActive: {
-    backgroundColor: COLORS.primaryContainer,
-  },
-  footerBtnText: {
-    ...TYPOGRAPHY.labelCaps,
-    fontSize: 11,
-    color: COLORS.onSurface,
-    fontWeight: '700',
-  },
-  footerBtnTextPrimary: {
-    ...TYPOGRAPHY.labelCaps,
-    fontSize: 11,
-    color: COLORS.onPrimary,
-    fontWeight: '700',
+  disclaimerText: {
+    ...TYPOGRAPHY.dataMono,
+    fontSize: 10,
+    color: COLORS.outline,
+    flex: 1,
+    lineHeight: 16,
   },
 });
 
