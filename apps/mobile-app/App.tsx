@@ -20,20 +20,15 @@ import {
   AuditLogEntry,
 } from './src/utils/mockState';
 
-import {
-  startBackgroundTracking,
-  stopBackgroundTracking,
-  checkAllPermissionsStatus,
-  requestPermissionType,
-  sendImmediateTelemetry,
-} from './src/utils/telemetryService';
+// Services — new persistent background layer
+import * as DutyManager from './src/services/dutyManager';
+import { checkAllPermissionsStatus, requestPermissionType } from './src/services/permissionService';
 
+// Alert service — callbacks only (WebSocket is in socketManager now)
 import {
   registerAlertCallbacks,
   unregisterAlertCallbacks,
   simulateIncomingAlert,
-  // connectAlertWebSocket,    // Uncomment when backend is ready
-  // disconnectAlertWebSocket, // Uncomment when backend is ready
 } from './src/utils/alertService';
 
 // Screens
@@ -48,6 +43,10 @@ import { PermissionGuardScreen } from './src/screens/PermissionGuardScreen';
 import { TacticalAlertPopup } from './src/components/TacticalAlertPopup';
 
 type ScreenType = 'alerts' | 'details' | 'cases' | 'logs' | 'map' | 'profile';
+
+// WebSocket URL — change this when backend is ready
+// For local testing with the FastAPI mock server: 'ws://YOUR_PC_IP:8765/ws'
+const WS_URL = 'ws://161.118.169.220:8765/ws';
 
 export default function App() {
   const [isAuthorized, setIsAuthorized] = useState(false);
@@ -69,15 +68,14 @@ export default function App() {
   // Degraded active permissions tracking (fault tolerance)
   const [degradedPermissions, setDegradedPermissions] = useState<('foreground' | 'background' | 'notifications')[]>([]);
 
-  // Periodic Telemetry & Background Tracking Hook
+  // =====================================================
+  // DUTY LIFECYCLE HOOK — Controls entire background layer
+  // =====================================================
   useEffect(() => {
     let simulatedAlertTimer: NodeJS.Timeout;
 
     if (isAuthorized) {
-      // Start native Foreground Service tracking when officer goes ON DUTY
-      startBackgroundTracking();
-
-      // Register the unified alert service callbacks
+      // Register alert callbacks (for both WebSocket and simulated alerts)
       registerAlertCallbacks({
         onNewAlert: (alert) => setAlerts((prev) => [alert, ...prev]),
         onTacticalPopup: (alert) => {
@@ -86,32 +84,35 @@ export default function App() {
         },
       });
 
-      // Simulate a backend-pushed alert 8 seconds after login (demo only)
-      // In production, this would come from: connectAlertWebSocket('ws://your-server/alerts')
-      simulatedAlertTimer = simulateIncomingAlert({
-        ...SIMULATED_DEMO_ALERT,
-        assignedOfficer: {
-          name: officer.name,
-          unitId: officer.unitId,
-          rank: officer.rank,
-        },
-      }, 8000);
+      if (officer.status === 'ACTIVE DUTY') {
+        // GO ON DUTY — starts foreground service, WebSocket, GPS, telemetry
+        DutyManager.goOnDuty({
+          officerId: officer.unitId,
+          officerName: officer.name,
+          officerRank: officer.rank,
+          wsUrl: WS_URL,
+          telemetryIntervalMs: 15000,
+        });
+      } else {
+        // GO OFF DUTY — stops everything, removes notification
+        DutyManager.goOffDuty();
+      }
     } else {
-      // Stop tracking when officer goes OFF DUTY
-      stopBackgroundTracking();
+      // LOGGED OUT — stop everything
+      DutyManager.goOffDuty();
       unregisterAlertCallbacks();
       setTacticalAlertVisible(false);
       setIncomingTacticalAlert(null);
     }
 
     return () => {
-      stopBackgroundTracking();
+      DutyManager.goOffDuty();
       unregisterAlertCallbacks();
       if (simulatedAlertTimer) {
         clearTimeout(simulatedAlertTimer);
       }
     };
-  }, [isAuthorized]);
+  }, [isAuthorized, officer.status]);
 
   // Periodic Permission Monitor Hook (Fault Tolerance)
   useEffect(() => {
@@ -151,8 +152,8 @@ export default function App() {
   const handleLoginSuccess = () => {
     setIsAuthorized(true);
     setCurrentScreen('alerts');
-    // Immediate telemetry broadcast on login — bypasses background interval
-    sendImmediateTelemetry('LOGIN', 'OFFICER LOGGED IN');
+    // Immediate telemetry broadcast on login
+    DutyManager.sendEvent('LOGIN', officer.unitId, officer.name, 'OFFICER LOGGED IN');
   };
 
   const handleAcknowledgeTacticalAlert = () => {
@@ -173,7 +174,7 @@ export default function App() {
           style: 'destructive',
           onPress: () => {
             // Immediate telemetry broadcast BEFORE clearing session
-            sendImmediateTelemetry('LOGOUT', 'OFFICER LOGGED OUT');
+            DutyManager.sendEvent('LOGOUT', officer.unitId, officer.name, 'OFFICER LOGGED OUT');
             setIsAuthorized(false);
             setCurrentScreen('alerts');
             setSelectedAlert(null);
@@ -233,8 +234,7 @@ export default function App() {
 
   const handleUpdateOfficerStatus = (status: string) => {
     setOfficer((prev) => ({ ...prev, status }));
-    // Immediate telemetry broadcast on duty toggle — bypasses background interval
-    sendImmediateTelemetry('DUTY_TOGGLE', `DUTY STATUS: ${status}`);
+    // Duty toggle is handled by the useEffect above reacting to officer.status change
   };
 
   const handleSendMessage = (text: string) => {
@@ -261,6 +261,9 @@ export default function App() {
   };
 
   const handleSosTrigger = () => {
+    // Send SOS telemetry
+    DutyManager.sendEvent('SOS', officer.unitId, officer.name, 'EMERGENCY SOS');
+
     Alert.alert(
       'EMERGENCY SOS ACTIVATED',
       'Tactical distress telemetry has been broadcast to command centers. Municipal patrol backups dispatched. Stay behind cover.',

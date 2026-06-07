@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -14,6 +14,7 @@ import { AlertItem } from '../utils/mockState';
 import ScanLine from '../components/ScanLine';
 import PulseIndicator from '../components/PulseIndicator';
 import TacticalCard from '../components/TacticalCard';
+import { getBestEffortPosition } from '../services/gpsService';
 
 interface AlertsScreenProps {
   alerts: AlertItem[];
@@ -28,6 +29,33 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
   onRespondAlert,
   onSosTrigger,
 }) => {
+  const [geoLoc, setGeoLoc] = useState<string>('12.3007° N, 76.5986° E');
+
+  useEffect(() => {
+    let isMounted = true;
+    const updateLoc = async () => {
+      try {
+        const pos = await getBestEffortPosition();
+        if (isMounted) {
+          const latDirection = pos.latitude >= 0 ? 'N' : 'S';
+          const lonDirection = pos.longitude >= 0 ? 'E' : 'W';
+          setGeoLoc(
+            `${Math.abs(pos.latitude).toFixed(4)}° ${latDirection}, ${Math.abs(pos.longitude).toFixed(4)}° ${lonDirection}`
+          );
+        }
+      } catch {
+        // Silently handle
+      }
+    };
+
+    updateLoc();
+    const interval = setInterval(updateLoc, 10000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       {/* Top Header */}
@@ -45,13 +73,17 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Live Status Bar */}
         <View style={styles.statusBar}>
-          <View>
+          <View style={styles.statusInfo}>
             <Text style={styles.statusLabel}>SYSTEM STATUS</Text>
-            <Text style={styles.statusValue}>ACTIVE SCANNING [24.4 FPS]</Text>
+            <Text style={styles.statusValue} numberOfLines={1} adjustsFontSizeToFit>
+              ACTIVE SCANNING [24.4 FPS]
+            </Text>
           </View>
           <View style={styles.geoLocContainer}>
             <Text style={styles.geoLabel}>GEO-LOC</Text>
-            <Text style={styles.geoValue}>18.9231° N, 72.8246° E</Text>
+            <Text style={styles.geoValue} numberOfLines={1} adjustsFontSizeToFit>
+              {geoLoc}
+            </Text>
           </View>
         </View>
 
@@ -297,6 +329,8 @@ const styles = StyleSheet.create({
   statusBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 8,
     backgroundColor: COLORS.surfaceContainer,
     borderRadius: ROUNDED.DEFAULT,
     padding: 12,
@@ -304,27 +338,36 @@ const styles = StyleSheet.create({
     borderColor: COLORS.outlineVariant,
     marginBottom: 16,
   },
+  statusInfo: {
+    flex: 1.1,
+    marginRight: 4,
+  },
   statusLabel: {
     ...TYPOGRAPHY.labelCaps,
     color: COLORS.primary,
     opacity: 0.7,
+    fontSize: 10,
   },
   statusValue: {
     ...TYPOGRAPHY.dataMono,
     color: COLORS.secondary,
     marginTop: 2,
+    fontSize: 12,
   },
   geoLocContainer: {
+    flex: 1,
     alignItems: 'flex-end',
   },
   geoLabel: {
     ...TYPOGRAPHY.labelCaps,
     color: COLORS.onSurfaceVariant,
+    fontSize: 10,
   },
   geoValue: {
     ...TYPOGRAPHY.dataMono,
     color: COLORS.onSurface,
     marginTop: 2,
+    fontSize: 12,
   },
   cardContainer: {
     marginBottom: 16,

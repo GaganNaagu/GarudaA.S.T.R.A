@@ -2,12 +2,15 @@
  * Alert Service — Unified modular alert system for Garuda A.S.T.R.A
  *
  * Provides a single entry point for all incoming alerts, whether from:
- * - Backend WebSocket push
+ * - Backend WebSocket push (via socketManager → dutyManager)
  * - Local simulation / testing
  * - System-generated events
  *
  * All alerts follow the same AlertItem structure and are injected
  * uniformly into the app's state via registered callbacks.
+ *
+ * NOTE: WebSocket management has been moved to socketManager.ts.
+ * This module only handles alert normalization, injection, and callbacks.
  */
 
 import { AlertItem } from './mockState';
@@ -49,9 +52,6 @@ export interface AlertServiceCallbacks {
 // ---------- State ----------
 
 let callbacks: AlertServiceCallbacks | null = null;
-let wsInstance: WebSocket | null = null;
-let reconnectTimer: NodeJS.Timeout | null = null;
-let isConnected = false;
 
 const FALLBACK_LAT = 18.9431;
 const FALLBACK_LON = 72.8246;
@@ -128,85 +128,6 @@ export function registerAlertCallbacks(cbs: AlertServiceCallbacks) {
  */
 export function unregisterAlertCallbacks() {
   callbacks = null;
-}
-
-// ---------- WebSocket Client ----------
-
-/**
- * Connect to the backend WebSocket alert stream.
- *
- * @param url - WebSocket URL (e.g., 'ws://192.168.1.100:8080/alerts')
- *
- * The backend should send JSON messages matching BackendAlertPayload.
- * Each received message is automatically normalized and injected.
- */
-export function connectAlertWebSocket(url: string) {
-  if (wsInstance && isConnected) {
-    console.log('ℹ️ [ALERT WS] Already connected.');
-    return;
-  }
-
-  try {
-    wsInstance = new WebSocket(url);
-
-    wsInstance.onopen = () => {
-      isConnected = true;
-      console.log(`✅ [ALERT WS] Connected to ${url}`);
-      if (reconnectTimer) {
-        clearTimeout(reconnectTimer);
-        reconnectTimer = null;
-      }
-    };
-
-    wsInstance.onmessage = (event: WebSocketMessageEvent) => {
-      try {
-        const payload: BackendAlertPayload = JSON.parse(event.data);
-        injectAlert(payload);
-      } catch (parseError) {
-        console.error('❌ [ALERT WS] Failed to parse message:', parseError);
-      }
-    };
-
-    wsInstance.onerror = (error: Event) => {
-      console.error('❌ [ALERT WS] Connection error:', error);
-    };
-
-    wsInstance.onclose = (event: WebSocketCloseEvent) => {
-      isConnected = false;
-      console.log(`🔌 [ALERT WS] Disconnected (code: ${event.code}). Reconnecting in 5s...`);
-
-      // Auto-reconnect after 5 seconds
-      reconnectTimer = setTimeout(() => {
-        connectAlertWebSocket(url);
-      }, 5000);
-    };
-  } catch (error) {
-    console.error('❌ [ALERT WS] Failed to create WebSocket:', error);
-  }
-}
-
-/**
- * Disconnect from the WebSocket alert stream.
- */
-export function disconnectAlertWebSocket() {
-  if (reconnectTimer) {
-    clearTimeout(reconnectTimer);
-    reconnectTimer = null;
-  }
-  if (wsInstance) {
-    wsInstance.onclose = null; // Prevent auto-reconnect
-    wsInstance.close();
-    wsInstance = null;
-    isConnected = false;
-    console.log('🔌 [ALERT WS] Disconnected.');
-  }
-}
-
-/**
- * Check if the WebSocket is currently connected.
- */
-export function isAlertWebSocketConnected(): boolean {
-  return isConnected;
 }
 
 // ---------- Simulation Helpers ----------
