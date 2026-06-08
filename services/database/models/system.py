@@ -4,7 +4,7 @@ from typing import Optional
 from datetime import datetime
 import uuid
 
-from app.db.base import Base, TimestampMixin, UUIDMixin
+from database.db.base import Base, TimestampMixin, UUIDMixin
 
 class Notification(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "notifications"

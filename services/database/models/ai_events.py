@@ -4,7 +4,7 @@ from typing import List, Optional
 import uuid
 from datetime import datetime
 
-from app.db.base import Base, TimestampMixin, UUIDMixin
+from database.db.base import Base, TimestampMixin, UUIDMixin
 
 class DetectionEvent(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "detection_events"

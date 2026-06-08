@@ -20,8 +20,8 @@ import os
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.core.config import settings
-from app.models import Base
+from backend.core.config import settings
+from database.models import Base
 
 # add your model's MetaData object here
 # for 'autogenerate' support

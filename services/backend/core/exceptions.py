@@ -3,7 +3,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.core.responses import error_response
+from backend.core.responses import error_response
 
 class AppException(Exception):
     def __init__(self, status_code: int, code: str, message: str, details: dict = None):

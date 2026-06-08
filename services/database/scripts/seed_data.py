@@ -8,10 +8,10 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from app.db.session import AsyncSessionLocal
-from app.models.auth import Role, User
-from app.models.personnel import Officer, DispatchUnit
-from app.models.infrastructure import Location, CameraFeed
+from database.db.session import AsyncSessionLocal
+from database.models.auth import Role, User
+from database.models.personnel import Officer, DispatchUnit
+from database.models.infrastructure import Location, CameraFeed
 
 async def seed_data():
     async with AsyncSessionLocal() as session:

@@ -3,7 +3,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import List, Optional
 import uuid
 
-from app.db.base import Base, TimestampMixin, UUIDMixin
+from database.db.base import Base, TimestampMixin, UUIDMixin
 
 class DispatchUnit(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "dispatch_units"

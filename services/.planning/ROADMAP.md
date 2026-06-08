@@ -82,6 +82,10 @@
 6. Mock engine generates realistic events at configurable intervals
 7. AI health check uses circuit breaker (3 failures → open, 30s reset)
 
+**AI Pipeline Split (Orderly Implementation):**
+* **Frontend (Next.js/React Native):** Handles Video Stream → OpenCV → RetinaFace → Face Crop → Send to Backend.
+* **Backend (FastAPI):** Handles Face Crop → DeepFace → ArcFace Embedding → Cosine Similarity → Match Result → Alert Generation → PostgreSQL.
+
 **Depends on:** Phase 3 (requires WebSocket for event broadcasting)
 
 **UI hint**: no

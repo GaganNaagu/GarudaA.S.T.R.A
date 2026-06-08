@@ -3,7 +3,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import List, Optional
 from datetime import datetime
 
-from app.db.base import Base, TimestampMixin, UUIDMixin
+from database.db.base import Base, TimestampMixin, UUIDMixin
 
 class MissingPerson(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "missing_persons"

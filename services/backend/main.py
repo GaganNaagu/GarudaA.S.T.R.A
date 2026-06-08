@@ -1,8 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.core.config import settings
-from app.core.exceptions import add_exception_handlers
+from backend.core.config import settings
+from backend.core.exceptions import add_exception_handlers
+from backend.api.v1.router import api_router
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -28,4 +29,5 @@ add_exception_handlers(app)
 async def health_live():
     return {"status": "alive"}
 
-# TODO: Add router inclusion here when API routers are implemented
+# Include API v1 router
+app.include_router(api_router, prefix=settings.API_V1_STR)
