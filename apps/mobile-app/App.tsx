@@ -89,7 +89,7 @@ export default function App() {
           officerName: officer.name,
           officerRank: officer.rank,
           wsUrl: WS_URL,
-          telemetryIntervalMs: 15000,
+          telemetryIntervalMs: 5000,
         });
       } else {
         // GO OFF DUTY — stops everything, removes notification

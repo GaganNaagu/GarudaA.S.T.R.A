@@ -38,18 +38,27 @@ export default function PatrolBoard() {
 
     if (lastMessage.type === 'telemetry') {
       const data = lastMessage.data
-      setUnits(prev => ({
-        ...prev,
-        [lastMessage.unit_id]: {
-          id: lastMessage.unit_id,
-          name: data.officer_name || `Unit ${lastMessage.unit_id.substring(0, 4).toUpperCase()}`,
-          lat: data.lat,
-          lng: data.lng,
-          battery: data.battery ?? 0,
-          status: 'Active Patrol',
-          lastUpdate: new Date()
-        }
-      }))
+
+      if (data.event_type === 'DUTY_OFF' || data.status === 'OFF DUTY') {
+        setUnits(prev => {
+          const updated = { ...prev }
+          delete updated[lastMessage.unit_id]
+          return updated
+        })
+      } else {
+        setUnits(prev => ({
+          ...prev,
+          [lastMessage.unit_id]: {
+            id: lastMessage.unit_id,
+            name: data.officer_name || `Unit ${lastMessage.unit_id.substring(0, 4).toUpperCase()}`,
+            lat: data.lat,
+            lng: data.lng,
+            battery: data.battery ?? 0,
+            status: data.status === 'on_duty' ? 'Active Patrol' : data.status || 'Active Patrol',
+            lastUpdate: new Date()
+          }
+        }))
+      }
     }
   }, [lastMessage])
 
@@ -61,8 +70,8 @@ export default function PatrolBoard() {
         const updated = { ...prev }
         let changed = false
         for (const [id, unit] of Object.entries(updated)) {
-          if (now - unit.lastUpdate.getTime() > 60000 && unit.status !== 'Offline') { // older than 60s
-            updated[id] = { ...unit, status: 'Offline' }
+          if (now - unit.lastUpdate.getTime() > 60000) { // older than 60s
+            delete updated[id]
             changed = true
           }
         }
