@@ -59,3 +59,39 @@ async def read_missing_persons(
     """
     result = await db.execute(select(MissingPerson).offset(skip).limit(limit))
     return result.scalars().all()
+
+from fastapi import UploadFile, File
+from services.ai.core.recognition import extract_embeddings
+import json
+
+@router.post("/{person_id}/image")
+async def upload_missing_person_image(
+    person_id: str,
+    image: UploadFile = File(...),
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+):
+    """
+    Upload a reference photo for the missing person to generate the AI face embedding.
+    """
+    if current_user.role.name not in ["admin", "dispatcher"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+        
+    result = await db.execute(select(MissingPerson).where(MissingPerson.id == person_id))
+    person = result.scalars().first()
+    
+    if not person:
+        raise HTTPException(status_code=404, detail="Missing person not found")
+        
+    image_bytes = await image.read()
+    embedding = extract_embeddings(image_bytes)
+    
+    if not embedding:
+        raise HTTPException(status_code=400, detail="Could not detect a clear face in the image")
+        
+    # Store embedding as JSON
+    person.face_embedding = embedding
+    
+    await db.commit()
+    
+    return {"status": "success", "message": "Face embedding generated successfully"}

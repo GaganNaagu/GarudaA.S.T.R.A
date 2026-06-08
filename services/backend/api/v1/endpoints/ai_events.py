@@ -1,10 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
-from sqlalchemy.orm import Session
-from database.db.session import get_db
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+from services.backend.api import deps
 from database.models.ai_events import DetectionEvent, Alert
+from database.models.registry import MissingPerson
 from services.ai.core.recognition import process_face
 from services.backend.api.v1.endpoints.websockets import manager
 import base64
+import uuid
+from datetime import datetime
 
 router = APIRouter()
 
@@ -13,54 +17,62 @@ async def ingest_ai_event(
     camera_id: str = Form(...),
     location_lat: float = Form(...),
     location_lng: float = Form(...),
-    image: UploadFile = File(None),
-    db: Session = Depends(get_db)
+    image: UploadFile = File(...),
+    db: AsyncSession = Depends(deps.get_db)
 ):
     """
     Ingest a detection event from an edge camera or mock engine.
     """
-    # 1. Simulate reading the image
-    image_bytes = b""
-    if image:
-        image_bytes = await image.read()
-    else:
-        # If no image is provided, we simulate an empty byte array for the mock
-        image_bytes = b"mock_image_data"
+    image_bytes = await image.read()
         
-    # 2. Process with AI module
-    match_result = await process_face(image_bytes)
+    # Fetch all active missing persons with embeddings
+    result = await db.execute(
+        select(MissingPerson).where(
+            MissingPerson.status == "Reported",
+            MissingPerson.face_embedding.isnot(None)
+        )
+    )
+    active_persons = result.scalars().all()
+    
+    # Format database for DeepFace matcher
+    database = []
+    for p in active_persons:
+        # face_embedding should be a list of floats (JSON decoded automatically by SQLAlchemy)
+        database.append({"id": p.id, "embedding": p.face_embedding})
+        
+    # Process with AI module
+    match_result = await process_face(image_bytes, database)
     
     if not match_result or not match_result.get("match_found"):
         return {"status": "success", "message": "No match found"}
         
-    # 3. If a match is found, create the DetectionEvent
+    # If a match is found, create the DetectionEvent
     missing_person_id = match_result.get("missing_person_id")
     confidence = match_result.get("confidence")
     
     event = DetectionEvent(
+        id=str(uuid.uuid4()),
         camera_id=camera_id,
-        missing_person_id=missing_person_id,
+        person_id=missing_person_id,
         confidence_score=confidence,
-        location_lat=location_lat,
-        location_lng=location_lng
+        timestamp=datetime.utcnow(),
+        match_type="facial_recognition"
     )
     db.add(event)
-    db.commit()
-    db.refresh(event)
+    await db.commit()
+    await db.refresh(event)
     
-    # 4. Generate an Alert for the Dispatcher
     alert = Alert(
+        id=str(uuid.uuid4()),
         missing_person_id=missing_person_id,
         detection_event_id=event.id,
-        status="pending",
-        alert_location_lat=location_lat,
-        alert_location_lng=location_lng
+        status="pending"
     )
     db.add(alert)
-    db.commit()
-    db.refresh(alert)
+    await db.commit()
+    await db.refresh(alert)
     
-    # 5. Broadcast to Admin & Dispatcher via WebSocket
+    # Broadcast to Admin & Dispatcher via WebSocket
     payload = {
         "event": "possible_match_detected",
         "data": {
