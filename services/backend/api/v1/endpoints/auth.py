@@ -6,9 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import joinedload
 
-from backend.core.config import settings
-from backend.core.security import create_access_token, verify_password
-from backend.api import deps
+from services.backend.core.config import settings
+from services.backend.core.security import create_access_token, verify_password
+from services.backend.api import deps
 from database.models.auth import User
 
 router = APIRouter()

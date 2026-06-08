@@ -1,9 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.core.config import settings
-from backend.core.exceptions import add_exception_handlers
-from backend.api.v1.router import api_router
+from services.backend.core.config import settings
+from services.backend.core.exceptions import add_exception_handlers
+from services.backend.api.v1.router import api_router
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

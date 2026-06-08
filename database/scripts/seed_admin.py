@@ -5,7 +5,7 @@ from uuid import uuid4
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
-from backend.core.security import get_password_hash
+from services.backend.core.security import get_password_hash
 from database.db.session import AsyncSessionLocal
 from database.models.auth import User, Role
 from sqlalchemy.future import select

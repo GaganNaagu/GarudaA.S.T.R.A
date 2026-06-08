@@ -1,7 +1,7 @@
 import logging
 from typing import Dict, Any
 
-from backend.core.websocket_manager import manager
+from services.backend.core.websocket_manager import manager
 
 logger = logging.getLogger(__name__)
 

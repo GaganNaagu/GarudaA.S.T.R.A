@@ -1,5 +1,6 @@
 from sqlalchemy import String, Integer, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.dialects.postgresql import JSON
 from typing import List, Optional
 from datetime import datetime
 
@@ -14,6 +15,7 @@ class MissingPerson(Base, UUIDMixin, TimestampMixin):
     gender: Mapped[Optional[str]] = mapped_column(String(50))
     description: Mapped[Optional[str]] = mapped_column(String)
     photo_path: Mapped[Optional[str]] = mapped_column(String(255))
+    face_embedding: Mapped[Optional[list]] = mapped_column(JSON)
     last_seen_location: Mapped[Optional[str]] = mapped_column(String(255))
     last_seen_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     priority: Mapped[str] = mapped_column(String(50), default="Normal")

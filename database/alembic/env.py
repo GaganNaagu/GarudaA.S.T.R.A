@@ -20,7 +20,7 @@ import os
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from backend.core.config import settings
+from services.backend.core.config import settings
 from database.models import Base
 
 # add your model's MetaData object here

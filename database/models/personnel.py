@@ -1,4 +1,4 @@
-from sqlalchemy import String, ForeignKey
+from sqlalchemy import String, ForeignKey, Float
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import List, Optional
 import uuid
@@ -10,6 +10,8 @@ class DispatchUnit(Base, UUIDMixin, TimestampMixin):
     
     name: Mapped[str] = mapped_column(String(100), unique=True)
     status: Mapped[str] = mapped_column(String(50), default="Available")
+    last_known_lat: Mapped[Optional[float]] = mapped_column(Float)
+    last_known_lng: Mapped[Optional[float]] = mapped_column(Float)
     
     officers: Mapped[List["Officer"]] = relationship(back_populates="dispatch_unit")
     assignments: Mapped[List["Assignment"]] = relationship(back_populates="dispatch_unit")

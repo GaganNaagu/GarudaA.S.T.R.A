@@ -5,9 +5,9 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import joinedload
 import uuid
 
-from backend.core.config import settings
-from backend.core.websocket_manager import manager
-from backend.services.telemetry_service import telemetry_service
+from services.backend.core.config import settings
+from services.backend.core.websocket_manager import manager
+from services.backend.services.telemetry_service import telemetry_service
 from database.db.session import AsyncSessionLocal
 from database.models.auth import User
 

@@ -7,8 +7,8 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import joinedload
 import uuid
 
-from backend.core.config import settings
-from backend.core.security import pwd_context
+from services.backend.core.config import settings
+from services.backend.core.security import pwd_context
 from database.db.session import AsyncSessionLocal
 from database.models.auth import User, Role
 
