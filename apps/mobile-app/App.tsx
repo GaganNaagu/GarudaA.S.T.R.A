@@ -147,11 +147,20 @@ export default function App() {
   };
 
   // Authentication Callbacks
-  const handleLoginSuccess = () => {
+  const handleLoginSuccess = (data: { unitId: string; role: string; email?: string; full_name?: string }) => {
     setIsAuthorized(true);
     setCurrentScreen('alerts');
+
+    // Update officer state with actual logged in user
+    setOfficer(prev => ({
+      ...prev,
+      name: data.full_name || data.email?.split('@')[0].toUpperCase() || 'OFFICER',
+      unitId: data.unitId,
+      rank: data.role.toUpperCase(),
+    }));
+
     // Immediate telemetry broadcast on login
-    DutyManager.sendEvent('LOGIN', officer.unitId, officer.name, 'OFFICER LOGGED IN');
+    DutyManager.sendEvent('LOGIN', data.unitId, data.full_name || data.email || 'OFFICER', 'OFFICER LOGGED IN');
   };
 
   const handleAcknowledgeTacticalAlert = () => {

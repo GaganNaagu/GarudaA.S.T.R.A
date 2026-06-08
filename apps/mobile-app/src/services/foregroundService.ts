@@ -187,11 +187,22 @@ export async function sendImmediateTelemetry(
   let batteryCharging = false;
 
   try {
-    const gps = await getBestEffortPosition();
-    gpsData = { lat: gps.latitude, lng: gps.longitude };
-    const battery = await getBatteryInfo();
-    batteryLevel = battery.level;
-    batteryCharging = battery.charging;
+    // We race the GPS and Battery fetches against a 500ms timeout so immediate telemetry
+    // is truly "immediate" on the dashboard. The background loop will update accurate GPS later.
+    const fetchData = async () => {
+      const gps = await getBestEffortPosition();
+      const battery = await getBatteryInfo();
+      return { gps, battery };
+    };
+
+    const timeoutPromise = new Promise<null>(resolve => setTimeout(() => resolve(null), 500));
+    const result = await Promise.race([fetchData(), timeoutPromise]);
+
+    if (result) {
+      gpsData = { lat: result.gps.latitude, lng: result.gps.longitude };
+      batteryLevel = result.battery.level;
+      batteryCharging = result.battery.charging;
+    }
   } catch {
     // Fail silently
   }
