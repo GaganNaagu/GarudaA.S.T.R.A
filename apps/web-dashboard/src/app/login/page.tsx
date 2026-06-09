@@ -43,7 +43,7 @@ export default function LoginPage() {
       toast('Authorization granted.', 'success')
       
     } catch (err) {
-      toast('Access denied. Invalid credentials.', 'destructive')
+      toast('Access denied. Invalid credentials.', 'error')
     } finally {
       setIsLoading(false)
     }
