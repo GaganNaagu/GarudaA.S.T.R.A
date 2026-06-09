@@ -1,0 +1,30 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Deploy
+        run: |
+          cd /opt/garuda-astra
+
+          git pull origin main
+
+          cd apps/web-dashboard
+          npm install
+          npm run build
+
+          sudo systemctl restart garuda-frontend
+
+          cd /opt/garuda-astra
+
+          source services/venv/bin/activate
+          pip install -r services/requirements.txt
+
+          sudo systemctl restart garuda-backend
