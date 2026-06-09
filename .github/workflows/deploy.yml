@@ -14,17 +14,42 @@ jobs:
         run: |
           cd /opt/garuda-astra
 
+          git fetch origin
+
+          CHANGED=$(git diff --name-only HEAD origin/main)
+
+          echo "Changed files:"
+          echo "$CHANGED"
+
           git pull origin main
 
-          cd apps/web-dashboard
-          npm install
-          npm run build
+          # Frontend dependencies
+          if echo "$CHANGED" | grep -E "apps/web-dashboard/package.json|apps/web-dashboard/package-lock.json"; then
+            cd apps/web-dashboard
+            npm install
+            cd ../..
+          fi
 
-          sudo systemctl restart garuda-frontend
+          # Frontend
+          if echo "$CHANGED" | grep "^apps/web-dashboard/"; then
+            cd apps/web-dashboard
+            npm run build
+            cd ../..
+            sudo systemctl restart garuda-frontend
+          fi
 
-          cd /opt/garuda-astra
+          # Backend dependencies
+          if echo "$CHANGED" | grep "services/requirements.txt"; then
+            source services/venv/bin/activate
+            pip install -r services/requirements.txt
+          fi
 
-          source services/venv/bin/activate
-          pip install -r services/requirements.txt
+          # Backend
+          if echo "$CHANGED" | grep "^services/backend/"; then
+            sudo systemctl restart garuda-backend
+          fi
 
-          sudo systemctl restart garuda-backend
+          # AI Services
+          if echo "$CHANGED" | grep "^services/ai/"; then
+            echo "AI service changed"
+          fi
