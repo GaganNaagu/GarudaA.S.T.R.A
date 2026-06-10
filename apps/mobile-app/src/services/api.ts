@@ -12,7 +12,7 @@ async function getHeaders() {
 
 export async function loginApi(username: string, password: string) {
   const formData = new URLSearchParams();
-  formData.append('username', username);
+  formData.append('username', username.trim());
   formData.append('password', password);
 
   const response = await fetch(`${API_URL}/auth/login`, {
