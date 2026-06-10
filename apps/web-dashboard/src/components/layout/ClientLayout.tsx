@@ -9,7 +9,7 @@ import { AuthProvider, useAuth } from '@/lib/auth-context'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, useRef } from 'react'
 import { cn } from '@/lib/utils'
-import { useWebSocket } from '@/lib/websocket'
+import { useWebSocket, WebSocketProvider } from '@/lib/websocket.tsx'
 
 export function ClientLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -48,7 +48,6 @@ export function ClientLayoutContent({ children }: { children: React.ReactNode })
           ctx.resume()
         }
         
-        // Play a simple alert sequence
         const playBeep = (freq: number, startTime: number, duration: number) => {
           const osc = ctx.createOscillator()
           const gain = ctx.createGain()
@@ -72,10 +71,6 @@ export function ClientLayoutContent({ children }: { children: React.ReactNode })
     }
   }, [lastMessage])
 
-  if (isAdminRoute && role !== 'admin') {
-    return null // Return nothing while redirecting
-  }
-
   // Close mobile menu when resizing to desktop
   useEffect(() => {
     const handleResize = () => {
@@ -86,6 +81,10 @@ export function ClientLayoutContent({ children }: { children: React.ReactNode })
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
+
+  if (isAdminRoute && role !== 'admin') {
+    return null // Return nothing while redirecting
+  }
 
   return (
     <div className="flex min-h-screen bg-background overflow-hidden">
@@ -120,7 +119,9 @@ export function ClientLayoutContent({ children }: { children: React.ReactNode })
 export function ClientLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthProvider>
-      <ClientLayoutContent>{children}</ClientLayoutContent>
+      <WebSocketProvider>
+        <ClientLayoutContent>{children}</ClientLayoutContent>
+      </WebSocketProvider>
     </AuthProvider>
   )
 }
