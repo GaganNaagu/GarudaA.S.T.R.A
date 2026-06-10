@@ -88,8 +88,8 @@ async def ingest_ai_event(
     }
     
     # Send to dispatcher role specifically, or broadcast to all dispatchers
-    await manager.broadcast_to_role("dispatcher", payload)
-    await manager.broadcast_to_role("admin", payload)
+    await manager.broadcast_to_dispatchers(payload)
+    await manager.broadcast_to_admins(payload)
     
     return {"status": "success", "event_id": event.id, "alert_id": alert.id}
 
