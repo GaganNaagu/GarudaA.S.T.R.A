@@ -4,6 +4,7 @@ from sqlalchemy.future import select
 from services.backend.api import deps
 from database.models.ai_events import DetectionEvent, Alert
 from database.models.registry import MissingPerson
+from database.models.infrastructure import CameraFeed
 from services.ai.recognition.embedding_service import generate_embedding
 from services.ai.recognition.ranking_service import get_best_match
 from services.backend.api.v1.endpoints.websockets import manager
@@ -107,10 +108,30 @@ async def test_alert(db: AsyncSession = Depends(deps.get_db)):
     if not person:
         # Create a mock person if none exists
         person_id = str(uuid.uuid4())
+        person = MissingPerson(
+            id=person_id,
+            case_number=f"TEST-{uuid.uuid4().hex[:8]}",
+            full_name="Test Missing Person",
+            status="Reported"
+        )
+        db.add(person)
+        await db.commit()
     else:
         person_id = person.id
         
-    camera_id = str(uuid.uuid4())
+    cam_result = await db.execute(select(CameraFeed).limit(1))
+    camera = cam_result.scalars().first()
+    
+    if not camera:
+        camera_id = str(uuid.uuid4())
+        camera = CameraFeed(
+            id=camera_id,
+            name="Test Camera"
+        )
+        db.add(camera)
+        await db.commit()
+    else:
+        camera_id = camera.id
     location_lat = 40.7128
     location_lng = -74.0060
     confidence = 99.9
