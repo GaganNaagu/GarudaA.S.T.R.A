@@ -171,7 +171,7 @@ async def test_alert(db: AsyncSession = Depends(deps.get_db)):
         }
     }
     
-    await manager.broadcast_to_role("dispatcher", payload)
-    await manager.broadcast_to_role("admin", payload)
+    await manager.broadcast_to_dispatchers(payload)
+    await manager.broadcast_to_admins(payload)
     
     return {"status": "success", "event_id": event.id, "alert_id": alert.id, "message": "Test alert created and broadcasted"}
