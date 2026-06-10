@@ -37,13 +37,13 @@ export default function LoginPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        setError(data.detail || 'Login failed')
+        toast(data.detail || 'Login failed', 'error')
         return
       }
 
       // Block Patrol Units from logging into Web Dashboard
       if (data.role && (data.role.toLowerCase() === 'patrol officer' || data.role.toLowerCase() === 'patrol')) {
-        setError('Patrol Units cannot access the Web Dashboard. Please use the Mobile App.')
+        toast('Patrol Units cannot access the Web Dashboard.', 'error')
         return
       }
 
