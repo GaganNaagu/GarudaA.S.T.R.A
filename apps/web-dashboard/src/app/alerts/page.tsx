@@ -16,7 +16,7 @@ import {
 import { cn } from "@/lib/utils"
 import { useToast } from "@/components/ui/Toast"
 import { getAlerts, verifyAlert, rejectAlert } from '@/lib/api'
-import { useWebSocket } from '@/lib/websocket.tsx'
+import { useWebSocket } from '@/lib/websocket'
 
 function mapAlert(a: any) {
   return {

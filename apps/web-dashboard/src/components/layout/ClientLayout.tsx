@@ -9,7 +9,7 @@ import { AuthProvider, useAuth } from '@/lib/auth-context'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, useRef } from 'react'
 import { cn } from '@/lib/utils'
-import { useWebSocket, WebSocketProvider } from '@/lib/websocket.tsx'
+import { useWebSocket, WebSocketProvider } from '@/lib/websocket'
 
 export function ClientLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
