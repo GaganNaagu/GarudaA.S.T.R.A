@@ -91,3 +91,66 @@ async def ingest_ai_event(
     await manager.broadcast_to_role("admin", payload)
     
     return {"status": "success", "event_id": event.id, "alert_id": alert.id}
+
+
+@router.post("/test-alert")
+async def test_alert(db: AsyncSession = Depends(deps.get_db)):
+    """
+    Test endpoint to simulate a positive match alert for frontend testing.
+    """
+    # Fetch a random active missing person
+    result = await db.execute(
+        select(MissingPerson).where(MissingPerson.status == "Reported").limit(1)
+    )
+    person = result.scalars().first()
+    
+    if not person:
+        # Create a mock person if none exists
+        person_id = str(uuid.uuid4())
+    else:
+        person_id = person.id
+        
+    camera_id = "TEST_CAM_01"
+    location_lat = 40.7128
+    location_lng = -74.0060
+    confidence = 99.9
+
+    event = DetectionEvent(
+        id=str(uuid.uuid4()),
+        camera_id=camera_id,
+        person_id=person_id,
+        confidence_score=confidence,
+        timestamp=datetime.utcnow(),
+        match_type="facial_recognition_test"
+    )
+    db.add(event)
+    await db.commit()
+    await db.refresh(event)
+    
+    alert = Alert(
+        id=str(uuid.uuid4()),
+        missing_person_id=person_id,
+        detection_event_id=event.id,
+        status="pending"
+    )
+    db.add(alert)
+    await db.commit()
+    await db.refresh(alert)
+    
+    # Broadcast to Admin & Dispatcher via WebSocket
+    payload = {
+        "event": "possible_match_detected",
+        "data": {
+            "alert_id": alert.id,
+            "missing_person_id": person_id,
+            "camera_id": camera_id,
+            "confidence": confidence,
+            "lat": location_lat,
+            "lng": location_lng
+        }
+    }
+    
+    await manager.broadcast_to_role("dispatcher", payload)
+    await manager.broadcast_to_role("admin", payload)
+    
+    return {"status": "success", "event_id": event.id, "alert_id": alert.id, "message": "Test alert created and broadcasted"}
