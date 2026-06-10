@@ -64,12 +64,17 @@ class DispatchService:
 
         # Broadcast to ALL patrol websockets
         dispatch_payload = {
-            "event": "dispatch_alert",
+            "event": "possible_match_detected",
+            "type": "assignment",
             "alert_id": str(alert.id),
             "missing_person_id": str(alert.missing_person_id) if alert.missing_person_id else None,
-            "target_lat": event_lat,
-            "target_lng": event_lng,
-            "message": "URGENT: Missing Person Match Confirmed. All units respond."
+            "data": {
+                "alert_id": str(alert.id),
+                "message": "URGENT: Missing Person Match Confirmed. All units respond.",
+                "lat": event_lat,
+                "lng": event_lng,
+                "confidence": 99.9
+            }
         }
         await manager.broadcast_to_patrols(dispatch_payload)
 
