@@ -50,8 +50,8 @@ async def create_user(
     db: AsyncSession = Depends(deps.get_db),
     current_user: User = Depends(require_admin)
 ):
-    # Check if email exists
-    result = await db.execute(select(User).where(User.email == user_in.email))
+    # Check if user already exists (case-insensitive)
+    result = await db.execute(select(User).where(func.lower(User.email) == user_in.email.strip().lower()))
     if result.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Email already registered")
         
@@ -62,7 +62,7 @@ async def create_user(
         raise HTTPException(status_code=400, detail=f"Role '{user_in.role_name}' does not exist")
         
     db_user = User(
-        email=user_in.email,
+        email=user_in.email.strip().lower(),
         full_name=user_in.full_name,
         hashed_password=get_password_hash(user_in.password),
         role_id=role.id

@@ -23,7 +23,7 @@ export default function LoginPage() {
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
       
       const formData = new URLSearchParams()
-      formData.append('username', email.trim())
+      formData.append('username', email.trim().toLowerCase())
       formData.append('password', password)
 
       const response = await fetch(`${baseUrl}/auth/login`, {
@@ -37,7 +37,9 @@ export default function LoginPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        toast(data.detail || 'Login failed', 'error')
+        const errorMsg = typeof data.detail === 'string' ? data.detail : 
+                         Array.isArray(data.detail) ? data.detail[0].msg : 'Login failed'
+        toast(errorMsg, 'error')
         return
       }
 
@@ -50,8 +52,8 @@ export default function LoginPage() {
       login(data.access_token, data.role, data.user_id, data.full_name)
       toast('Authorization granted.', 'success')
       
-    } catch (err) {
-      toast('Access denied. Invalid credentials.', 'error')
+    } catch (err: any) {
+      toast(err.message || 'Access denied. Invalid credentials.', 'error')
     } finally {
       setIsLoading(false)
     }
