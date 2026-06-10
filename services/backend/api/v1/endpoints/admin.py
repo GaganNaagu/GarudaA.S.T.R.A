@@ -59,7 +59,7 @@ async def create_user(
     role_mapping = {
         "admin": "admin",
         "dispatcher": "control room operator",
-        "officer": "patrol officer",
+        "officer": "officer",
         "patrol": "patrol officer"
     }
     mapped_role = role_mapping.get(user_in.role_name.lower(), user_in.role_name.lower())
@@ -115,7 +115,7 @@ async def update_user(
         role_mapping = {
             "admin": "admin",
             "dispatcher": "control room operator",
-            "officer": "patrol officer",
+            "officer": "officer",
             "patrol": "patrol officer"
         }
         mapped_role = role_mapping.get(user_in.role_name.lower(), user_in.role_name.lower())
