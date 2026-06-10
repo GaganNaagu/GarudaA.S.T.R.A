@@ -40,7 +40,8 @@ export default function UserManagementPage() {
   const fetchUsers = async () => {
     try {
       setIsLoading(true)
-      const res = await fetch('http://localhost:8000/api/v1/admin/users', {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
+      const res = await fetch(`${API_URL}/admin/users`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -80,9 +81,10 @@ export default function UserManagementPage() {
     setIsSubmitting(true)
     setError(null)
     try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
       const url = modalMode === 'create' 
-        ? 'http://localhost:8000/api/v1/admin/users' 
-        : `http://localhost:8000/api/v1/admin/users/${editingUserId}`
+        ? `${API_URL}/admin/users` 
+        : `${API_URL}/admin/users/${editingUserId}`
       
       const method = modalMode === 'create' ? 'POST' : 'PUT'
       
