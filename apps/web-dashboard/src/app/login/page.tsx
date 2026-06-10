@@ -37,8 +37,14 @@ export default function LoginPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        const errorMsg = typeof data.detail === 'string' ? data.detail : 
-                         Array.isArray(data.detail) ? data.detail[0].msg : 'Login failed'
+        let errorMsg = 'Login failed'
+        if (data.error && data.error.message) {
+          errorMsg = data.error.message
+        } else if (typeof data.detail === 'string') {
+          errorMsg = data.detail
+        } else if (Array.isArray(data.detail)) {
+          errorMsg = data.detail[0].msg
+        }
         toast(errorMsg, 'error')
         return
       }

@@ -27,7 +27,11 @@ export async function loginApi(username: string, password: string) {
     let errorMsg = 'Invalid credentials';
     try {
       const errData = await response.json();
-      if (errData.detail) errorMsg = errData.detail;
+      if (errData.error && errData.error.message) {
+        errorMsg = errData.error.message;
+      } else if (errData.detail) {
+        errorMsg = errData.detail;
+      }
     } catch(e) {}
     throw new Error(errorMsg);
   }
