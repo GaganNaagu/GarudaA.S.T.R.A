@@ -23,7 +23,7 @@ export default function LoginPage() {
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
       
       const formData = new URLSearchParams()
-      formData.append('username', email)
+      formData.append('username', email.trim())
       formData.append('password', password)
 
       const response = await fetch(`${baseUrl}/auth/login`, {
