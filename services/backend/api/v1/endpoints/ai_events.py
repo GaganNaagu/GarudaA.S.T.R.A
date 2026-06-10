@@ -110,7 +110,7 @@ async def test_alert(db: AsyncSession = Depends(deps.get_db)):
     else:
         person_id = person.id
         
-    camera_id = "TEST_CAM_01"
+    camera_id = str(uuid.uuid4())
     location_lat = 40.7128
     location_lng = -74.0060
     confidence = 99.9
