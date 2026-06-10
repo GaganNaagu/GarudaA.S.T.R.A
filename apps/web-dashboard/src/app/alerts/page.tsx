@@ -11,7 +11,10 @@ import {
   XCircle,
   Eye,
   Filter,
-  User
+  User,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react'
 import { cn } from "@/lib/utils"
 import { useToast } from "@/components/ui/Toast"
@@ -33,6 +36,7 @@ function mapAlert(a: any) {
       : a.status === 'Rejected False Positive'
       ? 'Rejected'
       : a.status,
+    rawTime: a.created_at, // ISO string for sorting
     time: new Date(a.created_at).toLocaleTimeString(),
     camera: a.detection_event?.camera_id
       ? String(a.detection_event.camera_id).substring(0, 8)
@@ -45,6 +49,7 @@ export default function AlertsPage() {
   const { toast } = useToast()
   const [alerts, setAlerts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [sortDir, setSortDir] = useState<'desc' | 'asc'>('desc') // newest first by default
   const { lastMessage } = useWebSocket()
 
   const fetchAlerts = useCallback(async () => {
@@ -90,6 +95,13 @@ export default function AlertsPage() {
     }
   }, [lastMessage, fetchAlerts])
 
+  // Sorted list derived from state
+  const sortedAlerts = [...alerts].sort((a, b) => {
+    const ta = new Date(a.rawTime ?? a.time).getTime()
+    const tb = new Date(b.rawTime ?? b.time).getTime()
+    return sortDir === 'desc' ? tb - ta : ta - tb
+  })
+
   const handleConfirm = async (id: string) => {
     try {
       await verifyAlert(id)
@@ -124,6 +136,17 @@ export default function AlertsPage() {
           <p className="text-muted-foreground">High-confidence facial recognition alerts across the network.</p>
         </div>
         <div className="flex gap-3 w-full sm:w-auto">
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full sm:w-auto"
+            onClick={() => setSortDir(d => d === 'desc' ? 'asc' : 'desc')}
+          >
+            {sortDir === 'desc'
+              ? <ArrowDown className="w-4 h-4 mr-2" />
+              : <ArrowUp className="w-4 h-4 mr-2" />}
+            {sortDir === 'desc' ? 'Newest First' : 'Oldest First'}
+          </Button>
           <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={fetchAlerts}>
             <Filter className="w-4 h-4 mr-2" />
             Refresh
@@ -135,10 +158,10 @@ export default function AlertsPage() {
         <p className="text-muted-foreground text-sm">Loading alerts...</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {alerts.length === 0 ? (
+          {sortedAlerts.length === 0 ? (
             <p className="text-muted-foreground text-sm col-span-3">No active alerts.</p>
           ) : (
-            alerts.map((alert) => (
+            sortedAlerts.map((alert) => (
               <Card key={alert.id} className={cn(
                 "group transition-all hover:border-primary/50 animate-fade-in",
                 alert.status === 'Verified' ? "border-red-500/20 bg-red-500/5" : "",
