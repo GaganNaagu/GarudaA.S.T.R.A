@@ -73,9 +73,34 @@ class TestFrameExtractor(unittest.TestCase):
         indices = [idx for _, idx in frames]
         self.assertEqual(indices, list(range(20)))
 
+from services.ai.detection.face_detection import FaceDetector
+
 class TestFaceDetection(unittest.TestCase):
-    def test_detect_faces_stub(self):
-        self.assertTrue(True)
+    def test_detect_faces_empty_frame(self):
+        import numpy as np
+        # An empty or completely black frame should return no faces
+        frame = np.zeros((100, 100, 3), dtype=np.uint8)
+        faces = FaceDetector.detect_faces(frame)
+        self.assertEqual(faces, [])
+        
+    @unittest.mock.patch('services.ai.detection.face_detection.RetinaFace')
+    def test_detect_faces_with_mock(self, mock_retinaface):
+        import numpy as np
+        frame = np.zeros((100, 100, 3), dtype=np.uint8)
+        
+        # Mock RetinaFace.detect_faces to return a valid dict
+        mock_retinaface.detect_faces.return_value = {
+            "face_1": {
+                "score": 0.99,
+                "facial_area": [10, 10, 50, 50],
+                "landmarks": {"left_eye": [20, 20]}
+            }
+        }
+        
+        faces = FaceDetector.detect_faces(frame)
+        self.assertEqual(len(faces), 1)
+        self.assertEqual(faces[0]["facial_area"], [10, 10, 50, 50])
+        self.assertEqual(faces[0]["score"], 0.99)
 
 class TestFaceCropper(unittest.TestCase):
     def test_crop_faces_stub(self):
