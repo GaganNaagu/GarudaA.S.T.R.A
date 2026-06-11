@@ -102,9 +102,37 @@ class TestFaceDetection(unittest.TestCase):
         self.assertEqual(faces[0]["facial_area"], [10, 10, 50, 50])
         self.assertEqual(faces[0]["score"], 0.99)
 
+from services.ai.detection.face_cropper import FaceCropper
+
 class TestFaceCropper(unittest.TestCase):
-    def test_crop_faces_stub(self):
-        self.assertTrue(True)
+    def test_crop_face_valid(self):
+        import numpy as np
+        frame = np.ones((100, 100, 3), dtype=np.uint8) * 255
+        facial_area = [10, 20, 50, 60]
+        
+        cropped = FaceCropper.crop_face(frame, facial_area)
+        self.assertIsNotNone(cropped)
+        self.assertEqual(cropped.shape, (40, 40, 3))
+        
+    def test_crop_face_clamping(self):
+        import numpy as np
+        frame = np.ones((100, 100, 3), dtype=np.uint8) * 255
+        # Coordinates outside bounds
+        facial_area = [-10, -20, 150, 160]
+        
+        cropped = FaceCropper.crop_face(frame, facial_area)
+        self.assertIsNotNone(cropped)
+        # Should be clamped to 0..100
+        self.assertEqual(cropped.shape, (100, 100, 3))
+
+    def test_crop_face_invalid_area(self):
+        import numpy as np
+        frame = np.ones((100, 100, 3), dtype=np.uint8) * 255
+        # x1 > x2
+        facial_area = [50, 10, 10, 50]
+        
+        cropped = FaceCropper.crop_face(frame, facial_area)
+        self.assertIsNone(cropped)
 
 class TestPreprocessing(unittest.TestCase):
     def test_preprocess_crop_stub(self):
