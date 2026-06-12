@@ -116,24 +116,16 @@ async def test_alert(db: AsyncSession = Depends(deps.get_db)):
     Test endpoint to simulate a positive match alert for frontend testing.
     """
     # Fetch a random active missing person
+    from sqlalchemy.sql.expression import func
     result = await db.execute(
-        select(MissingPerson).where(MissingPerson.status == "Reported").limit(1)
+        select(MissingPerson).where(MissingPerson.status == "Reported").order_by(func.random()).limit(1)
     )
     person = result.scalars().first()
     
     if not person:
-        # Create a mock person if none exists
-        person_id = str(uuid.uuid4())
-        person = MissingPerson(
-            id=person_id,
-            case_number=f"TEST-{uuid.uuid4().hex[:8]}",
-            full_name="Test Missing Person",
-            status="Reported"
-        )
-        db.add(person)
-        await db.commit()
-    else:
-        person_id = person.id
+        raise HTTPException(status_code=404, detail="No reported missing persons found to create a test alert.")
+    
+    person_id = person.id
         
     cam_result = await db.execute(select(CameraFeed).limit(1))
     camera = cam_result.scalars().first()
