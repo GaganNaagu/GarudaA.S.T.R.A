@@ -137,24 +137,8 @@ export default function App() {
           }));
           setCases(mappedCases);
 
-          const backendAlerts = await getAlertsApi();
-          const mappedAlerts: AlertItem[] = backendAlerts
-            .filter((a: any) => ['Verified', 'Assigned', 'Dispatched', 'Resolved', 'Rejected False Positive'].includes(a.status))
-            .map((a: any) => ({
-              id: a.id,
-              title: a.missing_person?.full_name || 'Unknown Subject',
-              subtitle: 'Missing Person - Camera Match',
-              threatLevel: 'HIGH',
-              matchPercentage: a.detection_event?.confidence_score ? Math.round(a.detection_event.confidence_score) : 90,
-              fileNo: a.missing_person?.case_number || '#AUTO',
-              lastSeenLocation: `Camera ${a.detection_event?.camera_id?.substring(0, 8)}`,
-              lastSeenTime: new Date(a.created_at).toLocaleTimeString(),
-              mugshotUrl: a.detection_event?.image_path ? `${process.env.EXPO_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:8000'}${a.detection_event.image_path}` : '',
-              latitude: 18.9431, // Fallback coordinates
-              longitude: 72.8246,
-              status: a.status === 'Verified' ? 'INVESTIGATING' : a.status === 'Rejected False Positive' ? 'FALSE ALARM' : a.status === 'Resolved' ? 'COMPLETED' : 'ALERT',
-            }));
-          setAlerts(mappedAlerts);
+          // We intentionally do not fetch historical alerts here.
+          // Alerts are only populated via WebSocket when the dispatcher sends an assignment.
 
         } catch (e) {
           console.warn('⚠️ Failed to fetch backend data on load:', e);
