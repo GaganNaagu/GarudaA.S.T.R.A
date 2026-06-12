@@ -123,18 +123,23 @@ export default function App() {
           const { getAlertsApi, getMissingPersonsApi } = require('./src/services/api');
           
           const backendCases = await getMissingPersonsApi();
-          const mappedCases: CaseItem[] = backendCases.map((c: any) => ({
-            id: c.id,
-            name: c.full_name,
-            age: c.age || 0,
-            gender: c.gender || 'UNKNOWN',
-            missingSince: new Date(c.date_missing).toLocaleDateString(),
-            lastSeen: c.last_seen_location || 'Unknown',
-            photoUrl: c.photo_path ? `${process.env.EXPO_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:8000'}${c.photo_path}` : '',
-            status: c.status?.toUpperCase() || 'ACTIVE',
-            caseType: 'MISSING',
-            description: c.description || '',
-          }));
+          const mappedCases: CaseItem[] = backendCases.map((c: any) => {
+            const baseUrl = process.env.EXPO_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:8000';
+            const photoPath = c.photo_path?.startsWith('/') ? c.photo_path : `/${c.photo_path}`;
+            const finalPhotoUrl = c.photo_path ? `${baseUrl}${photoPath}` : 'https://ui-avatars.com/api/?name=Unknown';
+            return {
+              id: c.id,
+              name: c.full_name,
+              age: c.age || 0,
+              gender: c.gender || 'UNKNOWN',
+              missingSince: new Date(c.date_missing).toLocaleDateString(),
+              lastSeen: c.last_seen_location || 'Unknown',
+              photoUrl: finalPhotoUrl,
+              status: c.status?.toUpperCase() || 'ACTIVE',
+              caseType: 'MISSING',
+              description: c.description || '',
+            };
+          });
           setCases(mappedCases);
 
           // We intentionally do not fetch historical alerts here.
