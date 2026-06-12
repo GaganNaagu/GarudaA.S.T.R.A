@@ -148,7 +148,7 @@ export default function AlertsPage() {
               : <ArrowUp className="w-4 h-4 mr-2" />}
             {sortDir === 'desc' ? 'Newest First' : 'Oldest First'}
           </Button>
-          <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={fetchAlerts}>
+          <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => fetchAlerts(false)}>
             <Filter className="w-4 h-4 mr-2" />
             Refresh
           </Button>
