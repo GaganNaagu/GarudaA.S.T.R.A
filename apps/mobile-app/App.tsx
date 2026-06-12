@@ -56,8 +56,8 @@ export default function App() {
   const [dutyAcknowledged, setDutyAcknowledged] = useState(false);
 
   // Live state tracking
-  const [alerts, setAlerts] = useState<AlertItem[]>(INITIAL_ALERTS);
-  const [cases, setCases] = useState<CaseItem[]>(INITIAL_CASES);
+  const [alerts, setAlerts] = useState<AlertItem[]>([]);
+  const [cases, setCases] = useState<CaseItem[]>([]);
   const [messages, setMessages] = useState<MessageItem[]>(INITIAL_MESSAGES);
   const [officer, setOfficer] = useState<OfficerProfile>(INITIAL_OFFICER);
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>(INITIAL_AUDIT_LOGS);
@@ -114,6 +114,56 @@ export default function App() {
       }
     };
   }, [isAuthorized, officer.status]);
+
+  // Fetch initial data from backend
+  useEffect(() => {
+    if (isAuthorized) {
+      const fetchBackendData = async () => {
+        try {
+          const { getAlertsApi, getMissingPersonsApi } = require('./src/services/api');
+          
+          const backendCases = await getMissingPersonsApi();
+          const mappedCases: CaseItem[] = backendCases.map((c: any) => ({
+            id: c.id,
+            name: c.full_name,
+            age: c.age || 0,
+            gender: c.gender || 'UNKNOWN',
+            missingSince: new Date(c.date_missing).toLocaleDateString(),
+            lastSeen: c.last_seen_location || 'Unknown',
+            photoUrl: c.photo_path ? `${process.env.EXPO_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:8000'}${c.photo_path}` : '',
+            status: c.status?.toUpperCase() || 'ACTIVE',
+            caseType: 'MISSING',
+            description: c.description || '',
+          }));
+          setCases(mappedCases);
+
+          const backendAlerts = await getAlertsApi();
+          const mappedAlerts: AlertItem[] = backendAlerts
+            .filter((a: any) => ['Verified', 'Assigned', 'Dispatched', 'Resolved', 'Rejected False Positive'].includes(a.status))
+            .map((a: any) => ({
+              id: a.id,
+              title: a.missing_person?.full_name || 'Unknown Subject',
+              subtitle: 'Missing Person - Camera Match',
+              threatLevel: 'HIGH',
+              matchPercentage: a.detection_event?.confidence_score ? Math.round(a.detection_event.confidence_score) : 90,
+              fileNo: a.missing_person?.case_number || '#AUTO',
+              lastSeenLocation: `Camera ${a.detection_event?.camera_id?.substring(0, 8)}`,
+              lastSeenTime: new Date(a.created_at).toLocaleTimeString(),
+              mugshotUrl: a.detection_event?.image_path ? `${process.env.EXPO_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:8000'}${a.detection_event.image_path}` : '',
+              latitude: 18.9431, // Fallback coordinates
+              longitude: 72.8246,
+              status: a.status === 'Verified' ? 'INVESTIGATING' : a.status === 'Rejected False Positive' ? 'FALSE ALARM' : a.status === 'Resolved' ? 'COMPLETED' : 'ALERT',
+            }));
+          setAlerts(mappedAlerts);
+
+        } catch (e) {
+          console.warn('⚠️ Failed to fetch backend data on load:', e);
+        }
+      };
+      
+      fetchBackendData();
+    }
+  }, [isAuthorized]);
 
   // Periodic Permission Monitor Hook (Fault Tolerance)
   useEffect(() => {
