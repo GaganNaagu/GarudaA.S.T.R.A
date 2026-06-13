@@ -15,7 +15,7 @@ import {
   Users,
   Settings,
   ChevronRight,
-  Sparkles
+  Construction
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth-context'
@@ -76,8 +76,8 @@ export function Sidebar() {
                     <div className="flex items-center gap-1">
                       {(item as any).premium && (
                         <span className="flex items-center gap-0.5 text-[9px] font-bold text-primary/70 bg-primary/10 px-1.5 py-0.5 rounded-full">
-                          <Sparkles className="w-2.5 h-2.5" />
-                          PRO
+                          <Construction className="w-2.5 h-2.5" />
+                          V2
                         </span>
                       )}
                       {isActive && <ChevronRight className="w-4 h-4" />}
@@ -114,8 +114,8 @@ export function Sidebar() {
                     <div className="flex items-center gap-1">
                       {item.premium && (
                         <span className="flex items-center gap-0.5 text-[9px] font-bold text-primary/70 bg-primary/10 px-1.5 py-0.5 rounded-full">
-                          <Sparkles className="w-2.5 h-2.5" />
-                          PRO
+                          <Construction className="w-2.5 h-2.5" />
+                          V2
                         </span>
                       )}
                       {isActive && <ChevronRight className="w-4 h-4" />}

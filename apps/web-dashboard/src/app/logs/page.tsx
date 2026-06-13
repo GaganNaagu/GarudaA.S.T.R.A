@@ -137,8 +137,9 @@ function LogsContent() {
 export default function LogsPage() {
   return (
     <PremiumLock
-      title="Enterprise Module"
-      description="Detection log analytics, CSV export, and historical audit trails require an Enterprise license. Contact your administrator to unlock the full detection event history."
+      title="Coming Soon"
+      version="V2"
+      description="Detection log analytics, CSV export, and historical audit trails are being built for the next release."
     >
       <LogsContent />
     </PremiumLock>

@@ -124,8 +124,9 @@ function ServicesContent() {
 export default function ServicesPage() {
   return (
     <PremiumLock
-      title="Enterprise Module"
-      description="Real-time AI service health monitoring, latency tracking, and cluster management require an Enterprise license. Contact your administrator to unlock infrastructure telemetry."
+      title="Coming Soon"
+      version="V2"
+      description="Real-time AI service health monitoring, latency tracking, and cluster management are being built for the next release."
     >
       <ServicesContent />
     </PremiumLock>

@@ -153,8 +153,9 @@ function StatusContent() {
 export default function StatusPage() {
   return (
     <PremiumLock
-      title="Enterprise Module"
-      description="The tactical Response Board with real-time unit deployment tracking, incident management, and Kanban-style operational views requires an Enterprise license."
+      title="Coming Soon"
+      version="V2"
+      description="The tactical Response Board with real-time unit deployment tracking, incident management, and Kanban-style operational views is being built for the next release."
     >
       <StatusContent />
     </PremiumLock>
