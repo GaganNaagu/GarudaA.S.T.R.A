@@ -5,11 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/Badge"
 import { Button } from "@/components/ui/Button"
 import { 
-  Shield, 
-  Eye, 
   Bell, 
-  Lock, 
-  Globe, 
   Cpu,
   Save,
   RotateCcw
@@ -22,7 +18,6 @@ export default function SettingsPage() {
   const [threshold, setThreshold] = useState(85)
   const [notifications, setNotifications] = useState(true)
   const [faceExtraction, setFaceExtraction] = useState(true)
-  const [visualStrobe, setVisualStrobe] = useState(false)
 
   const handleSave = () => {
     toast('Settings saved successfully', 'success')
@@ -32,7 +27,6 @@ export default function SettingsPage() {
     setThreshold(85)
     setNotifications(true)
     setFaceExtraction(true)
-    setVisualStrobe(false)
     toast('All settings reset to defaults', 'info')
   }
 
@@ -41,7 +35,7 @@ export default function SettingsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">System Settings</h1>
-          <p className="text-muted-foreground">Configure AI thresholds, security protocols, and platform preferences.</p>
+          <p className="text-muted-foreground">Configure AI thresholds and platform preferences.</p>
         </div>
         <div className="flex gap-3">
           <Button variant="outline" size="sm" onClick={handleReset}>
@@ -117,45 +111,6 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Security & Access */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Lock className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <CardTitle className="text-lg">Mission Security</CardTitle>
-                <CardDescription>Manage platform-wide security protocols and encryption standards.</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-               <div className="p-4 rounded-lg bg-secondary/30 border border-border space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-primary" />
-                    <span className="text-sm font-semibold">Encryption: AES-256-GCM</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">All surveillance data is encrypted at rest and in transit.</p>
-                  <Button variant="outline" size="sm" className="w-full text-xs" onClick={() => toast('Key rotation initiated — new keys will propagate in 30s', 'warning')}>
-                    Rotate Mission Keys
-                  </Button>
-               </div>
-               <div className="p-4 rounded-lg bg-secondary/30 border border-border space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Globe className="w-4 h-4 text-primary" />
-                    <span className="text-sm font-semibold">Global Feed Sync</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">Sync with international intelligence databases (Interpol/UN).</p>
-                  <Button variant="outline" size="sm" className="w-full text-xs" onClick={() => toast('Integration settings coming soon', 'info')}>
-                    Manage Integrations
-                  </Button>
-               </div>
-             </div>
-          </CardContent>
-        </Card>
-
         {/* Notifications */}
         <Card>
           <CardHeader>
@@ -188,27 +143,6 @@ export default function SettingsPage() {
                   <div className={cn(
                     "w-4 h-4 rounded-full bg-white transition-transform duration-200",
                     notifications ? "translate-x-6" : "translate-x-0"
-                  )} />
-                </button>
-             </div>
-             <div className="pt-6 border-t border-border flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <label className="text-sm font-medium">Visual Strobe on Emergency</label>
-                  <p className="text-xs text-muted-foreground">Flash the UI background red when a critical incident is reported.</p>
-                </div>
-                <button
-                  onClick={() => {
-                    setVisualStrobe(!visualStrobe)
-                    toast(visualStrobe ? 'Visual strobe disabled' : 'Visual strobe enabled', visualStrobe ? 'warning' : 'success')
-                  }}
-                  className={cn(
-                    "w-12 h-6 rounded-full p-1 transition-colors duration-200 focus:outline-none cursor-pointer",
-                    visualStrobe ? "bg-primary" : "bg-secondary"
-                  )}
-                >
-                  <div className={cn(
-                    "w-4 h-4 rounded-full bg-white transition-transform duration-200",
-                    visualStrobe ? "translate-x-6" : "translate-x-0"
                   )} />
                 </button>
              </div>
