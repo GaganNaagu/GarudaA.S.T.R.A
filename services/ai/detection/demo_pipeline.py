@@ -2,6 +2,9 @@ import cv2
 import sys
 import os
 
+# Add parent directory to sys.path so we can import from detection and recognition
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 # Suppress TensorFlow logging warnings
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
@@ -33,8 +36,6 @@ def run_pipeline(video_path: str):
     
     # Mock Database for testing demo pipeline
     print("\n--- Loading Mock Database ---")
-    # For a real demo, we should pre-calculate some embeddings here or connect to DB.
-    # To keep it simple, we'll start with an empty DB, but if an image named 'reference.jpg' exists, we use it.
     database = []
     if os.path.exists("reference.jpg"):
         with open("reference.jpg", "rb") as f:
