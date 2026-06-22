@@ -90,6 +90,7 @@ async def get_uploads(db: AsyncSession = Depends(get_db)):
             "camera_id": v.camera_id,
             "sector": v.sector,
             "priority": v.priority,
+            "progress": getattr(v, "progress", 0.0),
             "uploaded_at": v.created_at.isoformat() if v.created_at else None
         })
     return results

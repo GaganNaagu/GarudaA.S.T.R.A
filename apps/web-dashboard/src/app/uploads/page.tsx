@@ -177,26 +177,36 @@ export default function UploadsPage() {
                  </div>
                ) : (
                  <div className="space-y-3 max-h-64 overflow-y-auto pr-2">
-                   {uploads.map(u => (
-                     <div key={u.id} className="flex items-center justify-between p-3 rounded-md bg-secondary/30 border border-border">
-                       <div className="flex items-center gap-3 overflow-hidden">
-                         {u.status === 'COMPLETED' ? (
-                           <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />
-                         ) : u.status === 'ERROR' ? (
-                           <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
-                         ) : (
-                           <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin shrink-0" />
-                         )}
-                         <div className="truncate">
-                           <p className="text-sm font-medium truncate">{u.filename}</p>
-                           <p className="text-xs text-muted-foreground">{new Date(u.uploaded_at).toLocaleString()}</p>
-                         </div>
-                       </div>
-                       <Badge variant={u.status === 'COMPLETED' ? 'default' : u.status === 'ERROR' ? 'destructive' : 'secondary'}>
-                         {u.status}
-                       </Badge>
-                     </div>
-                   ))}
+                    {uploads.map(u => (
+                      <div key={u.id} className="flex flex-col p-3 rounded-md bg-secondary/30 border border-border gap-3">
+                        <div className="flex items-center justify-between w-full">
+                          <div className="flex items-center gap-3 overflow-hidden">
+                            {u.status === 'COMPLETED' ? (
+                              <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />
+                            ) : u.status === 'ERROR' ? (
+                              <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
+                            ) : (
+                              <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin shrink-0" />
+                            )}
+                            <div className="truncate">
+                              <p className="text-sm font-medium truncate">{u.filename}</p>
+                              <p className="text-xs text-muted-foreground">{new Date(u.uploaded_at).toLocaleString()}</p>
+                            </div>
+                          </div>
+                          <Badge variant={u.status === 'COMPLETED' ? 'default' : u.status === 'ERROR' ? 'destructive' : 'secondary'}>
+                            {u.status}
+                          </Badge>
+                        </div>
+                        {(u.status === 'PROCESSING' || u.status === 'PENDING') && (
+                          <div className="w-full bg-secondary rounded-full h-1.5 overflow-hidden">
+                            <div 
+                              className="bg-primary h-full transition-all duration-500 ease-out" 
+                              style={{ width: `${u.progress || 0}%` }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    ))}
                  </div>
                )}
             </CardContent>
