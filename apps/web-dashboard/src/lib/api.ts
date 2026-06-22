@@ -97,3 +97,36 @@ export async function updateSettings(data: any) {
     body: JSON.stringify(data)
   })
 }
+
+export async function uploadFootage(file: File, cameraId: string, sector: string, priority: string) {
+  const formData = new FormData()
+  formData.append('file', file)
+  if (cameraId) formData.append('camera_id', cameraId)
+  if (sector) formData.append('sector', sector)
+  if (priority) formData.append('priority', priority)
+  
+  const token = typeof window !== 'undefined' ? localStorage.getItem('astra_token') : null
+  const response = await fetch(`${API_URL}/uploads/`, {
+    method: 'POST',
+    headers: {
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    },
+    body: formData,
+  })
+  
+  if (response.status === 401 && typeof window !== 'undefined') {
+    localStorage.removeItem('astra_token')
+    window.location.href = '/login'
+    throw new Error('Unauthorized - Redirecting to login')
+  }
+
+  if (!response.ok) {
+    throw new Error(`API error: ${response.status} ${response.statusText}`)
+  }
+  
+  return response.json()
+}
+
+export async function getUploads() {
+  return fetchApi('/uploads/')
+}
