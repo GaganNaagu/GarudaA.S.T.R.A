@@ -2,7 +2,8 @@ import os
 import uuid
 import shutil
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, BackgroundTasks
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 from typing import List, Optional
 
 from database.db.session import get_db
@@ -20,7 +21,7 @@ async def upload_video(
     camera_id: Optional[str] = Form(None),
     sector: Optional[str] = Form(None),
     priority: Optional[str] = Form("Normal"),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """
     Upload a new video footage for AI face processing.
@@ -53,8 +54,8 @@ async def upload_video(
         priority=priority
     )
     db.add(video_record)
-    db.commit()
-    db.refresh(video_record)
+    await db.commit()
+    await db.refresh(video_record)
 
     # Dispatch background task
     background_tasks.add_task(process_video_task, str(video_id))
@@ -67,11 +68,13 @@ async def upload_video(
     }
 
 @router.get("/")
-def get_uploads(db: Session = Depends(get_db)):
+async def get_uploads(db: AsyncSession = Depends(get_db)):
     """
     Get all uploaded video footages and their processing status.
     """
-    videos = db.query(VideoFootage).order_by(VideoFootage.created_at.desc()).all()
+    stmt = select(VideoFootage).order_by(VideoFootage.created_at.desc())
+    result = await db.execute(stmt)
+    videos = result.scalars().all()
     
     # We can just return them as a list of dicts for simplicity
     results = []

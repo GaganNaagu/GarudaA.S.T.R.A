@@ -17,7 +17,7 @@ import {
 } from 'lucide-react'
 import { cn } from "@/lib/utils"
 import { useToast } from "@/components/ui/Toast"
-import { uploadFootage, getUploads } from "@/lib/api"
+import { uploadFootage, uploadFootageWithProgress, getUploads } from "@/lib/api"
 
 export default function UploadsPage() {
   const { toast } = useToast()
@@ -27,6 +27,7 @@ export default function UploadsPage() {
   const [sector, setSector] = useState('Sector Alpha (Central)')
   const [uploads, setUploads] = useState<any[]>([])
   const [isUploading, setIsUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
   
   const fetchUploads = async () => {
     try {
@@ -54,13 +55,17 @@ export default function UploadsPage() {
     setIsUploading(true)
     for (let i = 0; i < files.length; i++) {
       try {
-        await uploadFootage(files[i], cameraId, sector, selectedPriority)
+        setUploadProgress(0)
+        await uploadFootageWithProgress(files[i], cameraId, sector, selectedPriority, (percent) => {
+          setUploadProgress(percent)
+        })
         toast(`File ${files[i].name} uploaded! Processing started.`, 'success')
       } catch (err) {
         toast(`Failed to upload ${files[i].name}`, 'error')
       }
     }
     setIsUploading(false)
+    setUploadProgress(0)
     fetchUploads()
   }
 
@@ -190,6 +195,20 @@ export default function UploadsPage() {
                   ))}
                 </div>
               </div>
+              {isUploading && (
+                <div className="mt-4">
+                  <div className="flex justify-between text-xs mb-1">
+                    <span>Uploading file...</span>
+                    <span>{uploadProgress}%</span>
+                  </div>
+                  <div className="w-full bg-secondary rounded-full h-2">
+                    <div 
+                      className="bg-primary h-2 rounded-full transition-all duration-300" 
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
               <Button className="w-full mt-4" disabled={isUploading} onClick={handleFileDrop}>
                 <Upload className="w-4 h-4 mr-2" />
                 {isUploading ? "Uploading..." : "Upload & Analyze Video"}
