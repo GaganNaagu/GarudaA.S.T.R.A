@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
 
 function getHeaders() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('astra_token') : null
@@ -85,4 +85,15 @@ export async function getStats() {
 
 export async function getUsers() {
   return fetchApi('/admin/users')
+}
+
+export async function getSettings() {
+  return fetchApi('/settings/')
+}
+
+export async function updateSettings(data: any) {
+  return fetchApi('/settings/', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  })
 }
