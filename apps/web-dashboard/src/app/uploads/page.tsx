@@ -26,6 +26,8 @@ export default function UploadsPage() {
   const [selectedPriority, setSelectedPriority] = useState('High')
   const [cameraId, setCameraId] = useState('')
   const [sector, setSector] = useState('Sector Alpha (Central)')
+  const [uploads, setUploads] = useState<any[]>([])
+  const [isUploading, setIsUploading] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null)
   const [uploadProgress, setUploadProgress] = useState(0)
