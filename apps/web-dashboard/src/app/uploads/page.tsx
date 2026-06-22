@@ -14,7 +14,8 @@ import {
   Trash2,
   CheckCircle2,
   AlertCircle,
-  X
+  X,
+  Video
 } from 'lucide-react'
 import { cn } from "@/lib/utils"
 import { useToast } from "@/components/ui/Toast"
