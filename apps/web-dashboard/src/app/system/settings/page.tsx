@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card"
 import { Badge } from "@/components/ui/Badge"
 import { Button } from "@/components/ui/Button"
@@ -15,18 +15,53 @@ import { useToast } from "@/components/ui/Toast"
 
 export default function SettingsPage() {
   const { toast } = useToast()
-  const [threshold, setThreshold] = useState(85)
+  const [threshold, setThreshold] = useState(45)
   const [notifications, setNotifications] = useState(true)
   const [faceExtraction, setFaceExtraction] = useState(true)
+  const [processingEngine, setProcessingEngine] = useState('cpu')
 
-  const handleSave = () => {
-    toast('Settings saved successfully', 'success')
+  useEffect(() => {
+    fetch('http://localhost:8000/api/v1/settings/')
+      .then(res => res.json())
+      .then(data => {
+        if (data) {
+          setThreshold(data.detection_threshold ? Math.round(data.detection_threshold * 100) : 45)
+          setFaceExtraction(data.face_extraction_enabled ?? true)
+          setNotifications(data.sound_alerts_enabled ?? true)
+          setProcessingEngine(data.processing_engine || 'cpu')
+        }
+      })
+      .catch(err => console.error("Failed to load settings", err))
+  }, [])
+
+  const handleSave = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/api/v1/settings/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          detection_threshold: threshold / 100.0,
+          face_extraction_enabled: faceExtraction,
+          sound_alerts_enabled: notifications,
+          processing_engine: processingEngine
+        })
+      })
+      
+      if (response.ok) {
+        toast('Settings saved successfully', 'success')
+      } else {
+        toast('Failed to save settings', 'error')
+      }
+    } catch (err) {
+      toast('Network error saving settings', 'error')
+    }
   }
 
   const handleReset = () => {
-    setThreshold(85)
+    setThreshold(45)
     setNotifications(true)
     setFaceExtraction(true)
+    setProcessingEngine('cpu')
     toast('All settings reset to defaults', 'info')
   }
 
@@ -65,6 +100,31 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="space-y-8">
              <div className="space-y-4">
+               <div className="flex items-center justify-between">
+                 <div className="space-y-0.5">
+                    <label className="text-sm font-medium">Processing Engine</label>
+                    <p className="text-xs text-muted-foreground">Select AI inference engine. CPU uses heavily optimized ONNX Runtime.</p>
+                 </div>
+                 <div className="flex gap-2">
+                   <Button 
+                     variant={processingEngine === 'cpu' ? 'default' : 'outline'} 
+                     size="sm"
+                     onClick={() => setProcessingEngine('cpu')}
+                   >
+                     CPU (ONNX)
+                   </Button>
+                   <Button 
+                     variant={processingEngine === 'gpu' ? 'default' : 'outline'} 
+                     size="sm"
+                     onClick={() => setProcessingEngine('gpu')}
+                   >
+                     GPU (CUDA)
+                   </Button>
+                 </div>
+               </div>
+             </div>
+
+             <div className="space-y-4 border-t border-border pt-6">
                <div className="flex items-center justify-between">
                  <div className="space-y-0.5">
                     <label className="text-sm font-medium">Matching Confidence Threshold</label>

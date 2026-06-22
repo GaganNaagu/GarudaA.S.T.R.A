@@ -1,6 +1,7 @@
 import sys
 import os
 import cv2
+import time
 
 # Add parent directory to sys.path so we can import from detection and recognition
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -44,25 +45,27 @@ def run_batch_test(dataset_dir: str):
         frame_gen = FrameExtractor.extract_frames(video_path, skip_interval=5)
         
         video_face_count = 0
+        start_time = time.time()
         for frame, idx in frame_gen:
-            faces = FaceDetector.detect_faces(frame, threshold=0.8)
+            faces = FaceDetector.detect_faces(frame, threshold=0.30)
             
             for i, face in enumerate(faces):
                 area = face["facial_area"]
                 crop = FaceCropper.crop_face(frame, area)
                 if crop is not None and crop.size > 0:
-                    jpeg_bytes = Preprocessor.preprocess_face(crop)
-                    if jpeg_bytes:
+                    success, buffer = cv2.imencode('.jpg', crop)
+                    if success:
                         video_face_count += 1
                         total_faces += 1
                         
-                        # Save sample faces to output_dir for visual verification
+                        # Save raw crop faces to output_dir for visual verification
                         out_name = f"{filename}_frame{idx}_face{i}.jpg"
                         out_path = os.path.join(output_dir, out_name)
                         with open(out_path, "wb") as f:
-                            f.write(jpeg_bytes)
+                            f.write(buffer.tobytes())
                             
-        print(f"  -> Found {video_face_count} valid faces in {filename}.")
+        elapsed = time.time() - start_time
+        print(f"  -> Found {video_face_count} valid faces in {filename} (Took {elapsed:.2f}s).")
         
     print(f"\n--- Batch Test Complete ---")
     print(f"Total Videos Processed: {total_videos}")
