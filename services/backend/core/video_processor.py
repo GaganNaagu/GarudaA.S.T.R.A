@@ -55,7 +55,7 @@ async def process_video_task(video_id: str):
             run_script = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "ai", "run_pipeline.py"))
             
             process = await asyncio.create_subprocess_exec(
-                python_exec, run_script, video_path, video_id, video_crops_dir,
+                python_exec, "-u", run_script, video_path, video_id, video_crops_dir,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.STDOUT
             )
