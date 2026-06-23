@@ -64,7 +64,7 @@ async def process_video_task(video_id: str):
             log_file_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "ai_pipeline.log"))
             
             with open(log_file_path, "a") as log_file:
-                log_file.write(f"\\n--- STARTING ANALYSIS FOR VIDEO: {video_id} ---\\n")
+                log_file.write(f"\n--- STARTING ANALYSIS FOR VIDEO: {video_id} ---\n")
                 log_file.flush()
                 
                 results = []
@@ -81,7 +81,7 @@ async def process_video_task(video_id: str):
                             await db.commit()
                             # Show live progress in the terminal too!
                             if int(prog) % 5 == 0:  # Log every 5% to avoid totally flooding the file
-                                log_file.write(f"Processing Progress: {int(prog)}%\\n")
+                                log_file.write(f"Processing Progress: {int(prog)}%\n")
                                 log_file.flush()
                         elif decoded.startswith("RESULT:"):
                             results_str = decoded.split(":", 1)[1]
@@ -89,16 +89,16 @@ async def process_video_task(video_id: str):
                         elif decoded.startswith("ERROR:"):
                             err_msg = f"Pipeline error: {decoded}"
                             logger.error(err_msg)
-                            log_file.write(f"ERROR: {err_msg}\\n")
+                            log_file.write(f"ERROR: {err_msg}\n")
                             log_file.flush()
                             raise Exception(decoded[6:])
                         else:
                             # Forward other logs to the dedicated file instead of uvicorn logger
-                            log_file.write(f"{decoded}\\n")
+                            log_file.write(f"{decoded}\n")
                             log_file.flush()
                     except Exception as e:
                         if "Pipeline error:" not in str(e):
-                            log_file.write(f"Parse Warning: {e} | Line: {line}\\n")
+                            log_file.write(f"Parse Warning: {e} | Line: {line}\n")
                             log_file.flush()
             
             await process.wait()
