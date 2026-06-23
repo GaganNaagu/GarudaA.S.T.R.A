@@ -60,29 +60,42 @@ async def process_video_task(video_id: str):
                 stderr=asyncio.subprocess.STDOUT
             )
             
-            results = []
-            while True:
-                line = await process.stdout.readline()
-                if not line:
-                    break
-                    
-                try:
-                    decoded = line.decode('utf-8').strip()
-                    if decoded.startswith("PROGRESS:"):
-                        prog = float(decoded.split(":", 1)[1])
-                        video.progress = prog
-                        await db.commit()
-                    elif decoded.startswith("RESULT:"):
-                        results_str = decoded.split(":", 1)[1]
-                        results = json.loads(results_str)
-                    elif decoded.startswith("ERROR:"):
-                        logger.error(f"Pipeline error: {decoded}")
-                        raise Exception(decoded[6:])
-                    else:
-                        # Forward other logs
-                        logger.info(f"Pipeline: {decoded}")
-                except Exception as e:
-                    logger.warning(f"Error parsing pipeline output: {e} | Line: {line}")
+            # We will stream all AI logs to a dedicated file in the root directory
+            log_file_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "ai_pipeline.log"))
+            
+            with open(log_file_path, "a") as log_file:
+                log_file.write(f"\\n--- STARTING ANALYSIS FOR VIDEO: {video_id} ---\\n")
+                log_file.flush()
+                
+                results = []
+                while True:
+                    line = await process.stdout.readline()
+                    if not line:
+                        break
+                        
+                    try:
+                        decoded = line.decode('utf-8').strip()
+                        if decoded.startswith("PROGRESS:"):
+                            prog = float(decoded.split(":", 1)[1])
+                            video.progress = prog
+                            await db.commit()
+                        elif decoded.startswith("RESULT:"):
+                            results_str = decoded.split(":", 1)[1]
+                            results = json.loads(results_str)
+                        elif decoded.startswith("ERROR:"):
+                            err_msg = f"Pipeline error: {decoded}"
+                            logger.error(err_msg)
+                            log_file.write(f"ERROR: {err_msg}\\n")
+                            log_file.flush()
+                            raise Exception(decoded[6:])
+                        else:
+                            # Forward other logs to the dedicated file instead of uvicorn logger
+                            log_file.write(f"{decoded}\\n")
+                            log_file.flush()
+                    except Exception as e:
+                        if "Pipeline error:" not in str(e):
+                            log_file.write(f"Parse Warning: {e} | Line: {line}\\n")
+                            log_file.flush()
             
             await process.wait()
             if process.returncode != 0:
