@@ -80,6 +80,9 @@ def run_analysis_pipeline(
     saved_crops_count = 0
     
     for frame, idx in frame_gen:
+        if idx % 50 == 0:
+            logger.info(f"Processing Frame {idx} / {total_frames} ...")
+            
         if progress_callback:
             progress_callback(min(99.0, (idx / total_frames) * 100.0))
             
