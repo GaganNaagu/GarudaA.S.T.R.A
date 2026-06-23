@@ -19,7 +19,7 @@ import {
 } from 'lucide-react'
 import { cn } from "@/lib/utils"
 import { useToast } from "@/components/ui/Toast"
-import { uploadFootage, uploadFootageWithProgress, getUploads } from "@/lib/api"
+import { uploadFootage, uploadFootageWithProgress, getUploads, analyzeVideo, batchAnalyzeVideos } from "@/lib/api"
 
 export default function UploadsPage() {
   const { toast } = useToast()
@@ -99,6 +99,26 @@ export default function UploadsPage() {
     fetchUploads()
   }
 
+  const handleAnalyze = async (id: string) => {
+    try {
+      const res = await analyzeVideo(id)
+      toast(res.message, 'success')
+      fetchUploads()
+    } catch (err: any) {
+      toast(err.message || 'Failed to trigger analysis', 'error')
+    }
+  }
+
+  const handleBatchAnalyze = async () => {
+    try {
+      const res = await batchAnalyzeVideos()
+      toast(res.message, 'success')
+      fetchUploads()
+    } catch (err: any) {
+      toast(err.message || 'Failed to trigger batch analysis', 'error')
+    }
+  }
+
   return (
     <div className="max-w-5xl mx-auto space-y-8">
       <div>
@@ -164,9 +184,20 @@ export default function UploadsPage() {
           </Card>
 
           <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Upload Queue</CardTitle>
-              <CardDescription>Recently added files awaiting processing</CardDescription>
+            <CardHeader className="flex flex-row items-start justify-between">
+              <div>
+                <CardTitle className="text-lg">Upload Queue</CardTitle>
+                <CardDescription>Recently added files awaiting processing</CardDescription>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleBatchAnalyze}
+                disabled={uploads.filter(u => u.status === 'PENDING' || u.status === 'ERROR').length === 0}
+              >
+                <Play className="w-4 h-4 mr-2" />
+                Batch Analyze Pending
+              </Button>
             </CardHeader>
             <CardContent>
                {uploads.length === 0 ? (
@@ -193,9 +224,16 @@ export default function UploadsPage() {
                               <p className="text-xs text-muted-foreground">{new Date(u.uploaded_at).toLocaleString()}</p>
                             </div>
                           </div>
-                          <Badge variant={u.status === 'COMPLETED' ? 'default' : u.status === 'ERROR' ? 'destructive' : 'secondary'}>
-                            {u.status}
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={u.status === 'COMPLETED' ? 'default' : u.status === 'ERROR' ? 'destructive' : 'secondary'}>
+                              {u.status}
+                            </Badge>
+                            {(u.status === 'PENDING' || u.status === 'ERROR') && (
+                              <Button variant="ghost" size="sm" onClick={() => handleAnalyze(u.id)} className="h-7 px-2">
+                                <Play className="w-3 h-3 mr-1" /> Analyze
+                              </Button>
+                            )}
+                          </div>
                         </div>
                         {(u.status === 'PROCESSING' || u.status === 'PENDING') && (
                           <div className="w-full bg-secondary rounded-full h-1.5 overflow-hidden">
