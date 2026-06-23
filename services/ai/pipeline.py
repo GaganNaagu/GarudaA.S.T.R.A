@@ -86,6 +86,9 @@ def run_analysis_pipeline(
         # Detection
         faces = FaceDetector.detect_faces(frame, threshold=0.30)
         
+        if len(faces) > 0:
+            logger.info(f"Frame {idx}: YOLO detected {len(faces)} faces.")
+            
         for face_idx, face in enumerate(faces):
             area = face["facial_area"]
             score = face["score"]
@@ -115,6 +118,7 @@ def run_analysis_pipeline(
                     crop_path = os.path.join(crops_dir, crop_filename)
                     cv2.imwrite(crop_path, crop)
                     saved_crops_count += 1
+                    logger.info(f"  -> Saved crop to: {crop_path}")
                 
                 results.append({
                     "frame_idx": idx,

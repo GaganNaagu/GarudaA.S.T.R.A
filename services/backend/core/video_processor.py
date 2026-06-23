@@ -79,6 +79,10 @@ async def process_video_task(video_id: str):
                             prog = float(decoded.split(":", 1)[1])
                             video.progress = prog
                             await db.commit()
+                            # Show live progress in the terminal too!
+                            if int(prog) % 5 == 0:  # Log every 5% to avoid totally flooding the file
+                                log_file.write(f"Processing Progress: {int(prog)}%\\n")
+                                log_file.flush()
                         elif decoded.startswith("RESULT:"):
                             results_str = decoded.split(":", 1)[1]
                             results = json.loads(results_str)
