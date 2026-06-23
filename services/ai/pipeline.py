@@ -1,5 +1,14 @@
-import cv2
 import os
+
+# Set threading limits BEFORE importing cv2 or any AI libraries
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
+os.environ["NUMEXPR_NUM_THREADS"] = "1"
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
+import cv2
 import time
 import logging
 from typing import List, Dict, Any, Callable
@@ -30,8 +39,16 @@ def run_analysis_pipeline(
     """
     
     # 1. Threading safety for background execution
-    os.environ["OMP_NUM_THREADS"] = "1"
     cv2.setNumThreads(0)
+    
+    import tensorflow as tf
+    try:
+        # Prevent TF from preallocating all memory if using GPU
+        gpus = tf.config.list_physical_devices('GPU')
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+    except:
+        pass
     
     if not os.path.exists(video_path):
         logger.error(f"Video file not found at {video_path}")
