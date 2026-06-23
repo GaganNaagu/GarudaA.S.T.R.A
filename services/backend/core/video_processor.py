@@ -63,6 +63,8 @@ async def process_video_task(video_id: str):
             # We will stream all AI logs to a dedicated file in the root directory
             log_file_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "ai_pipeline.log"))
             
+            last_db_commit_prog = -1.0
+            
             with open(log_file_path, "a") as log_file:
                 log_file.write(f"\n--- STARTING ANALYSIS FOR VIDEO: {video_id} ---\n")
                 log_file.flush()
@@ -78,9 +80,14 @@ async def process_video_task(video_id: str):
                         if decoded.startswith("PROGRESS:"):
                             prog = float(decoded.split(":", 1)[1])
                             video.progress = prog
-                            await db.commit()
+                            
+                            # Throttle DB commits to every 1% to prevent massive I/O lag
+                            if prog - last_db_commit_prog >= 1.0 or prog >= 99.0:
+                                await db.commit()
+                                last_db_commit_prog = prog
+                                
                             # Show live progress in the terminal too!
-                            if int(prog) % 5 == 0:  # Log every 5% to avoid totally flooding the file
+                            if int(prog) % 5 == 0 and prog - last_db_commit_prog < 5.0:  # Log roughly every 5%
                                 log_file.write(f"Processing Progress: {int(prog)}%\n")
                                 log_file.flush()
                         elif decoded.startswith("RESULT:"):
