@@ -21,6 +21,9 @@ from detection.frame_extractor import FrameExtractor
 from detection.face_detection import FaceDetector
 from detection.face_cropper import FaceCropper
 from detection.preprocessing import Preprocessor
+from services.ai.recognition.embedding_service import generate_embedding
+from services.ai.recognition.ranking_service import get_best_match
+from services.ai.recognition.identity_manager import load_identities
 
 def run_pipeline(video_path: str, start_frame: int = 0):
     # Support webcam index by converting to int if possible
@@ -40,11 +43,22 @@ def run_pipeline(video_path: str, start_frame: int = 0):
     print(f"\n--- 2. Extracting Frames (Skip=5, Start={start_frame}) ---")
     frame_gen = FrameExtractor.extract_frames(source, skip_interval=5, start_frame=start_frame)
     
+    # Load registered identities from JSON storage
+    print("\n--- Loading Registered Identities ---")
+    identities_dict = load_identities()
+    database = []
+    for person_id, info in identities_dict.items():
+        database.append({
+            "id": info["name"],  # Use name directly as the display identifier
+            "embedding": info["embedding"]
+        })
+    print(f"Loaded {len(database)} registered identity/identities.")
+    
     start_time = time.time()
     
     print("\nPress 'q' in the video window to stop the demo.")
     
-    window_name = "Garuda A.S.T.R.A - Detection Pipeline Demo"
+    window_name = "Garuda A.S.T.R.A - Detection & Recognition Pipeline Demo"
     cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
     cv2.setWindowProperty(window_name, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
     
@@ -72,16 +86,7 @@ def run_pipeline(video_path: str, start_frame: int = 0):
             area = face["facial_area"]
             score = face["score"]
             
-            crop_w = area[2] - area[0]
-            crop_h = area[3] - area[1]
-            text = f"{score:.2f} ({crop_w}x{crop_h})"
-            
-            # Draw bounding box on the display frame
-            cv2.rectangle(display_frame, (area[0], area[1]), (area[2], area[3]), (0, 255, 0), 2)
-            cv2.putText(display_frame, text, (area[0], max(0, area[1] - 10)), 
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-            
-            # 4. Cropping (to verify the cropper still runs without crashing)
+            # 4. Cropping
             crop = FaceCropper.crop_face(frame, area)
             
             # Show the raw crop in its own tiny window
@@ -89,10 +94,27 @@ def run_pipeline(video_path: str, start_frame: int = 0):
                 if i < 5:  # Limit to 5 crop windows to avoid spam
                     cv2.imshow(f"Crop {i+1}", crop)
             
-            # 5. Preprocessing (to verify it still generates the JPEG bytes)
+            # 5. Preprocessing (raw crop, no resizing)
+            text = f"Unknown ({score:.2f})"
+            box_color = (0, 0, 255)  # Red (Unknown)
+            
             if crop is not None and crop.size > 0:
                 jpeg_bytes = Preprocessor.preprocess_face(crop)
                 
+                if jpeg_bytes:
+                    # 6. Recognition Integration
+                    emb = generate_embedding(jpeg_bytes)
+                    if emb:
+                        match_found, matched_name, conf = get_best_match(emb, database)
+                        if match_found:
+                            text = f"{matched_name} ({conf:.2f})"
+                            box_color = (0, 255, 0)  # Green (Matched)
+            
+            # Draw bounding box and label on the display frame
+            cv2.rectangle(display_frame, (area[0], area[1]), (area[2], area[3]), box_color, 2)
+            cv2.putText(display_frame, text, (area[0], max(0, area[1] - 10)), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, box_color, 2)
+            
         # Clean up extra crop windows if faces disappear
         for j in range(len(faces), 5):
             try:
@@ -102,6 +124,7 @@ def run_pipeline(video_path: str, start_frame: int = 0):
         
         # Display the frame with bounding boxes
         cv2.imshow(window_name, display_frame)
+
         
         # Wait 1ms and check if user pressed 'q' to quit
         if cv2.waitKey(1) & 0xFF == ord('q'):
