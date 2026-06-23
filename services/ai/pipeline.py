@@ -60,15 +60,15 @@ def run_analysis_pipeline(
     if total_frames <= 0:
         total_frames = 1000
 
-    # 2. Load Registered Identities for Recognition
-    identities_dict = load_identities()
+    # 2. Load Registered Identities for Recognition (Disabled for now)
+    # identities_dict = load_identities()
     database = []
-    for person_id, info in identities_dict.items():
-        database.append({
-            "id": info["name"],
-            "embedding": info["embedding"]
-        })
-    logger.info(f"Loaded {len(database)} registered identities.")
+    # for person_id, info in identities_dict.items():
+    #     database.append({
+    #         "id": info["name"],
+    #         "embedding": info["embedding"]
+    #     })
+    logger.info(f"Loaded {len(database)} registered identities (Recognition currently disabled).")
 
     # 3. Extract Frames
     # skip_interval could be dynamic based on fps, default 5 for now
@@ -100,10 +100,11 @@ def run_analysis_pipeline(
                 conf = 0.0
                 
                 if jpeg_bytes:
-                    # Recognition Integration
-                    emb = generate_embedding(jpeg_bytes)
-                    if emb:
-                        match_found, matched_name, conf = get_best_match(emb, database)
+                    # Recognition Integration (Disabled for now per user request)
+                    # emb = generate_embedding(jpeg_bytes)
+                    # if emb:
+                    #     match_found, matched_name, conf = get_best_match(emb, database)
+                    pass
                 
                 # Save crop to disk if requested
                 if save_crops and crops_dir:
