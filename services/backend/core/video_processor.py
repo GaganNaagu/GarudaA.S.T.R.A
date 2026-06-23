@@ -52,7 +52,7 @@ async def process_video_task(video_id: str):
             # This completely prevents OpenMP/CUDA/TensorFlow Segfaults (SEGV 11)
             # because the ML models have their own pristine memory space.
             python_exec = sys.executable
-            run_script = os.path.join(os.path.dirname(__file__), "..", "..", "..", "ai", "run_pipeline.py")
+            run_script = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "ai", "run_pipeline.py"))
             
             process = await asyncio.create_subprocess_exec(
                 python_exec, run_script, video_path, video_id, video_crops_dir,
