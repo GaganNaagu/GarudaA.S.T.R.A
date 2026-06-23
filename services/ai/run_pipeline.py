@@ -2,6 +2,10 @@ import sys
 import json
 import traceback
 
+import logging
+
+logging.basicConfig(level=logging.INFO, format="%(message)s", stream=sys.stdout)
+
 # Import and setup paths
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))

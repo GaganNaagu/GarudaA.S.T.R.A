@@ -57,7 +57,7 @@ async def process_video_task(video_id: str):
             process = await asyncio.create_subprocess_exec(
                 python_exec, run_script, video_path, video_id, video_crops_dir,
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                stderr=asyncio.subprocess.STDOUT
             )
             
             results = []
@@ -86,8 +86,7 @@ async def process_video_task(video_id: str):
             
             await process.wait()
             if process.returncode != 0:
-                stderr = await process.stderr.read()
-                error_msg = f"Process failed with code {process.returncode}: {stderr.decode()}"
+                error_msg = f"Process failed with code {process.returncode}"
                 logger.error(error_msg)
                 raise Exception(error_msg)
 
