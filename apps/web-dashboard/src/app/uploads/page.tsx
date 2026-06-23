@@ -186,8 +186,8 @@ export default function UploadsPage() {
           <Card>
             <CardHeader className="flex flex-row items-start justify-between">
               <div>
-                <CardTitle className="text-lg">Upload Queue</CardTitle>
-                <CardDescription>Recently added files awaiting processing</CardDescription>
+                <CardTitle className="text-lg">Stored Recordings</CardTitle>
+                <CardDescription>Footage securely stored on the server ready for analysis</CardDescription>
               </div>
               <Button 
                 variant="outline" 
@@ -203,48 +203,62 @@ export default function UploadsPage() {
                {uploads.length === 0 ? (
                  <div className="flex flex-col items-center justify-center py-8 text-center">
                    <Cloud className="w-8 h-8 text-muted-foreground/30 mb-3" />
-                   <p className="text-sm text-muted-foreground">No files in the upload queue.</p>
-                   <p className="text-xs text-muted-foreground/60 mt-1">Drop files above to start processing.</p>
+                   <p className="text-sm text-muted-foreground">No recordings stored.</p>
+                   <p className="text-xs text-muted-foreground/60 mt-1">Upload footage above to start.</p>
                  </div>
                ) : (
-                 <div className="space-y-3 max-h-64 overflow-y-auto pr-2">
-                    {uploads.map(u => (
-                      <div key={u.id} className="flex flex-col p-3 rounded-md bg-secondary/30 border border-border gap-3">
-                        <div className="flex items-center justify-between w-full">
-                          <div className="flex items-center gap-3 overflow-hidden">
-                            {u.status === 'COMPLETED' ? (
-                              <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />
-                            ) : u.status === 'ERROR' ? (
-                              <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
-                            ) : (
-                              <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin shrink-0" />
-                            )}
-                            <div className="truncate">
-                              <p className="text-sm font-medium truncate">{u.filename}</p>
-                              <p className="text-xs text-muted-foreground">{new Date(u.uploaded_at).toLocaleString()}</p>
+                 <div className="space-y-4 max-h-[32rem] overflow-y-auto pr-2">
+                    {uploads.map(u => {
+                      const ext = u.filename.substring(u.filename.lastIndexOf('.'))
+                      const staticUrl = `${process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:8000'}/uploads/videos/${u.id}${ext}`
+                      
+                      return (
+                      <div key={u.id} className="flex flex-col p-4 rounded-lg bg-secondary/20 border border-border gap-3">
+                        <div className="flex items-start gap-4 w-full">
+                          <video 
+                            src={staticUrl} 
+                            preload="metadata" 
+                            className="w-24 h-16 object-cover bg-black rounded border border-border shrink-0" 
+                          />
+                          <div className="flex-1 min-w-0 flex flex-col gap-1">
+                            <div className="flex items-center justify-between">
+                              <p className="text-sm font-semibold truncate text-foreground">{u.filename}</p>
+                              <Badge variant={u.status === 'ERROR' ? 'destructive' : u.status === 'COMPLETED' ? 'default' : 'secondary'}>
+                                {u.status === 'PENDING' ? 'Not Analysed' : u.status === 'COMPLETED' ? 'Analysed' : u.status}
+                              </Badge>
+                            </div>
+                            <div className="flex flex-col text-xs text-muted-foreground mt-1">
+                              <span>Uploaded: {new Date(u.uploaded_at).toLocaleString()}</span>
+                              {u.status === 'COMPLETED' && u.updated_at ? (
+                                <span>Last analysed: {new Date(u.updated_at).toLocaleString()}</span>
+                              ) : (
+                                <span>Not analysed yet</span>
+                              )}
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Badge variant={u.status === 'COMPLETED' ? 'default' : u.status === 'ERROR' ? 'destructive' : 'secondary'}>
-                              {u.status}
-                            </Badge>
-                            {(u.status === 'PENDING' || u.status === 'ERROR') && (
-                              <Button variant="ghost" size="sm" onClick={() => handleAnalyze(u.id)} className="h-7 px-2">
-                                <Play className="w-3 h-3 mr-1" /> Analyze
-                              </Button>
-                            )}
-                          </div>
                         </div>
-                        {(u.status === 'PROCESSING' || u.status === 'PENDING') && (
-                          <div className="w-full bg-secondary rounded-full h-1.5 overflow-hidden">
-                            <div 
-                              className="bg-primary h-full transition-all duration-500 ease-out" 
-                              style={{ width: `${u.progress || 0}%` }}
-                            />
-                          </div>
-                        )}
+                        
+                        <div className="flex items-center justify-end w-full pt-2 border-t border-border/50">
+                          {u.status === 'PROCESSING' ? (
+                            <div className="w-full flex items-center gap-3">
+                              <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin shrink-0" />
+                              <div className="w-full bg-secondary rounded-full h-1.5 overflow-hidden">
+                                <div 
+                                  className="bg-primary h-full transition-all duration-500 ease-out" 
+                                  style={{ width: `${u.progress || 0}%` }}
+                                />
+                              </div>
+                              <span className="text-xs text-muted-foreground w-12 text-right">{Math.round(u.progress || 0)}%</span>
+                            </div>
+                          ) : (
+                            <Button variant="ghost" size="sm" onClick={() => handleAnalyze(u.id)} className="h-8 px-3 hover:bg-primary hover:text-primary-foreground">
+                              <Play className="w-4 h-4 mr-2" /> 
+                              {u.status === 'COMPLETED' ? 'Re-Analyse' : 'Analyse'}
+                            </Button>
+                          )}
+                        </div>
                       </div>
-                    ))}
+                    )})}
                  </div>
                )}
             </CardContent>
