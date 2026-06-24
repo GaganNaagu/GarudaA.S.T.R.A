@@ -62,7 +62,8 @@ async def process_video_task(video_id: str):
             process = await asyncio.create_subprocess_exec(
                 python_exec, "-u", run_script, video_path, video_id, video_crops_dir, log_file_path,
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.STDOUT
+                stderr=asyncio.subprocess.STDOUT,
+                limit=1024 * 1024 * 10  # 10 MB
             )
             
             last_db_commit_prog = -1.0
