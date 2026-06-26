@@ -18,17 +18,6 @@ allprojects {
     mavenCentral()
     maven { url 'https://www.jitpack.io' }
   }
-
-  // Workaround for Windows MAX_PATH limits: redirect CMake C++ builds to a short path
-  afterEvaluate { project ->
-    if (project.plugins.hasPlugin("com.android.library") || project.plugins.hasPlugin("com.android.application")) {
-      project.android {
-        if (it.hasProperty("externalNativeBuild") && it.externalNativeBuild.hasProperty("cmake")) {
-          it.externalNativeBuild.cmake.buildStagingDirectory = new File("C:/tmp/cxx/${project.name}")
-        }
-      }
-    }
-  }
 }
 
 apply plugin: "expo-root-project"
