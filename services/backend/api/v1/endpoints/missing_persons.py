@@ -67,7 +67,7 @@ import json
 
 @router.post("/{person_id}/image")
 async def upload_missing_person_image(
-    person_id: str,
+    person_id: uuid.UUID,
     image: UploadFile = File(...),
     db: AsyncSession = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user),
@@ -111,7 +111,7 @@ async def upload_missing_person_image(
     # Trigger vector search automatically in the background to check history
     try:
         from services.backend.api.v1.endpoints.search import search_person_against_crops
-        await search_person_against_crops(person_id=uuid.UUID(person_id), db=db)
+        await search_person_against_crops(person_id=person_id, db=db)
     except Exception as e:
         import logging
         logging.getLogger(__name__).error(f"Error running automatic vector search on upload: {e}")

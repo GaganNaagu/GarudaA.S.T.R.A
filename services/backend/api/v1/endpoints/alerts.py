@@ -123,7 +123,7 @@ async def read_alerts(
 
 @router.patch("/{alert_id}/status", response_model=AlertRead)
 async def update_alert_status(
-    alert_id: str,
+    alert_id: uuid.UUID,
     status_update: AlertStatusUpdate,
     db: AsyncSession = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_user),
@@ -142,7 +142,7 @@ async def update_alert_status(
             joinedload(Alert.missing_person),
             joinedload(Alert.assignments).joinedload(Assignment.officer).joinedload(Officer.user)
         )
-        .where(Alert.id == uuid.UUID(alert_id))
+        .where(Alert.id == alert_id)
     )
     alert = result.unique().scalar_one_or_none()
 
@@ -216,7 +216,7 @@ async def update_alert_status(
             joinedload(Alert.missing_person),
             joinedload(Alert.assignments).joinedload(Assignment.officer).joinedload(Officer.user)
         )
-        .where(Alert.id == uuid.UUID(alert_id))
+        .where(Alert.id == alert_id)
     )
     updated_alert = result.unique().scalar_one()
 
