@@ -25,14 +25,39 @@ def init_adaface_model():
         os.makedirs(os.path.dirname(local_model_path), exist_ok=True)
         
         if os.path.exists(local_model_path) and os.path.isdir(local_model_path) and any(os.scandir(local_model_path)):
+            # Robustness: Check for double-nested directories (e.g., extracted zip)
+            if not os.path.exists(os.path.join(local_model_path, "config.json")):
+                inner_path = os.path.join(local_model_path, "cvlface_adaface_ir50_ms1mv2")
+                if os.path.exists(os.path.join(inner_path, "config.json")):
+                    local_model_path = inner_path
+                else:
+                    for d in os.scandir(local_model_path):
+                        if d.is_dir() and os.path.exists(os.path.join(d.path, "config.json")):
+                            local_model_path = d.path
+                            break
+            
+            # Robustness: Check for Git LFS pointer issues (file too small)
+            safetensors_path = os.path.join(local_model_path, "model.safetensors")
+            if os.path.exists(safetensors_path) and os.path.getsize(safetensors_path) < 1000:
+                raise ValueError("model.safetensors is a Git LFS pointer file (too small), not the actual weights.")
+                
             logger.info(f"Loading AdaFace Model from local directory: {local_model_path}")
             if local_model_path not in sys.path:
-                sys.path.append(local_model_path)
-            adaface_model = AutoModel.from_pretrained(
-                local_model_path, 
-                trust_remote_code=True,
-                local_files_only=True
-            )
+                sys.path.insert(0, local_model_path) # Insert at front to avoid module collisions
+                
+            # The author of this model hardcoded relative paths like open('pretrained_model/model.yaml')
+            # We must temporarily change the working directory to the model directory.
+            original_cwd = os.getcwd()
+            try:
+                os.chdir(local_model_path)
+                adaface_model = AutoModel.from_pretrained(
+                    local_model_path, 
+                    trust_remote_code=True,
+                    local_files_only=True
+                )
+            finally:
+                os.chdir(original_cwd)
+                
             adaface_model.eval()
             logger.info("AdaFace model loaded successfully from local directory.")
             adaface_load_error = None
@@ -40,18 +65,26 @@ def init_adaface_model():
             logger.info("Downloading & Initializing AdaFace Model (IR50) from Hugging Face...")
             model_dir = snapshot_download("minchul/cvlface_adaface_ir50_ms1mv2")
             if model_dir not in sys.path:
-                sys.path.append(model_dir)
+                sys.path.insert(0, model_dir)
                 
-            adaface_model = AutoModel.from_pretrained(
-                "minchul/cvlface_adaface_ir50_ms1mv2", 
-                trust_remote_code=True
-            )
+            original_cwd = os.getcwd()
+            try:
+                os.chdir(model_dir)
+                adaface_model = AutoModel.from_pretrained(
+                    model_dir, 
+                    trust_remote_code=True
+                )
+            finally:
+                os.chdir(original_cwd)
+                
             adaface_model.eval()
             logger.info("AdaFace model downloaded and loaded successfully.")
             adaface_load_error = None
     except Exception as e:
-        adaface_load_error = e
-        logger.error(f"Failed to load AdaFace model: {e}", exc_info=True)
+        # Format for syslog so it doesn't get split
+        err_msg = str(e).replace('\n', ' | ')
+        adaface_load_error = err_msg
+        logger.error(f"Failed to load AdaFace model: {err_msg}", exc_info=True)
         adaface_model = None
 
 # Initialize on module import
