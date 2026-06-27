@@ -18,6 +18,11 @@ adaface_load_error = None
 def init_adaface_model():
     global adaface_model, adaface_load_error
     try:
+        import transformers
+        # Patch for older custom models missing all_tied_weights_keys in newer transformers versions
+        if not hasattr(transformers.PreTrainedModel, 'all_tied_weights_keys'):
+            transformers.PreTrainedModel.all_tied_weights_keys = property(lambda self: {})
+            
         current_dir = os.path.dirname(os.path.abspath(__file__))
         local_model_path = os.path.abspath(os.path.join(current_dir, "..", "models", "cvlface_adaface_ir50_ms1mv2"))
         
