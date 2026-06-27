@@ -9,22 +9,53 @@ from huggingface_hub import snapshot_download
 
 logger = logging.getLogger(__name__)
 
+import os
+
 # Initialize AdaFace model globally to keep it in memory
-try:
-    logger.info("Downloading & Initializing AdaFace Model (IR50)...")
-    model_dir = snapshot_download("minchul/cvlface_adaface_ir50_ms1mv2")
-    if model_dir not in sys.path:
-        sys.path.append(model_dir)
+adaface_model = None
+adaface_load_error = None
+
+def init_adaface_model():
+    global adaface_model, adaface_load_error
+    try:
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        local_model_path = os.path.abspath(os.path.join(current_dir, "..", "models", "cvlface_adaface_ir50_ms1mv2"))
         
-    adaface_model = AutoModel.from_pretrained(
-        "minchul/cvlface_adaface_ir50_ms1mv2", 
-        trust_remote_code=True
-    )
-    adaface_model.eval()
-    logger.info("AdaFace model loaded successfully.")
-except Exception as e:
-    logger.error(f"Failed to load AdaFace model: {e}")
-    adaface_model = None
+        # Ensure the models folder exists
+        os.makedirs(os.path.dirname(local_model_path), exist_ok=True)
+        
+        if os.path.exists(local_model_path) and os.path.isdir(local_model_path) and any(os.scandir(local_model_path)):
+            logger.info(f"Loading AdaFace Model from local directory: {local_model_path}")
+            if local_model_path not in sys.path:
+                sys.path.append(local_model_path)
+            adaface_model = AutoModel.from_pretrained(
+                local_model_path, 
+                trust_remote_code=True,
+                local_files_only=True
+            )
+            adaface_model.eval()
+            logger.info("AdaFace model loaded successfully from local directory.")
+            adaface_load_error = None
+        else:
+            logger.info("Downloading & Initializing AdaFace Model (IR50) from Hugging Face...")
+            model_dir = snapshot_download("minchul/cvlface_adaface_ir50_ms1mv2")
+            if model_dir not in sys.path:
+                sys.path.append(model_dir)
+                
+            adaface_model = AutoModel.from_pretrained(
+                "minchul/cvlface_adaface_ir50_ms1mv2", 
+                trust_remote_code=True
+            )
+            adaface_model.eval()
+            logger.info("AdaFace model downloaded and loaded successfully.")
+            adaface_load_error = None
+    except Exception as e:
+        adaface_load_error = e
+        logger.error(f"Failed to load AdaFace model: {e}", exc_info=True)
+        adaface_model = None
+
+# Initialize on module import
+init_adaface_model()
 
 def generate_embedding(image_bytes: bytes) -> Optional[List[float]]:
     """
@@ -37,9 +68,16 @@ def generate_embedding(image_bytes: bytes) -> Optional[List[float]]:
     Returns:
         A list of floats representing the embedding, or None if extraction fails.
     """
+    global adaface_model, adaface_load_error
+    
     if adaface_model is None:
-        logger.error("AdaFace model is not initialized.")
-        return None
+        logger.error(f"AdaFace model is not initialized. Previous load error: {adaface_load_error}")
+        # Attempt to retry loading the model
+        logger.info("Attempting to re-initialize AdaFace model...")
+        init_adaface_model()
+        if adaface_model is None:
+            logger.error(f"AdaFace model re-initialization failed. Error: {adaface_load_error}")
+            return None
 
     try:
         # Convert bytes to cv2 image
