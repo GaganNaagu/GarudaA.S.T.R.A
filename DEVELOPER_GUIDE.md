@@ -1,6 +1,6 @@
 # 🚀 GARUDA A.S.T.R.A — Co-Developer Onboarding & Git Workflow Guide
 
-Welcome to the **GARUDA A.S.T.R.A** development team! This guide explains how to set up your local development environment, collaborate cleanly without merge conflicts, and follow our git workflow.
+Welcome to the **GARUDA A.S.T.R.A** development team! This guide explains how to set up your local development environment, collaborate cleanly without merge conflicts, and follow our strict git push procedures.
 
 ---
 
@@ -17,7 +17,7 @@ Our repository uses a staged branch workflow to preserve separate working code f
 
 > [!CAUTION]
 > **ABSOLUTE RULE: NO FORCE PUSHING.**  
-> Never run `git push --force` or `git push -f` under any circumstances.
+> Never run `git push --force`, `git push -f`, or `git push --force-with-lease` under any circumstances.
 
 ---
 
@@ -92,52 +92,89 @@ Interactive API Swagger docs available at `http://127.0.0.1:8000/docs`.
 | **Track A** | **Developer 1 (Lead / Owner)** | **Phase 2.1 & Phase 2.3** | • Evidence Vault data models & file storage<br>• Evidence Gallery UI<br>• Investigation Timeline API & visual feed |
 | **Track B** | **Developer 2 (Co-Dev)** | **Phase 2.2 & Phase 2.4** | • Smart Match Ranking formula ($w_1 \cdot \text{Sim} + w_2 \cdot \text{Qual} + w_3 \cdot \text{Rec}$)<br>• Ranked Leaderboard Table UI<br>• Intelligent Alert Center & priority triage |
 
+> [!IMPORTANT]
+> **Boundary Rule:** Neither developer should edit files assigned to the other track without explicit coordination. This guarantees clean, parallel development with ZERO merge conflicts.
+
 ---
 
-## 🔀 Step 4: Daily Git Workflow (For Developer 2 / Feature Work)
+## 🔀 Step 4: Daily Git Push Workflow (Step-by-Step)
 
-### 1. Always start by syncing with `phase-2`:
+Follow this exact routine whenever creating, committing, and pushing code:
+
+### 1. Sync with `phase-2` before starting:
 ```bash
 git checkout phase-2
 git pull origin phase-2
 ```
 
-### 2. Create a dedicated feature branch:
+### 2. Create your feature branch:
 ```bash
-# Example for Track B:
-git checkout -b feature/phase-2.2-smart-ranking
+# Developer 2 example:
+git checkout -b feature/phase-2.2-ranking
+
+# Developer 1 example:
+git checkout -b feature/phase-2.1-evidence
 ```
 
-### 3. Work on your assigned feature:
+### 3. Build & Test Feature:
 If using **Antigravity AI Agent** or **GSD**, run:
-```text
-/gsd-plan-phase 2.2
-```
-Your agent will automatically read [GEMINI.md](./GEMINI.md) / [AGENTS.md](./AGENTS.md) and adhere to all project boundaries.
+- Dev 1: `/gsd-plan-phase 2.1`
+- Dev 2: `/gsd-plan-phase 2.2`
 
-### 4. Commit using Conventional Commits:
+### 4. Pre-Commit Safety Check (Crucial):
 ```bash
-git add <modified-files>
-git commit -m "feat(ranking): implement composite match scoring formula"
+# Check what has been modified or created
+git status
+
+# Make sure NO secrets, virtual environments, or heavy videos are staged
+git diff
 ```
 
-### 5. Push your feature branch to GitHub:
+### 5. Atomic Commit:
 ```bash
-git push -u origin feature/phase-2.2-smart-ranking
+# Stage only relevant files (never git add .)
+git add services/backend/services/ranking_service.py apps/web-dashboard/src/components/RankingTable.tsx
+
+# Conventional commit message:
+git commit -m "feat(ranking): implement weighted candidate scoring service"
 ```
 
-### 6. Create a Pull Request (PR) on GitHub:
-- Target base branch: **`phase-2`** (NOT `main`!).
-- Compare branch: `feature/phase-2.2-smart-ranking`.
-- Assign **Developer 1** as the Reviewer.
-- Once Developer 1 reviews and approves, the branch is merged cleanly into `phase-2`.
+### 6. Pull Remote Changes Before Pushing:
+```bash
+# Prevent out-of-date rejection
+git fetch origin
+git pull --rebase origin phase-2
+```
+
+### 7. Push Feature Branch to GitHub:
+```bash
+# First push of the new branch:
+git push -u origin feature/phase-2.2-ranking
+
+# Subsequent pushes:
+git push origin feature/phase-2.2-ranking
+```
+
+### 8. Open a Pull Request (PR) on GitHub:
+- **Base repository/branch:** `phase-2` (⚠️ NEVER target `main`!).
+- **Compare branch:** `feature/phase-2.2-ranking`.
+- **Reviewer:** Assign **Developer 1** (Repo Owner).
+- **Merge:** Dev 1 reviews the diff, runs verification, and merges cleanly into `phase-2`.
 
 ---
 
-## ⚠️ Important Developer Rules
+## 🛑 Common Pitfalls & Mistakes to Avoid
 
-1. **Never commit secrets:** Never commit `.env` files or API keys.
-2. **Never run ML on async threads:** Computer vision inference (YOLO, DeepFace) runs in separate worker subprocesses via `video_processor.py`. Never block the FastAPI event loop.
-3. **Keep `.planning/` in sync:** When you finish a sub-phase, make sure `.planning/STATE.md` and `.planning/ROADMAP.md` reflect your progress.
+1. **⚠️ Never commit `.env` or credentials:**
+   - `.env` files contain private keys and database passwords. Check `git status` before committing.
+2. **⚠️ Never commit heavy video or crop files:**
+   - All uploaded CCTV footage and cropped faces belong in `services/backend/uploads/` which is ignored by `.gitignore`. Committing videos will exceed GitHub's 100MB file limit.
+3. **⚠️ Never run AI/ML inference on the FastAPI event loop:**
+   - Heavy computer vision (YOLOv8, DeepFace) MUST run via `services/backend/core/video_processor.py` in an isolated Python subprocess to prevent event loop starvation and WebSocket drops.
+4. **⚠️ Never alter old database migrations:**
+   - Never edit previous files in `database/alembic/versions/`. Always generate a new migration with `alembic revision --autogenerate -m "..."`.
+5. **⚠️ Never use synchronous Leaflet imports in Next.js:**
+   - Leaflet references `window` which breaks SSR. Always use client-side mounting (`"use client"`) and the `useMap()` hook in `useEffect`.
 
+---
 Happy building! 🚀

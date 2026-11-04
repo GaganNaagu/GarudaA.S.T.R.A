@@ -12,7 +12,7 @@
 1. **NO FORCE PUSHING EVER:**
    - **NEVER** run `git push --force`, `git push -f`, or `git push --force-with-lease`.
    - Any force push to remote branches is strictly forbidden.
-2. **ACTIVE BRANCH IS `phase-2`:**
+2. **ACTIVE BASE BRANCH IS `phase-2`:**
    - **NEVER** push commits directly to `main` or `phase-1`.
    - `main` is frozen at Phase 1 baseline code for college evaluation staging.
    - `phase-1` is an immutable historical archive.
@@ -29,7 +29,82 @@
      ```
 5. **ATOMIC CONVENTIONAL COMMITS:**
    - Use standard prefixes: `feat:`, `fix:`, `docs:`, `test:`, `chore:`, `refactor:`.
-   - Commit only related files, never messy bulk commits including secrets or cache.
+   - Commit only related files, never messy bulk commits.
+
+---
+
+## 🚀 COMPLETE GIT PUSH WORKFLOW & CHECKLIST
+
+Whenever you or an AI agent pushes code to the remote repository, follow this exact step-by-step checklist:
+
+### Step 1: Pre-Commit Safety Check
+```bash
+# Check modified and untracked files
+git status
+
+# Verify NO secrets, virtual environments, or media files are staged
+git diff --cached
+```
+
+### Step 2: Atomic Commit
+```bash
+# Stage only files relevant to the current task
+git add <path/to/specific/files>
+
+# Commit with descriptive conventional message
+git commit -m "feat(module): descriptive action taken"
+```
+
+### Step 3: Sync with Remote Before Pushing
+```bash
+# Fetch latest remote changes to prevent rejection
+git fetch origin
+
+# If working on a feature branch, rebase cleanly onto phase-2:
+git pull --rebase origin phase-2
+```
+
+### Step 4: Safe Push
+```bash
+# If pushing a new feature branch for the first time:
+git push -u origin <branch-name>
+
+# Subsequent pushes to your existing feature branch:
+git push origin <branch-name>
+```
+
+---
+
+## ⚠️ COMMON PITFALLS & HOW TO AVOID THEM
+
+### 🛑 Pitfall 1: Accidentally Pushing Secrets or Credentials
+- **The Danger:** Committing `.env`, `database/.env`, API keys, or private tokens exposes sensitive credentials permanently in git history.
+- **Rule:** Before committing, always check `git status`. Ensure `.env` files are never tracked. Reference `TEST_CREDENTIALS.md` for local mock logins only.
+
+### 🛑 Pitfall 2: Committing Heavy Binary Files (Videos, Crops, Weights)
+- **The Danger:** Pushing MP4 surveillance videos, thousands of JPEG face crops (`uploads/crops/`), or large model weights (`.pt`, `.onnx`) bloats the repository and causes GitHub 100MB file limit rejections.
+- **Rule:** All uploaded videos and crops MUST stay in `services/backend/uploads/` which is ignored by `.gitignore`. Never track generated test videos or images in git.
+
+### 🛑 Pitfall 3: Blocking FastAPI Event Loop with Heavy ML
+- **The Danger:** Running OpenCV video decoding or YOLO/DeepFace model inference directly inside an `async def` FastAPI route blocks Python's single asyncio event loop, causing all WebSocket connections to drop and API requests to 504 Gateway Timeout.
+- **Rule:** Heavy inference MUST run in an isolated Python subprocess via `services/backend/core/video_processor.py` -> `services/ai/run_pipeline.py`.
+
+### 🛑 Pitfall 4: Retroactively Modifying Old Alembic Migrations
+- **The Danger:** Editing previously applied migration files in `database/alembic/versions/` desynchronizes team databases and corrupts schema state.
+- **Rule:** Never modify old migration files. Always create a new migration:
+  ```bash
+  cd database
+  alembic revision --autogenerate -m "add_new_columns_to_table"
+  alembic upgrade head
+  ```
+
+### 🛑 Pitfall 5: Next.js SSR Hydration Crashes with Leaflet
+- **The Danger:** Importing Leaflet directly in server components causes `window is not defined` or hydration mismatch errors.
+- **Rule:** Leaflet maps must use client-only mounting (`"use client"`, `dynamic(() => import(...), { ssr: false })`, and the `useMap()` hook in `useEffect`).
+
+### 🛑 Pitfall 6: Editing Files Outside Assigned Track
+- **The Danger:** Modifying files assigned to the other developer creates complex git merge conflicts.
+- **Rule:** Strictly respect the workstream assignments below.
 
 ---
 
@@ -53,24 +128,6 @@ Development in Phase 2 is strictly partitioned into two parallel, non-overlappin
 
 > [!IMPORTANT]
 > **Boundary Rule:** Neither developer should edit files assigned to the other track without explicit coordination. This guarantees clean, parallel development with ZERO merge conflicts.
-
----
-
-## ⚙️ ARCHITECTURAL & CODING STANDARDS
-
-1. **Subprocess ML Worker Isolation:**
-   - Heavy computer vision inference (YOLOv8, DeepFace, ONNX) MUST run in an isolated Python subprocess via `services/backend/core/video_processor.py` -> `services/ai/run_pipeline.py`.
-   - **NEVER** execute OpenCV video decoding or deep learning inference inside an `async def` FastAPI route — it blocks the asyncio event loop and terminates WebSockets.
-2. **Database Queries:**
-   - Use SQLAlchemy 2.0 async syntax (`await db.execute(select(...))`, `await db.commit()`).
-   - For database migrations, navigate to `database/` and run `alembic revision --autogenerate -m "..."` followed by `alembic upgrade head`.
-3. **Frontend Standards (Next.js 16 & React 19):**
-   - App Router architecture in `apps/web-dashboard/src/app/`.
-   - Use Tailwind CSS v4 utility classes.
-   - Leaflet maps MUST use declarative React components and client-only mounting (`useMap()` hook in `useEffect`) to prevent Next.js SSR hydration mismatches.
-4. **Secrets & Security:**
-   - **NEVER** commit `.env`, `database/.env`, API keys, or private tokens to git.
-   - Reference `TEST_CREDENTIALS.md` for local testing accounts only.
 
 ---
 
