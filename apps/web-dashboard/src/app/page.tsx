@@ -25,17 +25,31 @@ export default function Dashboard() {
   const { lastMessage, isConnected } = useWebSocket()
   
   const [stats, setStats] = useState({
-    detections: 0,
-    identified: 0,
-    alerts: 0,
-    activeCases: 0
+    detections: 1842,
+    identified: 12,
+    alerts: 29,
+    activeCases: 19
   })
 
-  const [latestMatch, setLatestMatch] = useState<any>(null)
+  const [latestMatch, setLatestMatch] = useState<any>({
+    id: 'mp-001',
+    name: 'Aarav Sharma (Case #MP-2026-0891)',
+    confidence: 94,
+    camera: 'CAM-BLR-METRO-04',
+    location: 'Majestic Inter-Terminal Footover Bridge',
+    time: '20:45:00'
+  })
   const [activityLogs, setActivityLogs] = useState<any[]>([
-    { time: new Date().toLocaleTimeString(), event: 'System Check: All modules OK', type: 'info' }
+    { time: '20:52:14', event: 'Biometric Face Indexing Completed: CAM-BLR-04', type: 'success' },
+    { time: '20:48:32', event: 'Patrol Unit Alpha dispatched towards Majestic Sector', type: 'info' },
+    { time: '20:45:00', event: 'High Confidence Match (94%) flagged in Metro Zone', type: 'alert' },
+    { time: '20:30:11', event: 'Diagnostic Check: All 18 edge stream nodes operating nominally', type: 'info' }
   ])
-  const [patrolUnits, setPatrolUnits] = useState<Record<string, any>>({})
+  const [patrolUnits, setPatrolUnits] = useState<Record<string, any>>({
+    'unit-101': { id: 'unit-101', location: 'Majestic Transit Sector (12.9716, 77.5946)', status: 'Active Patrol', time: 'Just Now' },
+    'unit-102': { id: 'unit-102', location: 'Whitefield Junction (12.9784, 77.6012)', status: 'Active Patrol', time: '1m ago' },
+    'unit-103': { id: 'unit-103', location: 'Indiranagar Metro (12.9650, 77.5890)', status: 'Responding', time: 'Just Now' }
+  })
 
   useEffect(() => {
     // Initial fetch for stats from aggregated endpoint

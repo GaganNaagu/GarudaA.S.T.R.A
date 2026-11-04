@@ -1,7 +1,7 @@
 # GARUDA A.S.T.R.A — COMPREHENSIVE REVERSE-ENGINEERING & TECHNICAL KNOWLEDGE BASE
 
 > **System Name:** GARUDA A.S.T.R.A (Advanced Security & Tactical Response Architecture / AI-Powered Surveillance, Tactical Response & Alerting)  
-> **Repository Architecture:** Polyglot Monorepo (FastAPI Python Backend, PyTorch/YOLO/AdaFace AI Engine, Next.js 15 Web Dashboard, Expo/React Native Android Mobile App, PostgreSQL Database with SQLAlchemy 2.0 Async ORM).  
+> **Repository Architecture:** Polyglot Monorepo (FastAPI Python Backend, PyTorch/YOLOv8/AdaFace AI Engine, Next.js 16 Web Dashboard, Expo SDK 54 / React Native 0.81 Android Mobile App, PostgreSQL Database with SQLAlchemy 2.0 Async ORM).  
 > **Analysis Methodology:** 100% Directly extracted and reverse-engineered from source code.
 
 ---
@@ -88,8 +88,8 @@ GARUDA A.S.T.R.A utilizes a decoupled, asynchronous micro-architecture organized
 +-----------------------------------------------------------------------------------+
 |                                  CLIENT LAYER                                     |
 |  +-----------------------------------+     +-----------------------------------+  |
-|  |     Next.js 15 Web Dashboard      |     |    React Native / Expo Mobile     |  |
-|  |   (React 19, Tailwind, Leaflet)   |     |    (Android APK, Background)      |  |
+|  |     Next.js 16 Web Dashboard      |     |    React Native / Expo Mobile     |  |
+|  |  (React 19, Tailwind v4, Leaflet) |     |   (Android APK, Background Svc)   |  |
 |  +-----------------+-----------------+     +-----------------+-----------------+  |
 +--------------------|-----------------------------------------|--------------------+
                      | HTTP REST / WebSockets                  | HTTP REST / WebSockets
@@ -132,8 +132,8 @@ GARUDA A.S.T.R.A utilizes a decoupled, asynchronous micro-architecture organized
 
 ### Component Breakdown
 1. **Frontend Layer:**
-   - **Next.js Web Dashboard (`apps/web-dashboard`):** React 19 client application using Next.js App Router. Features JWT authentication context (`auth-context.tsx`), WebSocket connection management (`websocket.tsx`), dynamic Leaflet maps (`MapComponent.tsx`), and tactical administration pages.
-   - **React Native Mobile App (`apps/mobile-app`):** Expo-managed Android application tailored for field officers. Implements persistent background duty services (`dutyManager.ts`, `foregroundService.ts`), location tracking (`gpsService.ts`), battery level monitoring (`batteryService.ts`), hardware back-button interception, and full-screen tactical alert popups (`TacticalAlertPopup.tsx`).
+   - **Next.js Web Dashboard (`apps/web-dashboard`):** React 19 / Next.js 16 (App Router) client application styled with Tailwind CSS v4. Features JWT authentication context (`auth-context.tsx`), WebSocket connection management (`websocket.tsx`), dynamic Leaflet maps (`MapComponent.tsx`), and tactical administration pages.
+   - **React Native Mobile App (`apps/mobile-app`):** Expo SDK 54 / React Native 0.81 Android application tailored for field officers. Implements persistent background duty services (`dutyManager.ts`, `foregroundService.ts` via `react-native-background-actions`), location tracking (`gpsService.ts`), battery level monitoring (`batteryService.ts`), hardware back-button interception, siren/alert audio (`expo-audio`), and full-screen tactical alert popups (`TacticalAlertPopup.tsx`).
 2. **Backend Server Layer (`services/backend`):** FastAPI application powered by Uvicorn. Exposes REST endpoints under `/api/v1` and WebSocket endpoints at `/api/v1/ws/connect`. Handles authentication, alert workflows, video analysis dispatching, and role-segmented WebSocket broadcasting.
 3. **Database Layer (`database`):** PostgreSQL relational database managed via Async SQLAlchemy 2.0 ORM (`AsyncSessionLocal`) and Alembic schema migrations. Stores 20 relational entities including 512-dimensional floating-point embeddings saved as JSON arrays.
 4. **AI Processing Layer (`services/ai`):** High-performance Python machine learning pipeline executing YOLOv8-face detection and AdaFace feature extraction. Runs inside isolated OS subprocesses (`asyncio.create_subprocess_exec`) to isolate CUDA/C++ runtime memory and prevent native segfaults (`SEGV 11`).
@@ -163,7 +163,7 @@ GarudaA.S.T.R.A/
 │   │   ├── index.ts             # Expo entrypoint (registers root component)
 │   │   ├── mock_ws_server.py    # Standalone Python WebSocket server for offline testing
 │   │   └── package.json         # Mobile dependencies (expo, react-native, expo-location, etc.)
-│   └── web-dashboard/           # Next.js 15 Web Dashboard
+│   └── web-dashboard/           # Next.js 16 Web Dashboard
 │       ├── public/              # Static web assets
 │       ├── src/
 │       │   ├── app/             # Next.js App Router pages (admin, alerts, missing, patrol, uploads, etc.)
@@ -205,44 +205,54 @@ GarudaA.S.T.R.A/
 ### Backend Technologies
 | Technology | Version / Spec | Purpose | Where Used | Files Using It |
 | :--- | :--- | :--- | :--- | :--- |
-| **Python** | `^3.12` | Runtime environment | Entire Backend & AI Layer | All `.py` files |
-| **FastAPI** | `^0.110.0` | Web framework & OpenAPI router | REST API & WebSockets | `services/backend/main.py`, `services/backend/api/*` |
-| **Uvicorn** | `^0.28.0` | Async ASGI HTTP server | Backend server runner | `GUIDE.md` |
-| **SQLAlchemy** | `^2.0.28` | Async ORM & Database Mapper | DB transactions & models | `database/db/session.py`, `database/models/*` |
-| **asyncpg** | `^0.29.0` | Async PostgreSQL DB driver | PostgreSQL connection | `database/db/session.py`, `services/backend/core/config.py` |
-| **Alembic** | `^1.13.1` | Database migration tool | Schema creation & updates | `database/alembic/*` |
-| **Pydantic** | `^2.6.4` | Data validation & settings | Schema definitions & Config | `services/backend/schemas/*`, `services/backend/core/config.py` |
-| **python-jose** | `^3.3.0` | JWT encoding & decoding | Authentication tokens | `services/backend/core/security.py`, `services/backend/api/deps.py` |
-| **passlib** | `^1.7.4` | Password hashing (Bcrypt) | User password hashing | `services/backend/core/security.py` |
+| **Python** | `3.12` | Core execution runtime | Entire Backend & AI Layer | All `.py` files |
+| **FastAPI** | `>= 0.111.0` | Asynchronous REST framework & OpenAPI router | REST endpoints & WebSockets | `services/backend/main.py`, `services/backend/api/*` |
+| **Uvicorn** | `>= 0.30.0` (standard) | Asynchronous ASGI web server | Backend server runner | Entrypoint script / `GUIDE.md` |
+| **SQLAlchemy** | `>= 2.0.30` | Async 2.0 ORM & Database Mapper | DB transactions, models, sessions | `database/db/session.py`, `database/models/*` |
+| **asyncpg** | `>= 0.29.0` | High-performance async PostgreSQL driver | Async DB connection pooling | `database/db/session.py`, `services/backend/core/config.py` |
+| **Alembic** | `>= 1.13.1` | Relational database migration tool | Schema creation & version upgrades | `database/alembic/*`, `database/alembic.ini` |
+| **Pydantic** | `>= 2.7.0` | Schema validation & serialization | Request/response DTOs & settings | `services/backend/schemas/*`, `services/backend/core/config.py` |
+| **python-jose** | `>= 3.3.0` | JWT encoding/decoding (`HS256`) | Auth session tokens & role claims | `services/backend/core/security.py`, `services/backend/api/deps.py` |
+| **passlib / bcrypt** | `passlib>=1.7.4`, `bcrypt==3.2.2` | Secure password hashing (Bcrypt) | User password hashing | `services/backend/core/security.py` |
+| **HTTPX** | `>= 0.27.0` | Async HTTP client | Inter-service requests & engine checks | `services/ai/detection/face_detection.py` |
 
 ### AI / Machine Learning Technologies
 | Technology | Purpose | Where Used | Files Using It |
 | :--- | :--- | :--- | :--- |
-| **PyTorch** | Deep learning tensor computation engine | YOLOv8 & AdaFace execution | `services/ai/detection/face_detection.py`, `services/ai/recognition/embedding_service.py` |
-| **Ultralytics YOLOv8** | Real-time face detection model (`yolov8n-face`) | Face detection in video frames | `services/ai/detection/face_detection.py` |
-| **ONNX Runtime** | High-performance CPU model inference engine | Accelerated YOLO CPU execution | `services/ai/detection/face_detection.py`, `services/ai/models/yolov8n-face.onnx` |
-| **AdaFace (CVLFace)** | 512-dimensional facial feature embedding model | Generating face vector signatures | `services/ai/recognition/embedding_service.py` |
-| **OpenCV (`cv2`)** | Image processing, frame extraction, Laplacian variance | Frame decoding, crop, blur score | `services/ai/detection/*`, `services/ai/pipeline.py` |
-| **NumPy** | Array manipulation & vector math | Cosine similarity, matrix operations | `services/ai/recognition/similarity_service.py`, `services/backend/api/v1/endpoints/search.py` |
-| **HuggingFace Hub** | Downloading pre-trained model snapshots | Fetching `minchul/cvlface_adaface_ir50_ms1mv2` | `services/ai/recognition/embedding_service.py` |
+| **PyTorch & Torchvision** | Deep learning tensor computation engine | YOLOv8 & AdaFace execution | `services/ai/detection/face_detection.py`, `services/ai/recognition/embedding_service.py` |
+| **Ultralytics YOLOv8** | Real-time face detection model (`yolov8n-face.pt`) | Face detection & bounding box extraction | `services/ai/detection/face_detection.py` |
+| **ONNX Runtime** | High-performance CPU model inference engine | Accelerated CPU execution of `yolov8n-face.onnx` | `services/ai/detection/face_detection.py`, `services/ai/models/` |
+| **AdaFace (CVLFace)** | 512-dimensional facial feature embedding model | Generating face vector signatures | `services/ai/recognition/embedding_service.py` (`minchul/cvlface_adaface_ir50_ms1mv2`) |
+| **Hugging Face Transformers** | AutoModel loader with custom remote code | Loading AdaFace IR50 architecture | `services/ai/recognition/embedding_service.py` |
+| **OpenCV (`cv2`)** | Image decoding, crop padding, Laplacian variance | Frame extraction, blur evaluation | `services/ai/detection/*`, `services/ai/pipeline.py` |
+| **NumPy & SciPy** | Array manipulation & vector math | In-memory Cosine similarity matching | `services/backend/api/v1/endpoints/search.py`, `services/ai/recognition/` |
+| *(Note on Legacy/Unused)* | `deepface_service.py` is an unused prototype; `insightface` in `requirements.txt` is not imported | Active pipeline runs exclusively via AdaFace | `services/ai/pipeline.py` |
 
 ### Frontend (Web Dashboard) Technologies
-| Technology | Purpose | Where Used | Files Using It |
-| :--- | :--- | :--- | :--- |
-| **Next.js** | `15.1.0` (App Router) | Web application framework | Web Dashboard root | `apps/web-dashboard/package.json` |
-| **React** | `19.0.0` | UI component rendering library | Dashboard pages & components | `apps/web-dashboard/src/**/*` |
-| **Tailwind CSS** | `^3.4.1` | Utility-first CSS styling framework | Web Dashboard styling | `apps/web-dashboard/src/app/globals.css` |
-| **Lucide React** | `^0.469.0` | Modern UI icon set | Web Dashboard navigation & cards | `apps/web-dashboard/src/components/*` |
-| **Leaflet / React-Leaflet**| `^1.9.4` / `^4.2.1` | Interactive map rendering | Dynamic patrol & alert map | `apps/web-dashboard/src/components/map/MapComponent.tsx` |
+| Technology | Version / Spec | Purpose | Where Used | Files Using It |
+| :--- | :--- | :--- | :--- | :--- |
+| **Next.js** | `16.2.6` (App Router) | Modern React framework with server rendering | Web Dashboard root | `apps/web-dashboard/package.json` |
+| **React** | `19.2.4` / `React DOM 19.2.4` | UI component rendering library | Dashboard pages & components | `apps/web-dashboard/src/**/*` |
+| **Tailwind CSS** | `^4.0.0` (`@tailwindcss/postcss: ^4`) | Utility-first CSS styling engine (v4) | Global styling & dark tactical theme | `apps/web-dashboard/src/app/globals.css` |
+| **Radix UI Primitives** | `@radix-ui/react-slot ^1.2.4` | Accessible unstyled UI components | Custom buttons & slot composition | `apps/web-dashboard/src/components/ui/*` |
+| **Lucide React** | `^1.14.0` | Tactical command center icons | Dashboard navigation & status cards | `apps/web-dashboard/src/components/*` |
+| **Leaflet / React-Leaflet** | `leaflet ^1.9.4` / `react-leaflet ^5.0.0` | Interactive map rendering | Dynamic patrol & alert map | `apps/web-dashboard/src/components/map/MapComponent.tsx` |
+| **TypeScript** | `^5` | Strict static type checking | Web frontend codebase | `apps/web-dashboard/tsconfig.json` |
 
 ### Mobile App Technologies
-| Technology | Purpose | Where Used | Files Using It |
-| :--- | :--- | :--- | :--- |
-| **React Native / Expo** | `~52.0.23` / `0.76.5` | Cross-platform mobile framework | Mobile application root | `apps/mobile-app/package.json`, `App.tsx` |
-| **Expo Location** | `~18.0.4` | GPS location service | Background location tracking | `apps/mobile-app/src/services/gpsService.ts` |
-| **Expo Battery** | `~8.0.1` | Battery status telemetry | Monitoring officer device power | `apps/mobile-app/src/services/batteryService.ts` |
-| **Expo Notifications** | `~0.29.13` | System notifications | Ongoing foreground notifications | `apps/mobile-app/src/services/foregroundService.ts` |
-| **Expo Intent Launcher** | `~12.0.2` | Android native intent trigger | Minimizing app on hardware back | `apps/mobile-app/App.tsx` |
+| Technology | Version / Spec | Purpose | Where Used | Files Using It |
+| :--- | :--- | :--- | :--- | :--- |
+| **React Native** | `0.81.5` (React `19.1.0`) | Cross-platform mobile runtime | Mobile application root | `apps/mobile-app/package.json`, `App.tsx` |
+| **Expo SDK** | `~54.0.0` | Mobile application development platform | Android project configuration | `apps/mobile-app/app.json` |
+| **Foreground Service** | `react-native-background-actions ^4.1.0` | Persistent Android Foreground Service | Background duty persistence & tracking | `apps/mobile-app/src/services/foregroundService.ts` |
+| **Expo Location** | `~19.0.8` | GPS location service | 5-second background GPS telemetry | `apps/mobile-app/src/services/gpsService.ts` |
+| **Expo Battery** | `~10.0.8` | Battery status telemetry | Device battery level & charging state | `apps/mobile-app/src/services/batteryService.ts` |
+| **Expo Notifications** | `~0.32.17` | Ongoing system notification | Sticky notification preventing OS kill | `apps/mobile-app/src/services/foregroundService.ts` |
+| **Expo Audio** | `~1.1.1` | Native sound playback | Alert sirens & audible chime cues | `apps/mobile-app/src/screens/AlertDetailsScreen.tsx` |
+| **Expo Secure Store** | `~15.0.8` | Encrypted hardware key-value storage | Secure JWT session persistence | `apps/mobile-app/src/services/api.ts` |
+| **Expo Intent Launcher** | `~13.0.8` | Android native system intent triggers | App minimization & OS settings navigation | `apps/mobile-app/App.tsx`, `PermissionGuardScreen.tsx` |
+| **Expo Task Manager** | `~14.0.9` | Background task orchestration | Task scheduling | `apps/mobile-app/package.json` |
+| **Config Plugins** | `withBackgroundService.js`, `withShortCxxPath.js` | Custom Expo native manifest/build patches | Android foreground service & CMake path fixes | `apps/mobile-app/` |
 
 ---
 

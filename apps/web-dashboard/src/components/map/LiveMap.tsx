@@ -45,7 +45,7 @@ export default function LiveMap({ units, focusedLocation }: LiveMapProps) {
         <MapUpdater center={focusedLocation} />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+          url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         {units.map((unit) => {
           if (unit.lat == null || unit.lng == null) return null;

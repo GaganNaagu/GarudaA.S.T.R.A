@@ -31,7 +31,38 @@ const LiveMap = dynamic(() => import('@/components/map/LiveMap'), {
 
 export default function PatrolBoard() {
   const { lastMessage, isConnected } = useWebSocket()
-  const [units, setUnits] = useState<Record<string, PatrolUnit>>({})
+  const [units, setUnits] = useState<Record<string, PatrolUnit>>({
+    'unit-101': {
+      id: 'unit-101',
+      name: 'Patrol Alpha (Officer Arjun)',
+      lat: 12.9716,
+      lng: 77.5946,
+      battery: 88,
+      charging: false,
+      status: 'Active Patrol',
+      lastUpdate: new Date()
+    },
+    'unit-102': {
+      id: 'unit-102',
+      name: 'Patrol Bravo (Inspector Priya)',
+      lat: 12.9784,
+      lng: 77.6012,
+      battery: 64,
+      charging: false,
+      status: 'Active Patrol',
+      lastUpdate: new Date()
+    },
+    'unit-103': {
+      id: 'unit-103',
+      name: 'Rapid Response (Inspector Vikram)',
+      lat: 12.9650,
+      lng: 77.5890,
+      battery: 92,
+      charging: true,
+      status: 'Responding',
+      lastUpdate: new Date()
+    }
+  })
   const [focusedLocation, setFocusedLocation] = useState<[number, number] | null>(null)
 
   useEffect(() => {
