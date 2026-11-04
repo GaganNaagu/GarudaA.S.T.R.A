@@ -163,6 +163,30 @@ git push origin feature/phase-2.2-ranking
 
 ---
 
+## 💥 Merge Conflict Handling (Mandatory for AI Agents & Devs)
+
+If `git pull`, `git rebase`, or `git merge` encounters conflicts:
+
+1. **Do NOT force push or blindly delete code.**
+2. **If an AI agent is running:** The AI agent **MUST STOP and ask the user** for a decision. It must display the conflicted files and explain what both versions did.
+3. **If resolving manually:**
+   ```bash
+   # Check which files have conflicts
+   git status
+
+   # Open conflicting files and look for <<<<<<< HEAD markers
+   # Edit the file to combine the correct logic from both sides
+
+   # Mark as resolved:
+   git add <resolved-file>
+
+   # Continue rebase/merge:
+   git rebase --continue
+   ```
+4. Run verification tests before pushing to ensure nothing broke.
+
+---
+
 ## 🛑 Common Pitfalls & Mistakes to Avoid
 
 1. **⚠️ Never commit `.env` or credentials:**

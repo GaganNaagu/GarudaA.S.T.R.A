@@ -33,6 +33,30 @@
 
 ---
 
+## 🔀 MERGE CONFLICT RESOLUTION PROTOCOL (MANDATORY FOR AI AGENTS)
+
+If a `git pull`, `git merge`, or `git rebase` encounters merge conflicts:
+
+1. **STOP IMMEDIATELY:**
+   - **NEVER** automatically choose `ours` or `theirs` without human review.
+   - **NEVER** force-push or discard incoming commits blindly.
+   - **NEVER** abort or reset silently without telling the user.
+2. **INSPECT & REPORT:**
+   - Run `git status` and identify every conflicted file (`both modified:`).
+   - Inspect the conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`).
+3. **ASK THE USER FOR A DECISION:**
+   - The AI agent **MUST ASK THE USER** and present:
+     - Which files are in conflict.
+     - What changed in the local branch vs. what changed in the remote branch.
+     - The recommended resolution strategy (e.g. keep local, keep remote, or merge both).
+4. **RESOLVE ONLY AFTER USER CONFIRMATION:**
+   - Apply the decision chosen by the user.
+   - Run verification / tests to confirm the code compiles and tests pass.
+   - Stage the resolved files (`git add <file>`) and complete the rebase/merge (`git rebase --continue` or `git commit`).
+   - Proceed with safe push.
+
+---
+
 ## 🚀 COMPLETE GIT PUSH WORKFLOW & CHECKLIST
 
 Whenever you or an AI agent pushes code to the remote repository, follow this exact step-by-step checklist:
@@ -62,6 +86,8 @@ git fetch origin
 
 # If working on a feature branch, rebase cleanly onto phase-2:
 git pull --rebase origin phase-2
+
+# ⚠️ IF CONFLICTS OCCUR: Follow the Merge Conflict Protocol above (Stop, Inspect, Ask User).
 ```
 
 ### Step 4: Safe Push
