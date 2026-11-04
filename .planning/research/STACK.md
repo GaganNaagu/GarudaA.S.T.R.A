@@ -63,3 +63,4 @@ npm install --save-dev @types/leaflet.heat
 
 ---
 *Stack research: 2026-11-04*
+

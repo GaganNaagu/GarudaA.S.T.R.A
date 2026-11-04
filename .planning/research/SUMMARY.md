@@ -56,3 +56,4 @@ Delivers real-time camera processing, predictive search zones, animated trajecto
 
 ---
 *Research summary: 2026-11-04*
+

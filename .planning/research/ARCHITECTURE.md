@@ -119,3 +119,4 @@ The web dashboard's `LiveMap.tsx` acts as a declarative shell rendering multiple
 
 ---
 *Architecture research: 2026-11-04*
+

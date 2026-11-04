@@ -77,3 +77,4 @@ Signature capabilities that set GARUDA A.S.T.R.A apart during evaluation.
 
 ---
 *Feature research: 2026-11-04*
+
