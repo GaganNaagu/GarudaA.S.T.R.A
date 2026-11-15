@@ -40,7 +40,32 @@ git pull origin phase-2
 
 ## 📦 Step 2: Local Environment Setup
 
-### 1. Python Backend & AI Environment
+### 1. Universal Central Configuration (Single Root `.env`)
+We use a **Single Source of Truth** config at the repository root. This powers FastAPI, Next.js, and Alembic together.
+
+1. Create your local `.env` from the central template:
+   ```bash
+   cp .env.example .env
+   ```
+2. Verify configuration and live database connectivity:
+   ```bash
+   python scripts/env.py status
+   ```
+   *(By default, this connects to our shared Central Cloud PostgreSQL on Neon so you and your co-dev share the same live data and migrations).*
+
+3. Need to switch between offline and shared mode?
+   ```bash
+   # Switch to shared team mode (Local servers + Cloud DB):
+   python scripts/env.py switch hybrid
+
+   # Switch to fully offline mode (Localhost DB):
+   python scripts/env.py switch local
+
+   # Switch to deployed mode (Cloud servers + Cloud DB):
+   python scripts/env.py switch deployed
+   ```
+
+### 2. Python Backend & AI Environment
 ```powershell
 # Create virtual environment inside services/
 python -m venv services\venv
@@ -52,31 +77,23 @@ python -m venv services\venv
 pip install -r services\requirements.txt
 ```
 
-### 2. Database Setup (PostgreSQL + Alembic)
-1. Ensure your PostgreSQL instance is running on `localhost:5432` with a database named `astra_db`.
-2. Configure credentials in `database/.env` if needed (default: `postgresql://postgres:postgres@localhost:5432/astra_db`).
-3. Apply database migrations:
-```powershell
-cd database
-alembic upgrade head
-cd ..
-```
-4. Seed test users (Admin, Dispatcher, Officer):
+### 3. Database Setup (Alembic Migrations)
+With the central config active, apply database migrations directly:
 ```powershell
 $env:PYTHONPATH="."
-.\services\venv\Scripts\python database\scripts\seed_users.py
+.\services\venv\Scripts\python.exe -m alembic -c database/alembic.ini upgrade head
 ```
 *(Login credentials for test accounts are listed in [TEST_CREDENTIALS.md](./TEST_CREDENTIALS.md)).*
 
-### 3. Web Dashboard (Next.js)
+### 4. Web Dashboard (Next.js)
 ```bash
 cd apps/web-dashboard
 npm install
 npm run dev
 ```
-Dashboard will be live at `http://localhost:3000`.
+Dashboard will be live at `http://localhost:3000` (automatically reads endpoints from root `.env`).
 
-### 4. Running the Backend Server
+### 5. Running the Backend Server
 Choose the command block for your preferred terminal (always uses `python.exe -m uvicorn` to prevent Windows venv launcher path mismatch):
 
 **PowerShell:**

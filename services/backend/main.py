@@ -14,12 +14,14 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Set all CORS enabled origins
-origins = [
-    "https://frontend.garudaastra.dpdns.org",
+# Set all CORS enabled origins from central config
+origins = list(set([
     "http://localhost:3000",
     "http://localhost:3001",
-]
+    "http://127.0.0.1:3000",
+    "https://frontend.garudaastra.dpdns.org",
+    *settings.BACKEND_CORS_ORIGINS
+]))
 
 app.add_middleware(
     CORSMiddleware,
