@@ -4,8 +4,8 @@ from database.models.personnel import Officer, DispatchUnit
 from database.models.operations import Incident, IncidentUpdate, Assignment
 from database.models.ai_events import DetectionEvent, Alert
 from database.models.registry import MissingPerson
-from database.models.infrastructure import Location, CameraFeed, VideoFootage
-from database.models.system import Notification, ActivityLog, EvidenceFile, SystemStatus, AIHealthStatus, SystemSettings
+from database.models.infrastructure import Location, CameraFeed, VideoFootage, FaceCrop
+from database.models.system import Notification, ActivityLog, EvidenceFile, SystemStatus, AIHealthStatus, SystemSettings, SightingEvidence
 
 # This file exposes all models so Alembic can discover them
 __all__ = [
@@ -15,6 +15,7 @@ __all__ = [
     "Incident", "IncidentUpdate", "Assignment",
     "DetectionEvent", "Alert",
     "MissingPerson",
-    "Location", "CameraFeed", "VideoFootage",
-    "Notification", "ActivityLog", "EvidenceFile", "SystemStatus", "AIHealthStatus", "SystemSettings"
+    "Location", "CameraFeed", "VideoFootage", "FaceCrop",
+    "Notification", "ActivityLog", "EvidenceFile", "SystemStatus", "AIHealthStatus", "SystemSettings",
+    "SightingEvidence"
 ]

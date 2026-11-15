@@ -13,6 +13,7 @@ from database.db.session import AsyncSessionLocal
 from database.models.auth import User, Role
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login")
+oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login", auto_error=False)
 
 async def get_db() -> Generator:
     async with AsyncSessionLocal() as session:
@@ -46,3 +47,20 @@ async def get_current_user(
     if user is None:
         raise credentials_exception
     return user
+
+async def get_current_user_optional(
+    db: AsyncSession = Depends(get_db), token: Optional[str] = Depends(oauth2_scheme_optional)
+) -> Optional[User]:
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        user_id: str = payload.get("sub")
+        if not user_id:
+            return None
+        result = await db.execute(
+            select(User).options(joinedload(User.role)).where(User.id == uuid.UUID(user_id))
+        )
+        return result.scalar_one_or_none()
+    except Exception:
+        return None

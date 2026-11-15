@@ -19,7 +19,7 @@ GARUDA A.S.T.R.A transitions from a core face-recognition pipeline into an AI-as
 ## Phases
 
 - [x] **Phase 1: Database Foundation, Core APIs & Mobile Baseline** - Initial monorepo scaffolding, FastAPI REST & WebSocket server, YOLOv8 face detector, and Expo patrol app.
-- [ ] **Phase 2.1: Evidence Vault & Verification Architecture (Track A)** - Full forensic record per sighting and interactive verification workflow.
+- [x] **Phase 2.1: Evidence Vault & Verification Architecture (Track A)** - Full forensic record per sighting and interactive verification workflow.
 - [ ] **Phase 2.2: Smart Match Ranking & Composite Scoring Engine (Track B)** - Replace binary match with transparent, weighted candidate leaderboard.
 - [ ] **Phase 2.3: AI Investigation Timeline (Track A)** - Chronological reconstruction of all events in a missing person case.
 - [ ] **Phase 2.4: Intelligent Alert Center (Track B)** - Automated priority triage, multi-attribute filtering, and batch operations.
@@ -53,8 +53,8 @@ GARUDA A.S.T.R.A transitions from a core face-recognition pipeline into an AI-as
 **Plans**: 2 plans
 
 Plans:
-- [ ] 02.1-01: Evidence Vault models, file storage paths & verification REST endpoints
-- [ ] 02.1-02: Next.js Evidence Gallery UI component & status toggle actions
+- [x] 02.1-01: Evidence Vault models, file storage paths & verification REST endpoints
+- [x] 02.1-02: Next.js Evidence Gallery UI component & status toggle actions
 
 ---
 
@@ -237,7 +237,7 @@ Plans:
 
 | Phase | Track | Description | Plans | Status |
 |---|---|---|---|---|
-| **Phase 2.1** | Track A | Evidence Vault & Verification Architecture | 0/2 | Ready to plan |
+| **Phase 2.1** | Track A | Evidence Vault & Verification Architecture | 2/2 | Completed |
 | **Phase 2.2** | Track B | Smart Match Ranking Engine & Leaderboard | 0/2 | Ready to plan |
 | **Phase 2.3** | Track A | AI Investigation Timeline Aggregator | 0/2 | Waiting |
 | **Phase 2.4** | Track B | Intelligent Alert Center Prioritization | 0/2 | Waiting |

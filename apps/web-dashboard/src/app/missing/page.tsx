@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useMemo, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card"
 import { Badge } from "@/components/ui/Badge"
 import { Button } from "@/components/ui/Button"
@@ -15,13 +16,16 @@ import {
   ExternalLink,
   ShieldAlert,
   X,
-  CheckCircle
+  CheckCircle,
+  FileBox,
+  ShieldCheck
 } from 'lucide-react'
 import { cn } from "@/lib/utils"
 import { useToast } from "@/components/ui/Toast"
-import { getMissingPersons, createMissingPerson, uploadMissingPersonImage, searchPerson, massSearch } from '@/lib/api'
+import { getMissingPersons, createMissingPerson, uploadMissingPersonImage, searchPerson, massSearch, getCaseEvidence, SightingEvidence } from '@/lib/api'
 
 export default function MissingPersonsPage() {
+  const router = useRouter()
   const { toast } = useToast()
   const [searchQuery, setSearchQuery] = useState('')
   const [persons, setPersons] = useState<any[]>([])
@@ -234,9 +238,11 @@ export default function MissingPersonsPage() {
                    </div>
                  )}
               </div>
-              <CardHeader className="pb-2">
+              <CardHeader className="pb-2 cursor-pointer" onClick={() => router.push(`/missing/${person.id}`)}>
                 <div className="flex items-center justify-between">
-                  <CardTitle className={cn("text-xl", person.status === 'Found' ? "line-through text-muted-foreground" : "")}>{person.name}</CardTitle>
+                  <CardTitle className={cn("text-xl hover:text-primary transition-colors flex items-center gap-1.5", person.status === 'Found' ? "line-through text-muted-foreground" : "")}>
+                    {person.name}
+                  </CardTitle>
                   <span className="text-sm font-medium text-muted-foreground">{person.age} Years</span>
                 </div>
                 <CardDescription className="flex items-center gap-2">
@@ -262,6 +268,15 @@ export default function MissingPersonsPage() {
                    <Button 
                      className="flex-1 text-xs" 
                      size="sm" 
+                     variant="outline"
+                     onClick={() => router.push(`/missing/${person.id}`)}
+                   >
+                     <FileBox className="w-3.5 h-3.5 mr-1.5 text-blue-400" />
+                     Evidence Vault
+                   </Button>
+                   <Button 
+                     className="flex-1 text-xs" 
+                     size="sm" 
                      variant={person.status === 'Found' ? "secondary" : "default"}
                      onClick={() => handleSearchPerson(person.id, person.name)}
                      disabled={isSearching === person.id || person.status === 'Found'}
@@ -269,12 +284,12 @@ export default function MissingPersonsPage() {
                      {person.status === 'Found' ? (
                        <>
                          <CheckCircle className="w-3.5 h-3.5 mr-2" />
-                         Case Closed
+                         Closed
                        </>
                      ) : (
                        <>
                          <Search className={`w-3.5 h-3.5 mr-2 ${isSearching === person.id ? 'animate-spin' : ''}`} />
-                         {isSearching === person.id ? 'Searching DB...' : 'AI Match Search'}
+                         {isSearching === person.id ? 'Searching...' : 'AI Match'}
                        </>
                      )}
                    </Button>

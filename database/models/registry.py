@@ -1,10 +1,14 @@
 from sqlalchemy import String, Integer, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import JSON
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING
 from datetime import datetime
 
 from database.db.base import Base, TimestampMixin, UUIDMixin
+
+if TYPE_CHECKING:
+    from database.models.ai_events import DetectionEvent, Alert
+    from database.models.system import SightingEvidence
 
 class MissingPerson(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "missing_persons"
@@ -23,3 +27,4 @@ class MissingPerson(Base, UUIDMixin, TimestampMixin):
     
     detection_events: Mapped[List["DetectionEvent"]] = relationship(back_populates="missing_person")
     alerts: Mapped[List["Alert"]] = relationship(back_populates="missing_person")
+    sighting_evidences: Mapped[List["SightingEvidence"]] = relationship(back_populates="missing_person", cascade="all, delete-orphan")
