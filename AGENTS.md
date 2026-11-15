@@ -157,6 +157,35 @@ Development in Phase 2 is strictly partitioned into two parallel, non-overlappin
 
 ---
 
+## 🎨 UI/UX DESIGN INTELLIGENCE & MANDATORY SKILL: `ui-ux-pro-max`
+
+All UI/UX frontend work in `apps/web-dashboard` (new components, pages, tables, dialogs, charts, cards, styling, color palettes, responsive layouts, accessibility) **MUST USE THE `ui-ux-pro-max` SKILL**.
+
+### Project-Level Installation & Discovery
+To guarantee that **both Developer 1 and Developer 2 (and any AI agent working on either machine)** have access even if not installed globally:
+- The skill is installed directly into the repository workspace at `.agents/skills/ui-ux-pro-max/`.
+- Any AI agent (Antigravity, Claude Code, Cursor, Gemini CLI) automatically discovers workspace skills under `.agents/skills/`.
+
+### How Agents & Devs Must Use `ui-ux-pro-max`
+Before authoring or modifying any UI component or page:
+1. **Query design system & style recommendations:**
+   ```bash
+   python .agents/skills/ui-ux-pro-max/scripts/search.py "law enforcement surveillance dashboard" --domain style
+   ```
+2. **Query specific component or UX guidance:**
+   ```bash
+   # For data tables, leaderboards, or evidence cards:
+   python .agents/skills/ui-ux-pro-max/scripts/search.py "data table sorting dense" --domain ux
+   
+   # For Next.js / Tailwind best practices:
+   python .agents/skills/ui-ux-pro-max/scripts/search.py "dialog modal accessible" --stack nextjs
+   ```
+3. **Mandatory Compliance for AI Agents:**
+   - **Track A (Dev 1):** Evidence Gallery cards, side-by-side photo comparison, Lightbox modal, and Investigation Timeline UI **must** adhere to `ui-ux-pro-max` guidelines (dense data layout, high-contrast badges, keyboard accessibility).
+   - **Track B (Dev 2):** Ranked Match Leaderboard, score breakdown tooltips, Alert Center triage cards, and batch action bars **must** query and adhere to `ui-ux-pro-max`.
+
+---
+
 ## 📋 GSD (GET SHIT DONE) & PLANNING RULES
 
 Whenever an AI agent is working on this codebase:

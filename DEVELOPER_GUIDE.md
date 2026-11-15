@@ -97,6 +97,31 @@ Interactive API Swagger docs available at `http://127.0.0.1:8000/docs`.
 
 ---
 
+## 🎨 Mandatory UI/UX Standards (`ui-ux-pro-max`)
+
+To ensure that both developers and all AI assistants (Antigravity, Cursor, Claude Code) produce high-quality, professional, cohesive UI code, **the `ui-ux-pro-max` skill is bundled directly in this repository** under:
+```
+.agents/skills/ui-ux-pro-max/
+```
+
+### For Developers & AI Agents:
+Whenever designing, building, or modifying any frontend component in `apps/web-dashboard`:
+1. **Never guess UI patterns or write sloppy styles.**
+2. **Search the UI Pro Max catalog** for domain-tested patterns:
+   ```bash
+   # Search design systems / styles:
+   python .agents/skills/ui-ux-pro-max/scripts/search.py "law enforcement surveillance dashboard" --domain style
+
+   # Search UX best practices (e.g. data tables, alerts, dialogs):
+   python .agents/skills/ui-ux-pro-max/scripts/search.py "data table responsive dense" --domain ux
+
+   # Search Next.js / Tailwind stack rules:
+   python .agents/skills/ui-ux-pro-max/scripts/search.py "accessible modal dialog" --stack nextjs
+   ```
+3. **If using Antigravity:** The skill is automatically detected in `.agents/skills/ui-ux-pro-max` and can be invoked directly by name or CLI.
+
+---
+
 ## 🔀 Step 4: Daily Git Push Workflow (Step-by-Step)
 
 Follow this exact routine whenever creating, committing, and pushing code:
