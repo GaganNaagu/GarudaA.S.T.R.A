@@ -227,7 +227,7 @@ Exact commands to start all affected services:
 ```bash
 # Terminal 1: FastAPI Backend (:8000)
 $env:PYTHONPATH="."
-.\services\venv\Scripts\uvicorn services.backend.main:app --reload
+.\services\venv\Scripts\python -m uvicorn services.backend.main:app --reload
 
 # Terminal 2: Web Dashboard (:3000)
 cd apps/web-dashboard

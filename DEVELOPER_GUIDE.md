@@ -78,8 +78,9 @@ Dashboard will be live at `http://localhost:3000`.
 
 ### 4. Running the Backend Server
 ```powershell
-# From project root with venv activated:
-uvicorn services.backend.main:app --reload
+# From project root with python -m uvicorn (safe against path renames):
+$env:PYTHONPATH="."
+.\services\venv\Scripts\python -m uvicorn services.backend.main:app --reload
 ```
 Interactive API Swagger docs available at `http://127.0.0.1:8000/docs`.
 
@@ -234,7 +235,7 @@ Every phase completion output must provide:
    ```bash
    # Terminal 1: Backend (:8000)
    $env:PYTHONPATH="."
-   .\services\venv\Scripts\uvicorn services.backend.main:app --reload
+   .\services\venv\Scripts\python -m uvicorn services.backend.main:app --reload
 
    # Terminal 2: Web Dashboard (:3000)
    cd apps/web-dashboard
