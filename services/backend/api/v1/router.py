@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from services.backend.api.v1.endpoints import auth, websockets, missing_persons, alerts, ai_events, admin, settings, uploads, ai_testing, search
+from services.backend.api.v1.endpoints import auth, websockets, missing_persons, alerts, ai_events, admin, settings, uploads, ai_testing, search, evidence
 
 api_router = APIRouter()
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
@@ -12,3 +12,4 @@ api_router.include_router(settings.router, prefix="/settings", tags=["settings"]
 api_router.include_router(uploads.router, prefix="/uploads", tags=["uploads"])
 api_router.include_router(ai_testing.router, prefix="/ai-testing", tags=["ai_testing"])
 api_router.include_router(search.router, prefix="/search", tags=["search"])
+api_router.include_router(evidence.router, prefix="/evidence", tags=["Evidence Vault"])
