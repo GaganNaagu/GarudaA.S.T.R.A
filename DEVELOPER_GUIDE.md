@@ -77,11 +77,24 @@ npm run dev
 Dashboard will be live at `http://localhost:3000`.
 
 ### 4. Running the Backend Server
+Choose the command block for your preferred terminal (always uses `python.exe -m uvicorn` to prevent Windows venv launcher path mismatch):
+
+**PowerShell:**
 ```powershell
-# From project root with python -m uvicorn (safe against path renames):
 $env:PYTHONPATH="."
-.\services\venv\Scripts\python -m uvicorn services.backend.main:app --reload
+.\services\venv\Scripts\python.exe -m uvicorn services.backend.main:app --reload
 ```
+
+**Command Prompt (CMD):**
+```cmd
+set PYTHONPATH=. && services\venv\Scripts\python.exe -m uvicorn services.backend.main:app --reload
+```
+
+**Git Bash (MINGW64):**
+```bash
+PYTHONPATH=. ./services/venv/Scripts/python.exe -m uvicorn services.backend.main:app --reload
+```
+
 Interactive API Swagger docs available at `http://127.0.0.1:8000/docs`.
 
 ---
@@ -218,28 +231,75 @@ If `git pull`, `git rebase`, or `git merge` encounters conflicts:
 Whenever you or your AI agent completes a development phase (e.g. via `/gsd-execute-phase`), **the AI agent MUST return a step-by-step developer verification guide**. Never end a turn with just "Phase completed".
 
 Every phase completion output must provide:
-1. **Automated Test Commands:**
-   ```bash
-   # Run backend pytest suite:
+1. **Automated Test Commands (PowerShell, CMD, Git Bash):**
+
+   **PowerShell:**
+   ```powershell
+   # Backend pytest suite:
    $env:PYTHONPATH=".;services\venv\Lib\site-packages"
    pytest services/tests/ -v
 
-   # Run Next.js production build check:
+   # Frontend Next.js build check:
    cmd /c "cd apps\web-dashboard && npm run build"
 
-   # Verify database migration head:
+   # Database migration check:
    $env:PYTHONPATH="."
-   .\services\venv\Scripts\python -m alembic -c database/alembic.ini current
+   .\services\venv\Scripts\python.exe -m alembic -c database/alembic.ini current
    ```
-2. **Local Server Start Commands:**
+
+   **Command Prompt (CMD):**
+   ```cmd
+   :: Backend pytest suite:
+   set PYTHONPATH=.;services\venv\Lib\site-packages && pytest services/tests/ -v
+
+   :: Frontend Next.js build check:
+   cd apps\web-dashboard && npm run build && cd ..\..
+
+   :: Database migration check:
+   set PYTHONPATH=. && services\venv\Scripts\python.exe -m alembic -c database/alembic.ini current
+   ```
+
+   **Git Bash (MINGW64):**
    ```bash
+   # Backend pytest suite:
+   PYTHONPATH=".;services/venv/Lib/site-packages" pytest services/tests/ -v
+
+   # Frontend Next.js build check:
+   (cd apps/web-dashboard && npm run build)
+
+   # Database migration check:
+   PYTHONPATH=. ./services/venv/Scripts/python.exe -m alembic -c database/alembic.ini current
+   ```
+
+2. **Local Server Start Commands:**
+
+   **PowerShell:**
+   ```powershell
    # Terminal 1: Backend (:8000)
    $env:PYTHONPATH="."
-   .\services\venv\Scripts\python -m uvicorn services.backend.main:app --reload
+   .\services\venv\Scripts\python.exe -m uvicorn services.backend.main:app --reload
 
    # Terminal 2: Web Dashboard (:3000)
-   cd apps/web-dashboard
+   cd apps\web-dashboard
    npm run dev
+   ```
+
+   **Command Prompt (CMD):**
+   ```cmd
+   :: Terminal 1: Backend (:8000)
+   set PYTHONPATH=. && services\venv\Scripts\python.exe -m uvicorn services.backend.main:app --reload
+
+   :: Terminal 2: Web Dashboard (:3000)
+   cd apps\web-dashboard && npm run dev
+   ```
+
+   **Git Bash (MINGW64):**
+   ```bash
+   # Terminal 1: Backend (:8000)
+   PYTHONPATH=. ./services/venv/Scripts/python.exe -m uvicorn services.backend.main:app --reload
+
+   # Terminal 2: Web Dashboard (:3000)
+   cd apps/web-dashboard && npm run dev
    ```
 3. **Interactive UI Walkthrough:**
    - Specific URLs to open (`http://localhost:3000/missing`).
