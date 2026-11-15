@@ -212,6 +212,44 @@ If `git pull`, `git rebase`, or `git merge` encounters conflicts:
 
 ---
 
+## 🧪 Post-Phase Execution Testing & Verification Protocol (Mandatory for AI Agents)
+
+Whenever you or your AI agent completes a development phase (e.g. via `/gsd-execute-phase`), **the AI agent MUST return a step-by-step developer verification guide**. Never end a turn with just "Phase completed".
+
+Every phase completion output must provide:
+1. **Automated Test Commands:**
+   ```bash
+   # Run backend pytest suite:
+   $env:PYTHONPATH=".;services\venv\Lib\site-packages"
+   pytest services/tests/ -v
+
+   # Run Next.js production build check:
+   cmd /c "cd apps\web-dashboard && npm run build"
+
+   # Verify database migration head:
+   $env:PYTHONPATH="."
+   .\services\venv\Scripts\python -m alembic -c database/alembic.ini current
+   ```
+2. **Local Server Start Commands:**
+   ```bash
+   # Terminal 1: Backend (:8000)
+   $env:PYTHONPATH="."
+   .\services\venv\Scripts\uvicorn services.backend.main:app --reload
+
+   # Terminal 2: Web Dashboard (:3000)
+   cd apps/web-dashboard
+   npm run dev
+   ```
+3. **Interactive UI Walkthrough:**
+   - Specific URLs to open (`http://localhost:3000/missing`).
+   - Exact components, cards, tabs, and buttons to click.
+   - Expected UI changes, modals, badges, and alerts.
+4. **API Swagger & Database Verification:**
+   - Swagger docs URL (`http://localhost:8000/docs`).
+   - Tables and endpoints to inspect.
+
+---
+
 ## 🛑 Common Pitfalls & Mistakes to Avoid
 
 1. **⚠️ Never commit `.env` or credentials:**
