@@ -198,6 +198,10 @@ export async function getMissingPersons() {
   return fetchApi('/missing-persons/')
 }
 
+export async function getMissingPerson(id: string) {
+  return fetchApi(`/missing-persons/${id}`)
+}
+
 export async function createMissingPerson(data: any) {
   return fetchApi('/missing-persons/', {
     method: 'POST',
@@ -349,4 +353,71 @@ export async function searchPerson(id: string) {
 
 export async function massSearch() {
   return fetchApi('/search/mass', { method: 'POST' })
+}
+
+// ----------------------------------------------------
+// Evidence Vault & Verification Architecture (Phase 2.1)
+// ----------------------------------------------------
+
+export interface SightingEvidence {
+  id: string
+  missing_person_id: string
+  detection_event_id?: string | null
+  crop_image_path: string
+  full_frame_path: string
+  similarity_score: number
+  quality_score: number
+  model_version: string
+  verification_status: 'Unreviewed' | 'Confirmed' | 'Rejected'
+  reviewed_by_id?: string | null
+  reviewed_at?: string | null
+  review_notes?: string | null
+  bounding_box?: { x: number; y: number; w: number; h: number } | null
+  created_at: string
+  updated_at: string
+}
+
+export interface SightingStatusUpdate {
+  verification_status: 'Unreviewed' | 'Confirmed' | 'Rejected'
+  review_notes?: string
+}
+
+export function getSafeEvidenceUrl(rawPath: string | null): string {
+  if (!rawPath) return ''
+  if (rawPath.startsWith('http')) return rawPath
+  const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1').replace(/\/api\/v1\/?$/, '')
+  let cleanPath = rawPath.replace(/\\/g, '/')
+  const uploadsIdx = cleanPath.indexOf('uploads/')
+  if (uploadsIdx > -1) {
+    cleanPath = cleanPath.substring(uploadsIdx)
+  }
+  cleanPath = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`
+  return `${baseUrl}${cleanPath}`
+}
+
+export async function getCaseEvidence(caseId: string): Promise<SightingEvidence[]> {
+  try {
+    return await fetchApi(`/evidence/case/${caseId}`)
+  } catch (err) {
+    console.warn(`Failed to fetch evidence for case ${caseId}, fallback to empty list`, err)
+    return []
+  }
+}
+
+export async function getSightingEvidence(sightingId: string): Promise<SightingEvidence> {
+  return fetchApi(`/evidence/sighting/${sightingId}`)
+}
+
+export async function updateSightingStatus(
+  sightingId: string,
+  verification_status: 'Unreviewed' | 'Confirmed' | 'Rejected',
+  review_notes?: string
+): Promise<SightingEvidence> {
+  return fetchApi(`/evidence/sighting/${sightingId}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({
+      verification_status,
+      review_notes
+    })
+  })
 }
