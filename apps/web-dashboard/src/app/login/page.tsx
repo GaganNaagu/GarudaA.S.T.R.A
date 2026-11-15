@@ -22,8 +22,54 @@ export default function LoginPage() {
     try {
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
       
-      // Allow instant access in dev mode with default seeded test credentials
       const normalizedEmail = email.trim().toLowerCase()
+      const formData = new URLSearchParams()
+      formData.append('username', normalizedEmail)
+      formData.append('password', password)
+
+      let backendAvailable = true
+      let response: Response | null = null
+
+      try {
+        response = await fetch(`${baseUrl}/auth/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: formData.toString()
+        })
+      } catch (networkErr) {
+        backendAvailable = false
+      }
+
+      if (backendAvailable && response) {
+        const data = await response.json()
+
+        if (!response.ok) {
+          let errorMsg = 'Login failed'
+          if (data.error && data.error.message) {
+            errorMsg = data.error.message
+          } else if (typeof data.detail === 'string') {
+            errorMsg = data.detail
+          } else if (Array.isArray(data.detail)) {
+            errorMsg = data.detail[0].msg
+          }
+          toast(errorMsg, 'error')
+          return
+        }
+
+        // Block Patrol Units from logging into Web Dashboard
+        if (data.role && (data.role.toLowerCase() === 'patrol officer' || data.role.toLowerCase() === 'patrol')) {
+          toast('Patrol Units cannot access the Web Dashboard.', 'error')
+          return
+        }
+
+        login(data.access_token, data.role, data.user_id, data.full_name)
+        toast('Authorization granted.', 'success')
+        return
+      }
+
+      // Offline dev mode fallback: only if backend is unreachable
       if (
         (normalizedEmail === 'admin@astra.gov' && password === 'Password123!') ||
         (normalizedEmail === 'dispatcher@astra.gov' && password === 'Password123!') ||
@@ -32,45 +78,11 @@ export default function LoginPage() {
         const role = normalizedEmail === 'admin@astra.gov' ? 'Admin' : (normalizedEmail === 'dispatcher@astra.gov' ? 'Dispatcher' : 'Officer')
         const name = normalizedEmail === 'admin@astra.gov' ? 'System Admin' : (normalizedEmail === 'dispatcher@astra.gov' ? 'Central Dispatcher' : 'Inspector Vikram Rathore')
         login('astra-tactical-auth-token', role, '1', name)
-        toast('Tactical Authorization Granted.', 'success')
+        toast('Tactical Authorization Granted (Offline Mode).', 'info')
         return
       }
 
-      const formData = new URLSearchParams()
-      formData.append('username', normalizedEmail)
-      formData.append('password', password)
-
-      const response = await fetch(`${baseUrl}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: formData.toString()
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        let errorMsg = 'Login failed'
-        if (data.error && data.error.message) {
-          errorMsg = data.error.message
-        } else if (typeof data.detail === 'string') {
-          errorMsg = data.detail
-        } else if (Array.isArray(data.detail)) {
-          errorMsg = data.detail[0].msg
-        }
-        toast(errorMsg, 'error')
-        return
-      }
-
-      // Block Patrol Units from logging into Web Dashboard
-      if (data.role && (data.role.toLowerCase() === 'patrol officer' || data.role.toLowerCase() === 'patrol')) {
-        toast('Patrol Units cannot access the Web Dashboard.', 'error')
-        return
-      }
-
-      login(data.access_token, data.role, data.user_id, data.full_name)
-      toast('Authorization granted.', 'success')
+      toast('Backend server unreachable. Please start the backend service.', 'error')
       
     } catch (err: any) {
       toast(err.message || 'Access denied. Invalid credentials.', 'error')

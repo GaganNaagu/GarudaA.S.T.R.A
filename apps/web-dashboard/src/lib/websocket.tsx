@@ -109,6 +109,10 @@ export function WebSocketProvider({ children, token, onAuthExpired }: WebSocketP
         }
 
         if (event.code === 1008) {
+          if (token === 'astra-tactical-auth-token') {
+            console.warn('WebSocket: Tactical offline dev token rejected by backend.')
+            return
+          }
           // Token expired or invalid — trigger proper auth logout
           console.error('WebSocket: Token expired or invalid. Logging out.')
           onAuthExpiredRef.current()
