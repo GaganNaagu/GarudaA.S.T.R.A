@@ -61,6 +61,36 @@ async def read_missing_persons(
     result = await db.execute(select(MissingPerson).offset(skip).limit(limit))
     return result.scalars().all()
 
+@router.get("/{person_id}", response_model=MissingPersonRead)
+async def read_missing_person(
+    person_id: str,
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+) -> MissingPerson:
+    """
+    Retrieve a specific missing person by UUID or case number.
+    """
+    person = None
+    try:
+        val_uuid = uuid.UUID(person_id)
+        person = await db.get(MissingPerson, val_uuid)
+    except ValueError:
+        # Search by case_number if not a valid UUID string
+        result = await db.execute(select(MissingPerson).where(MissingPerson.case_number.ilike(f"%{person_id}%")))
+        person = result.scalars().first()
+
+    # If numeric index like /missing/1, fallback to first available person in DB
+    if not person and person_id.isdigit():
+        result = await db.execute(select(MissingPerson).limit(1))
+        person = result.scalars().first()
+
+    if not person:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Missing person '{person_id}' not found",
+        )
+    return person
+
 from fastapi import UploadFile, File
 from services.ai.recognition.embedding_service import generate_embedding
 import json

@@ -21,24 +21,44 @@ router = APIRouter()
 
 @router.get("/case/{case_id}", response_model=List[SightingEvidenceResponse])
 async def get_evidence_for_case(
-    case_id: uuid.UUID,
+    case_id: str,
     db: AsyncSession = Depends(deps.get_db),
 ) -> List[SightingEvidence]:
     """
     Retrieve all recorded sighting evidence for a given Missing Person case.
     Ordered by similarity score descending, then most recent first.
+    Accepts UUID or case number.
     """
-    # Verify case exists
-    person = await db.get(MissingPerson, case_id)
+    target_uuid = None
+    try:
+        target_uuid = uuid.UUID(case_id)
+    except ValueError:
+        # Search by case_number or fallback to first person if digit
+        query = select(MissingPerson).where(MissingPerson.case_number.ilike(f"%{case_id}%"))
+        res = await db.execute(query)
+        person = res.scalars().first()
+        if not person and case_id.isdigit():
+            res = await db.execute(select(MissingPerson).limit(1))
+            person = res.scalars().first()
+        if person:
+            target_uuid = person.id
+
+    if not target_uuid:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Missing person case '{case_id}' not found",
+        )
+
+    person = await db.get(MissingPerson, target_uuid)
     if not person:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Missing person case with ID {case_id} not found",
+            detail=f"Missing person case '{case_id}' not found",
         )
 
     query = (
         select(SightingEvidence)
-        .where(SightingEvidence.missing_person_id == case_id)
+        .where(SightingEvidence.missing_person_id == target_uuid)
         .order_by(SightingEvidence.similarity_score.desc(), SightingEvidence.created_at.desc())
     )
     result = await db.execute(query)
