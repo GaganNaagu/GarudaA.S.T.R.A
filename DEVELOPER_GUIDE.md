@@ -206,27 +206,20 @@ git push origin phase-2
 
 ---
 
-## 💥 Merge Conflict Handling (Mandatory for AI Agents & Devs)
+## 💥 Autonomous Merge Conflict Handling (AI Agents & Devs)
 
-If `git pull`, `git rebase`, or `git merge` encounters conflicts:
+When both developers push directly to `phase-2`, conflicts may occasionally occur on shared files (e.g. `router.py`, `models/__init__.py`, `Sidebar.tsx`). **AI agents are instructed to resolve merge conflicts autonomously without blocking the user.**
 
-1. **Do NOT force push or blindly delete code.**
-2. **If an AI agent is running:** The AI agent **MUST STOP and ask the user** for a decision. It must display the conflicted files and explain what both versions did.
-3. **If resolving manually:**
-   ```bash
-   # Check which files have conflicts
-   git status
-
-   # Open conflicting files and look for <<<<<<< HEAD markers
-   # Edit the file to combine the correct logic from both sides
-
-   # Mark as resolved:
-   git add <resolved-file>
-
-   # Continue rebase/merge:
-   git rebase --continue
-   ```
-4. Run verification tests before pushing to ensure nothing broke.
+### Resolution Rules:
+1. **Never force push or blindly delete code.**
+2. **Additive Synthesis (Keep Both Devs' Work):**
+   - Combine endpoints, routes, models, and UI tabs from both developers.
+   - Retain the superset of imports and dependencies.
+3. **Automated Verification:**
+   - After resolving conflict markers, run `pytest services/tests/ -v` and `npm run build` to confirm zero syntax or runtime errors.
+4. **Stage & Continue:**
+   - Run `git add <resolved-files>`, `git rebase --continue`, and push cleanly to `phase-2`.
+5. **Human Escalation:** Only if there is an irreconcilable logical collision will the agent pause and ask the human developer.
 
 ---
 

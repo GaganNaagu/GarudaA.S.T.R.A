@@ -33,27 +33,36 @@
 
 ---
 
-## 🔀 MERGE CONFLICT RESOLUTION PROTOCOL (MANDATORY FOR AI AGENTS)
+## 🔀 AUTONOMOUS MERGE CONFLICT RESOLUTION PROTOCOL (AI AGENTS)
 
-If a `git pull`, `git merge`, or `git rebase` encounters merge conflicts:
+When developers push directly to `phase-2`, conflicts may occasionally occur on shared files (e.g. router registrations, model exports, navigation links). **AI AGENTS MUST RESOLVE MERGE CONFLICTS AUTONOMOUSLY WITHOUT BLOCKING THE USER.**
 
-1. **STOP IMMEDIATELY:**
-   - **NEVER** automatically choose `ours` or `theirs` without human review.
-   - **NEVER** force-push or discard incoming commits blindly.
-   - **NEVER** abort or reset silently without telling the user.
-2. **INSPECT & REPORT:**
-   - Run `git status` and identify every conflicted file (`both modified:`).
-   - Inspect the conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`).
-3. **ASK THE USER FOR A DECISION:**
-   - The AI agent **MUST ASK THE USER** and present:
-     - Which files are in conflict.
-     - What changed in the local branch vs. what changed in the remote branch.
-     - The recommended resolution strategy (e.g. keep local, keep remote, or merge both).
-4. **RESOLVE ONLY AFTER USER CONFIRMATION:**
-   - Apply the decision chosen by the user.
-   - Run verification / tests to confirm the code compiles and tests pass.
-   - Stage the resolved files (`git add <file>`) and complete the rebase/merge (`git rebase --continue` or `git commit`).
-   - Proceed with safe push.
+### 🤖 Autonomous Resolution Workflow:
+
+1. **DO NOT ABORT OR FORCE-PUSH:**
+   - **NEVER** run `git rebase --abort`, `git merge --abort`, or `git push --force`.
+   - **NEVER** choose `--ours` or `--theirs` blindly to discard code.
+2. **INSPECT CONFLICT MARKERS:**
+   - Run `git status` to identify all conflicted files (`both modified:`).
+   - Read the conflict blocks delimited by `<<<<<<< HEAD`, `=======`, and `>>>>>>>`.
+3. **INTELLIGENT ADDITIVE SYNTHESIS (KEEP BOTH SIDES):**
+   - Because Developer 1 (Track A) and Developer 2 (Track B) build complementary features, conflicts are almost always additive:
+     - **Shared Routers / Endpoints (`api/v1/router.py`):** Keep and register BOTH developers' endpoints and routers.
+     - **Model Exports (`database/models/__init__.py`):** Export ALL models created by both developers.
+     - **Navigation / Layouts (`Sidebar.tsx`, `Topbar.tsx`):** Retain nav items, badges, and tabs for BOTH features.
+     - **Dependencies (`requirements.txt`, `package.json`):** Keep the superset of packages added by both developers.
+   - Edit the conflicted file cleanly, removing all conflict markers.
+4. **VERIFY INTEGRITY (TEST & BUILD):**
+   - Run unit tests and compilation before finalizing:
+     - Backend: `pytest services/tests/ -v`
+     - Frontend: `cmd /c "cd apps\web-dashboard && npm run build"`
+   - If tests fail, fix the merged import/syntax until green.
+5. **STAGE & COMPLETE REBASE:**
+   - `git add <resolved-files>`
+   - `git rebase --continue` (or `git commit`)
+   - Push cleanly to `phase-2`: `git push origin phase-2`
+6. **ESCALATE ONLY ON LOGICAL CONTRADICTION:**
+   - Only ask the user if there is an irreconcilable semantic collision (e.g. both developers fundamentally rewrote the exact same function with conflicting logic). In that rare case, present the diff and recommended resolution clearly.
 
 ---
 
