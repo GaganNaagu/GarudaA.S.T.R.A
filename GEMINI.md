@@ -12,20 +12,20 @@
 1. **NO FORCE PUSHING EVER:**
    - **NEVER** run `git push --force`, `git push -f`, or `git push --force-with-lease`.
    - Any force push to remote branches is strictly forbidden.
-2. **ACTIVE BASE BRANCH IS `phase-2`:**
-   - **NEVER** push commits directly to `main` or `phase-1`.
-   - `main` is frozen at Phase 1 baseline code for college evaluation staging.
-   - `phase-1` is an immutable historical archive.
-   - All active feature branches MUST be branched off `phase-2` and targeted back to `phase-2` via Pull Requests.
-3. **DEVELOPER 1 (REPO OWNER) IS THE MAIN MASTER:**
-   - Developer 1 owns repository administration and final PR merges into `phase-2` and `main`.
-   - Developer 2 (Co-Dev) works on assigned feature branches and submits Pull Requests for review.
+2. **ACTIVE DEVELOPMENT TRUNK IS `phase-2` — ALWAYS PUSH DIRECTLY TO `phase-2`:**
+   - **NO INTERMEDIATE FEATURE BRANCHES:** NEVER create extra branches like `feature/phase-2.1`, `feature/phase2.1`, `feature/phase-2.2`, `phase-2-track-a`, etc.
+   - All work and commits for Milestone 2 MUST be made directly on `phase-2` and pushed directly to `origin/phase-2`.
+   - Before pushing, always sync cleanly with `git pull --rebase origin phase-2`.
+   - **NEVER** push commits directly to `main` or `phase-1` (`main` is frozen at Phase 1 baseline code for college evaluation staging; `phase-1` is an immutable historical snapshot).
+3. **DEVELOPER WORKSTREAMS ARE FILE-PARTITIONED:**
+   - Developer 1 works on Track A files, Developer 2 works on Track B files.
+   - Because file paths are partitioned, both developers can push directly to `phase-2` without merge conflicts.
 4. **ALWAYS SYNC BEFORE CODING:**
    - Before planning, creating files, or writing code, run:
      ```bash
      git fetch origin
      git checkout phase-2
-     git pull origin phase-2
+     git pull --rebase origin phase-2
      ```
 5. **ATOMIC CONVENTIONAL COMMITS:**
    - Use standard prefixes: `feat:`, `fix:`, `docs:`, `test:`, `chore:`, `refactor:`.
@@ -84,19 +84,16 @@ git commit -m "feat(module): descriptive action taken"
 # Fetch latest remote changes to prevent rejection
 git fetch origin
 
-# If working on a feature branch, rebase cleanly onto phase-2:
+# Rebase cleanly onto origin/phase-2:
 git pull --rebase origin phase-2
 
 # ⚠️ IF CONFLICTS OCCUR: Follow the Merge Conflict Protocol above (Stop, Inspect, Ask User).
 ```
 
-### Step 4: Safe Push
+### Step 4: Direct Push to `phase-2`
 ```bash
-# If pushing a new feature branch for the first time:
-git push -u origin <branch-name>
-
-# Subsequent pushes to your existing feature branch:
-git push origin <branch-name>
+# Always push directly to origin/phase-2 (NEVER create or push to separate feature branches):
+git push origin phase-2
 ```
 
 ---
@@ -143,17 +140,16 @@ Development in Phase 2 is strictly partitioned into two parallel, non-overlappin
   - Focus: Database models (`EvidenceFile`), crop/frame storage, verification state machine (`Unreviewed` → `Confirmed` → `Rejected`), Evidence Gallery UI.
 - **Phase 2.3:** AI Investigation Timeline
   - Focus: Case lifecycle event aggregation API, vertical scrolling timeline UI component.
-- **Branch naming:** `phase-2-track-a` or `feature/phase-2.1-evidence`
 
 ### 🔹 Developer 2 (Co-Dev / Track B)
 - **Phase 2.2:** Smart Match Ranking & Composite Scoring Engine
   - Focus: NumPy composite scoring service ($w_1 \cdot \text{Similarity} + w_2 \cdot \text{Quality} + w_3 \cdot \text{Recency}$), ranked leaderboard table UI, score breakdown tooltips.
 - **Phase 2.4:** Intelligent Alert Center
   - Focus: Alert priority classifier (High/Medium/Low), multi-attribute alert filtering, grouping by missing person, batch operator actions.
-- **Branch naming:** `phase-2-track-b` or `feature/phase-2.2-ranking`
 
 > [!IMPORTANT]
-> **Boundary Rule:** Neither developer should edit files assigned to the other track without explicit coordination. This guarantees clean, parallel development with ZERO merge conflicts.
+> **Single Branch Policy (Direct `phase-2` Pushes Only):**  
+> Both Developer 1 and Developer 2 work directly on the `phase-2` branch. **NEVER create intermediate feature branches** (like `feature/phase-2.1`, `feature/phase2.1`, etc.). Because Track A and Track B edit mutually exclusive files, simply running `git pull --rebase origin phase-2` before `git push origin phase-2` ensures 100% clean, conflict-free collaboration without branch clutter.
 
 ---
 

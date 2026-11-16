@@ -153,31 +153,27 @@ Whenever designing, building, or modifying any frontend component in `apps/web-d
 
 ---
 
-## 🔀 Step 4: Daily Git Push Workflow (Step-by-Step)
+## 🔀 Step 4: Daily Git Push Workflow (Direct to `phase-2`)
 
-Follow this exact routine whenever creating, committing, and pushing code:
+> [!IMPORTANT]
+> **Single Branch Policy (Direct `phase-2` Pushes Only):**  
+> **DO NOT CREATE INTERMEDIATE FEATURE BRANCHES** (e.g. `feature/phase-2.1`, `feature/phase2.1`, etc.).  
+> Both developers work and commit **directly on the `phase-2` branch**. Because Developer 1 (Track A) and Developer 2 (Track B) edit non-overlapping files, pushing directly to `phase-2` with `git pull --rebase` is 100% clean and eliminates branch clutter.
 
-### 1. Sync with `phase-2` before starting:
+Follow this exact routine whenever coding, committing, and pushing:
+
+### 1. Always stay on `phase-2` and sync before coding:
 ```bash
 git checkout phase-2
-git pull origin phase-2
+git pull --rebase origin phase-2
 ```
 
-### 2. Create your feature branch:
-```bash
-# Developer 2 example:
-git checkout -b feature/phase-2.2-ranking
-
-# Developer 1 example:
-git checkout -b feature/phase-2.1-evidence
-```
-
-### 3. Build & Test Feature:
+### 2. Build & Test Feature:
 If using **Antigravity AI Agent** or **GSD**, run:
-- Dev 1: `/gsd-plan-phase 2.1`
+- Dev 1: `/gsd-plan-phase 2.3`
 - Dev 2: `/gsd-plan-phase 2.2`
 
-### 4. Pre-Commit Safety Check (Crucial):
+### 3. Pre-Commit Safety Check:
 ```bash
 # Check what has been modified or created
 git status
@@ -186,7 +182,7 @@ git status
 git diff
 ```
 
-### 5. Atomic Commit:
+### 4. Atomic Commit:
 ```bash
 # Stage only relevant files (never git add .)
 git add services/backend/services/ranking_service.py apps/web-dashboard/src/components/RankingTable.tsx
@@ -195,27 +191,18 @@ git add services/backend/services/ranking_service.py apps/web-dashboard/src/comp
 git commit -m "feat(ranking): implement weighted candidate scoring service"
 ```
 
-### 6. Pull Remote Changes Before Pushing:
+### 5. Pull Latest Remote Changes Before Pushing:
 ```bash
-# Prevent out-of-date rejection
+# Rebase cleanly to incorporate co-dev commits:
 git fetch origin
 git pull --rebase origin phase-2
 ```
 
-### 7. Push Feature Branch to GitHub:
+### 6. Push Directly to `phase-2`:
 ```bash
-# First push of the new branch:
-git push -u origin feature/phase-2.2-ranking
-
-# Subsequent pushes:
-git push origin feature/phase-2.2-ranking
+# Push directly to origin/phase-2 (NEVER create or push to a feature branch):
+git push origin phase-2
 ```
-
-### 8. Open a Pull Request (PR) on GitHub:
-- **Base repository/branch:** `phase-2` (⚠️ NEVER target `main`!).
-- **Compare branch:** `feature/phase-2.2-ranking`.
-- **Reviewer:** Assign **Developer 1** (Repo Owner).
-- **Merge:** Dev 1 reviews the diff, runs verification, and merges cleanly into `phase-2`.
 
 ---
 
