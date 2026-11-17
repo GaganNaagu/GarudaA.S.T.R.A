@@ -30,57 +30,61 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
   }
 
   return (
-    <header className="h-16 bg-card border-b border-border flex items-center justify-between px-4 md:px-8 sticky top-0 z-40">
+    <header className="h-16 bg-card border-b border-border flex items-center justify-between px-4 md:px-8 sticky top-0 z-40 backdrop-blur-md bg-card/90">
       <div className="flex items-center gap-4 flex-1">
         <button 
           onClick={onMenuClick}
-          className="md:hidden p-2 -ml-2 text-muted-foreground hover:text-foreground"
+          aria-label="Toggle navigation menu"
+          className="md:hidden p-2 -ml-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md transition-colors cursor-pointer"
         >
           <Menu className="w-5 h-5" />
         </button>
 
         <div className="relative max-w-md w-full hidden sm:block">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
           <input 
             type="text" 
             placeholder="Search surveillance records..." 
+            aria-label="Search surveillance records"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={handleSearch}
-            className="w-full bg-secondary border border-border rounded-md py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all"
+            className="w-full bg-secondary/70 border border-border rounded-md py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder:text-muted-foreground/60"
           />
         </div>
         
         <div className="hidden lg:flex items-center gap-4 text-xs font-mono text-muted-foreground">
-          <div className="flex items-center gap-2 px-3 py-1 bg-secondary rounded-full border border-border">
-            <Globe className="w-3 h-3 text-primary" />
+          <div className="flex items-center gap-2 px-3 py-1 bg-secondary/60 rounded-full border border-border/80">
+            <Globe className="w-3 h-3 text-primary" aria-hidden="true" />
             <span>SYSTEM TIME (IST): {currentTime || '—'}</span>
           </div>
-          <div className="flex items-center gap-2 px-3 py-1 bg-secondary rounded-full border border-border">
-            <Shield className="w-3 h-3 text-green-500" />
-            <span>SYSTEM STATUS: SECURE</span>
+          <div className="flex items-center gap-2 px-3 py-1 bg-secondary/60 rounded-full border border-border/80">
+            <Shield className="w-3 h-3 text-emerald-400" aria-hidden="true" />
+            <span className="text-emerald-400 font-semibold">STATUS: SECURE</span>
           </div>
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
         <button
           onClick={() => router.push('/alerts')}
-          className="p-2 hover:bg-secondary rounded-full transition-colors relative cursor-pointer"
-          title="View Alerts"
+          aria-label="View live alerts"
+          className="p-2 hover:bg-secondary rounded-full transition-colors relative cursor-pointer text-muted-foreground hover:text-foreground"
+          title="View Live Alerts"
         >
           <Bell className="w-5 h-5" />
-          <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-card"></span>
+          <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-rose-500 rounded-full ring-2 ring-card animate-pulse" aria-hidden="true"></span>
         </button>
         <button
           onClick={() => toast('Activity timeline coming soon', 'info')}
-          className="p-2 hover:bg-secondary rounded-full transition-colors cursor-pointer"
+          aria-label="Activity timeline"
+          className="p-2 hover:bg-secondary rounded-full transition-colors cursor-pointer text-muted-foreground hover:text-foreground"
           title="Activity Timeline"
         >
           <Clock className="w-5 h-5" />
         </button>
         
-        <div className="h-8 w-[1px] bg-border mx-2"></div>
+        <div className="h-6 w-[1px] bg-border mx-1" aria-hidden="true"></div>
       </div>
     </header>
   )

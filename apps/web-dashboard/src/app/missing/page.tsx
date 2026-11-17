@@ -44,6 +44,7 @@ export default function MissingPersonsPage() {
   };
   
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'CRITICAL' | 'HIGH' | 'ACTIVE' | 'FOUND'>('ALL')
   const [formData, setFormData] = useState({
     full_name: '', age: '', gender: '', description: '', last_seen_location: '', last_seen_at: '', priority: 'Normal'
   })
@@ -78,14 +79,25 @@ export default function MissingPersonsPage() {
   }, [])
 
   const filteredPersons = useMemo(() => {
-    if (!searchQuery.trim()) return persons
+    let result = persons
+    if (statusFilter === 'CRITICAL') {
+      result = result.filter(p => p.priority === 'Critical' || p.priority === 'URGENT')
+    } else if (statusFilter === 'HIGH') {
+      result = result.filter(p => p.priority === 'High')
+    } else if (statusFilter === 'ACTIVE') {
+      result = result.filter(p => p.status !== 'Found')
+    } else if (statusFilter === 'FOUND') {
+      result = result.filter(p => p.status === 'Found')
+    }
+
+    if (!searchQuery.trim()) return result
     const q = searchQuery.toLowerCase()
-    return persons.filter(p =>
+    return result.filter(p =>
       p.name.toLowerCase().includes(q) ||
       p.caseNumber.toLowerCase().includes(q) ||
       p.lastSeen.toLowerCase().includes(q)
     )
-  }, [searchQuery, persons])
+  }, [searchQuery, persons, statusFilter])
 
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -168,76 +180,121 @@ export default function MissingPersonsPage() {
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Search by name, ID, or last seen location..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-card border border-border rounded-md py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-          />
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+            <input
+              type="text"
+              placeholder="Search by name, case ID, or last seen location..."
+              aria-label="Search by name, case ID, or last seen location"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-card border border-border rounded-md py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder:text-muted-foreground/60"
+            />
+          </div>
         </div>
-        <div className="flex gap-2">
-           <Button variant="secondary" size="sm">
-             <Filter className="w-4 h-4 mr-2" />
-             Filters
-           </Button>
+
+        {/* Tactical Filter Chips */}
+        <div className="flex flex-wrap items-center gap-2 pt-1" role="group" aria-label="Filter cases by priority or status">
+          <Button
+            size="sm"
+            variant={statusFilter === 'ALL' ? 'default' : 'secondary'}
+            className="text-xs h-8 px-3 rounded-full"
+            onClick={() => setStatusFilter('ALL')}
+          >
+            All Cases ({persons.length})
+          </Button>
+          <Button
+            size="sm"
+            variant={statusFilter === 'CRITICAL' ? 'destructive' : 'secondary'}
+            className="text-xs h-8 px-3 rounded-full"
+            onClick={() => setStatusFilter('CRITICAL')}
+          >
+            Critical Priority ({persons.filter(p => p.priority === 'Critical' || p.priority === 'URGENT').length})
+          </Button>
+          <Button
+            size="sm"
+            variant={statusFilter === 'HIGH' ? 'default' : 'secondary'}
+            className="text-xs h-8 px-3 rounded-full"
+            onClick={() => setStatusFilter('HIGH')}
+          >
+            High Priority ({persons.filter(p => p.priority === 'High').length})
+          </Button>
+          <Button
+            size="sm"
+            variant={statusFilter === 'ACTIVE' ? 'default' : 'secondary'}
+            className="text-xs h-8 px-3 rounded-full"
+            onClick={() => setStatusFilter('ACTIVE')}
+          >
+            Active Search ({persons.filter(p => p.status !== 'Found').length})
+          </Button>
+          <Button
+            size="sm"
+            variant={statusFilter === 'FOUND' ? 'default' : 'secondary'}
+            className="text-xs h-8 px-3 rounded-full text-emerald-400"
+            onClick={() => setStatusFilter('FOUND')}
+          >
+            Resolved / Found ({persons.filter(p => p.status === 'Found').length})
+          </Button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredPersons.length === 0 ? (
-          <div className="col-span-full text-center py-16">
-            <UserSearch className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
-            <p className="text-muted-foreground">No matching records found.</p>
+          <div className="col-span-full text-center py-16 border border-dashed border-border rounded-xl bg-card/30">
+            <UserSearch className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" aria-hidden="true" />
+            <p className="text-sm font-semibold text-foreground">No matching case records found</p>
+            <p className="text-xs text-muted-foreground mt-1">Try adjusting your search criteria or priority filter.</p>
           </div>
         ) : (
-          filteredPersons.map((person) => (
-            <Card key={person.id} className={cn(
-              "group overflow-hidden transition-all hover:shadow-lg animate-fade-in relative",
-              person.status === 'Found' ? "opacity-60 hover:opacity-100 grayscale hover:grayscale-0 border-green-500/20" :
-              person.priority === 'URGENT' ? "hover:border-primary/30 border-red-500/20 shadow-red-500/5" : "hover:border-primary/30"
-            )}>
-              <div className="h-48 bg-slate-800 flex items-center justify-center relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-[1]"></div>
-                 {person.photoPath ? (
-                   <img
-                     src={getSafePhotoUrl(person.photoPath)}
-                     alt={person.name}
-                     className="w-full h-full object-cover"
-                     onError={(e) => {
-                       e.currentTarget.onerror = null;
-                       (e.currentTarget.parentElement as HTMLElement).innerHTML = '<div class="text-muted-foreground flex flex-col items-center gap-2 opacity-20"><svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="text-[10px] uppercase tracking-widest font-bold">Image unavailable</span></div>';
-                     }}
-                   />
-                 ) : (
-                   <div className="text-muted-foreground flex flex-col items-center gap-2 opacity-20">
-                     <UserSearch className="w-12 h-12" />
-                     <span className="text-[10px] uppercase tracking-widest font-bold">No Photo</span>
-                   </div>
-                 )}
-                 <div className="absolute top-3 left-3 flex flex-col gap-2 z-10">
-                    {person.status === 'Found' ? (
-                      <Badge className="bg-green-600 hover:bg-green-500 text-white border-none">
-                        FOUND
+          filteredPersons.map((person) => {
+            const isCritical = person.priority === 'Critical' || person.priority === 'URGENT'
+            return (
+              <Card key={person.id} className={cn(
+                "group overflow-hidden transition-all duration-200 hover:shadow-xl hover:border-primary/50 relative",
+                person.status === 'Found' ? "opacity-75 hover:opacity-100 border-emerald-500/30" :
+                isCritical ? "border-rose-500/30 shadow-rose-500/5 hover:border-rose-500/60" : "hover:border-primary/40"
+              )}>
+                <div className="h-48 bg-slate-900 flex items-center justify-center relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-80 z-[1]"></div>
+                   {person.photoPath ? (
+                     <img
+                       src={getSafePhotoUrl(person.photoPath)}
+                       alt={person.name}
+                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                       onError={(e) => {
+                         e.currentTarget.onerror = null;
+                         (e.currentTarget.parentElement as HTMLElement).innerHTML = '<div class="text-muted-foreground flex flex-col items-center gap-2 opacity-30"><svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="text-[10px] uppercase tracking-widest font-bold">Image unavailable</span></div>';
+                       }}
+                     />
+                   ) : (
+                     <div className="text-muted-foreground flex flex-col items-center gap-2 opacity-30">
+                       <UserSearch className="w-12 h-12" aria-hidden="true" />
+                       <span className="text-[10px] uppercase tracking-widest font-bold">No Photo</span>
+                     </div>
+                   )}
+                   <div className="absolute top-3 left-3 flex flex-col gap-2 z-10">
+                      {person.status === 'Found' ? (
+                        <Badge className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold border-none shadow-md">
+                          FOUND
+                        </Badge>
+                      ) : (
+                        <Badge variant={isCritical ? 'destructive' : person.priority === 'High' ? 'warning' : 'secondary'}>
+                          {person.priority}
+                        </Badge>
+                      )}
+                      <Badge variant="outline" className="bg-black/60 backdrop-blur-md text-white border-white/20 font-mono text-[11px]">
+                        {person.caseNumber}
                       </Badge>
-                    ) : (
-                      <Badge variant={person.priority === 'URGENT' ? 'destructive' : person.priority === 'High' ? 'warning' : 'secondary'}>
-                        {person.priority}
-                      </Badge>
-                    )}
-                    <Badge variant="outline" className="bg-black/50 backdrop-blur-md text-white border-white/10">
-                      {person.caseNumber}
-                    </Badge>
-                 </div>
-                 {person.priority === 'URGENT' && person.status !== 'Found' && (
-                   <div className="absolute bottom-3 right-3 animate-bounce z-10">
-                     <ShieldAlert className="w-6 h-6 text-red-500 drop-shadow-lg" />
                    </div>
-                 )}
-              </div>
+                   {isCritical && person.status !== 'Found' && (
+                     <div className="absolute bottom-3 right-3 z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-300 text-[10px] font-bold backdrop-blur-md">
+                       <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" aria-hidden="true"></span>
+                       URGENT
+                     </div>
+                   )}
+                </div>
               <CardHeader className="pb-2 cursor-pointer" onClick={() => router.push(`/missing/${person.id}`)}>
                 <div className="flex items-center justify-between">
                   <CardTitle className={cn("text-xl hover:text-primary transition-colors flex items-center gap-1.5", person.status === 'Found' ? "line-through text-muted-foreground" : "")}>
@@ -296,7 +353,8 @@ export default function MissingPersonsPage() {
                 </div>
               </CardContent>
             </Card>
-          ))
+            )
+          })
         )}
       </div>
 

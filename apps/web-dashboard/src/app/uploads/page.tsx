@@ -145,10 +145,11 @@ export default function UploadsPage() {
                 <div className="w-full flex flex-col items-center gap-4 relative">
                   <button 
                     onClick={handleRemoveFile}
-                    className="absolute -top-4 -right-4 p-2 bg-destructive text-destructive-foreground rounded-full hover:bg-destructive/80 transition-colors z-10 shadow-lg"
+                    aria-label="Remove selected file"
+                    className="absolute -top-4 -right-4 p-2 bg-destructive text-destructive-foreground rounded-full hover:bg-destructive/80 transition-colors z-10 shadow-lg cursor-pointer"
                     title="Remove file"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-4 h-4" aria-hidden="true" />
                   </button>
                   {videoPreviewUrl ? (
                     <video 

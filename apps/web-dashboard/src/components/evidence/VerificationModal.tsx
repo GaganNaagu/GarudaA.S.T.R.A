@@ -76,9 +76,10 @@ export function VerificationModal({
             variant="ghost"
             size="icon"
             onClick={onClose}
-            className="text-slate-400 hover:text-white hover:bg-slate-800"
+            aria-label="Close dialog"
+            className="text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
           >
-            <X className="w-4 h-4" />
+            <X className="w-4 h-4" aria-hidden="true" />
           </Button>
         </CardHeader>
 

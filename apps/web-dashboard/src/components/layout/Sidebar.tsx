@@ -62,6 +62,7 @@ export function Sidebar() {
                 <li key={item.name}>
                   <Link
                     href={item.href}
+                    aria-current={isActive ? "page" : undefined}
                     className={cn(
                       "flex items-center justify-between px-4 py-2 text-sm font-medium rounded-md transition-all",
                       isActive
@@ -100,6 +101,7 @@ export function Sidebar() {
                 <li key={item.name}>
                   <Link
                     href={item.href}
+                    aria-current={isActive ? "page" : undefined}
                     className={cn(
                       "flex items-center justify-between px-4 py-2 text-sm font-medium rounded-md transition-all",
                       isActive
@@ -163,9 +165,9 @@ export function Sidebar() {
           <button
             onClick={() => {
               logout()
-              // Next.js Link/router will handle redirect but since we are in Sidebar we need router
               window.location.href = '/login'
             }}
+            aria-label="Log Out"
             className="p-2 hover:bg-red-500/10 text-red-500 rounded-full transition-colors cursor-pointer"
             title="Log Out"
           >

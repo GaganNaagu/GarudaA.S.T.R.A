@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card"
 import { Badge } from "@/components/ui/Badge"
 import { useAuth } from '@/lib/auth-context'
-import { Plus, Edit, Shield, Mail, User, Clock, Loader2 } from 'lucide-react'
+import { Plus, Edit, Shield, Mail, User, Clock, Loader2, X } from 'lucide-react'
 
 // Dialog mock (we might not have a generic Dialog component yet, so using native prompt/state for MVP)
 // Ideally we'd build/use a proper Radix Dialog component.
@@ -211,15 +211,30 @@ export default function UserManagementPage() {
 
       {/* Modal Dialog */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div 
+          role="dialog" 
+          aria-modal="true" 
+          aria-labelledby="user-dialog-title"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+        >
           <div className="bg-card border border-border shadow-2xl rounded-xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-border/40 bg-secondary/10">
-              <h2 className="text-xl font-bold">
-                {modalMode === 'create' ? 'Create New User' : 'Edit User Profile'}
-              </h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                {modalMode === 'create' ? 'Provision a new account.' : 'Update existing details.'}
-              </p>
+            <div className="p-6 border-b border-border/40 bg-secondary/10 flex items-start justify-between">
+              <div>
+                <h2 id="user-dialog-title" className="text-xl font-bold">
+                  {modalMode === 'create' ? 'Create New User' : 'Edit User Profile'}
+                </h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {modalMode === 'create' ? 'Provision a new account.' : 'Update existing details.'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                aria-label="Close dialog"
+                className="p-1 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" aria-hidden="true" />
+              </button>
             </div>
             
             <form onSubmit={handleSubmit} className="p-6 space-y-4">

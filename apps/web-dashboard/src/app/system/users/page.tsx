@@ -87,10 +87,11 @@ export default function UsersPage() {
            <div className="flex items-center justify-between">
               <CardTitle className="text-lg">Authorized Personnel</CardTitle>
               <div className="relative max-w-sm w-full">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
                 <input
                   type="text"
                   placeholder="Filter by name, email, or role..."
+                  aria-label="Filter personnel by name, email, or role"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full bg-secondary border border-border rounded-md py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-primary"

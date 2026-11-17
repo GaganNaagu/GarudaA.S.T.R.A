@@ -297,8 +297,8 @@ export default function Dashboard() {
                         <Badge variant="success">{unit.status}</Badge>
                         <p className="text-[10px] text-muted-foreground mt-1">{unit.time}</p>
                       </div>
-                      <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); router.push('/patrol'); }}>
-                        <ExternalLink className="w-4 h-4" />
+                      <Button variant="ghost" size="icon" aria-label={`View unit ${unit.id} on map`} onClick={(e) => { e.stopPropagation(); router.push('/patrol'); }}>
+                        <ExternalLink className="w-4 h-4" aria-hidden="true" />
                       </Button>
                    </div>
                  </div>

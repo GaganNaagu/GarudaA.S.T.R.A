@@ -14,7 +14,8 @@ import {
   User,
   ArrowUpDown,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  AlertTriangle
 } from 'lucide-react'
 import { cn } from "@/lib/utils"
 import { useToast } from "@/components/ui/Toast"
@@ -162,27 +163,40 @@ export default function AlertsPage() {
           <Button
             variant="outline"
             size="sm"
+            aria-label={sortDir === 'desc' ? "Sort newest first" : "Sort oldest first"}
             className="w-full sm:w-auto"
             onClick={() => setSortDir(d => d === 'desc' ? 'asc' : 'desc')}
           >
             {sortDir === 'desc'
-              ? <ArrowDown className="w-4 h-4 mr-2" />
-              : <ArrowUp className="w-4 h-4 mr-2" />}
+              ? <ArrowDown className="w-4 h-4 mr-2" aria-hidden="true" />
+              : <ArrowUp className="w-4 h-4 mr-2" aria-hidden="true" />}
             {sortDir === 'desc' ? 'Newest First' : 'Oldest First'}
           </Button>
-          <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => fetchAlerts(false)}>
-            <Filter className="w-4 h-4 mr-2" />
+          <Button
+            variant="outline"
+            size="sm"
+            aria-label="Refresh alerts list"
+            className="w-full sm:w-auto"
+            onClick={() => fetchAlerts(false)}
+          >
+            <Filter className="w-4 h-4 mr-2" aria-hidden="true" />
             Refresh
           </Button>
         </div>
       </div>
 
       {loading ? (
-        <p className="text-muted-foreground text-sm">Loading alerts...</p>
+        <div className="flex items-center justify-center py-16">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" aria-label="Loading alerts"></div>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {sortedAlerts.length === 0 ? (
-            <p className="text-muted-foreground text-sm col-span-3">No active alerts.</p>
+            <div className="col-span-full py-16 text-center border border-dashed border-border rounded-xl bg-card/40">
+              <ShieldAlert className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" aria-hidden="true" />
+              <p className="text-sm font-semibold text-foreground">No active tactical alerts</p>
+              <p className="text-xs text-muted-foreground mt-1">All surveillance sectors are currently operating nominally.</p>
+            </div>
           ) : (
             sortedAlerts.map((alert) => (
               <Card key={alert.id} className={cn(
@@ -303,7 +317,10 @@ export default function AlertsPage() {
                             ))}
                           </div>
                         ) : (
-                          <span className="text-yellow-600 dark:text-yellow-500">⚠️ Not assigned to anyone</span>
+                          <span className="text-amber-400 font-medium flex items-center justify-center gap-1.5">
+                            <AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />
+                            Unassigned to field officer
+                          </span>
                         )}
                       </div>
                     )}

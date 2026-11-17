@@ -191,46 +191,56 @@ export default function CaseDetailPage() {
       </div>
 
       {/* Tabs Navigation */}
-      <div className="border-b border-slate-800 flex items-center gap-4">
+      <div className="border-b border-slate-800 flex items-center gap-4" role="tablist" aria-label="Case Dossier Sections">
         <button
+          role="tab"
+          aria-selected={activeTab === 'evidence'}
+          aria-controls="panel-evidence"
+          id="tab-evidence"
           onClick={() => setActiveTab('evidence')}
-          className={`pb-3 px-2 text-sm font-semibold flex items-center gap-2 border-b-2 transition-colors ${
+          className={`pb-3 px-2 text-sm font-semibold flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${
             activeTab === 'evidence'
               ? 'border-blue-500 text-blue-400'
               : 'border-transparent text-slate-400 hover:text-slate-200'
           }`}
         >
-          <FileBox className="w-4 h-4" />
+          <FileBox className="w-4 h-4" aria-hidden="true" />
           Evidence Vault
           {confirmedCount > 0 && (
-            <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-green-500/20 text-green-400 font-mono">
+            <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-emerald-500/20 text-emerald-400 font-mono font-bold">
               {confirmedCount} confirmed
             </span>
           )}
         </button>
 
         <button
+          role="tab"
+          aria-selected={activeTab === 'overview'}
+          aria-controls="panel-overview"
+          id="tab-overview"
           onClick={() => setActiveTab('overview')}
-          className={`pb-3 px-2 text-sm font-semibold flex items-center gap-2 border-b-2 transition-colors ${
+          className={`pb-3 px-2 text-sm font-semibold flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${
             activeTab === 'overview'
               ? 'border-blue-500 text-blue-400'
               : 'border-transparent text-slate-400 hover:text-slate-200'
           }`}
         >
-          <Info className="w-4 h-4" />
+          <Info className="w-4 h-4" aria-hidden="true" />
           Case Overview
         </button>
       </div>
 
       {/* Tab Panels */}
       {activeTab === 'evidence' ? (
-        <EvidenceVaultTab
-          caseId={person.id}
-          person={person}
-          onEvidenceChange={(count) => setConfirmedCount(count)}
-        />
+        <div id="panel-evidence" role="tabpanel" aria-labelledby="tab-evidence">
+          <EvidenceVaultTab
+            caseId={person.id}
+            person={person}
+            onEvidenceChange={(count) => setConfirmedCount(count)}
+          />
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div id="panel-overview" role="tabpanel" aria-labelledby="tab-overview" className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card className="bg-slate-900 border-slate-800 md:col-span-2">
             <CardHeader>
               <CardTitle className="text-base text-white">Physical & Incident Description</CardTitle>

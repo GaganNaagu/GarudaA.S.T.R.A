@@ -69,51 +69,56 @@ export function EvidenceLightbox({
           <Button
             size="sm"
             variant="secondary"
-            className="h-8 px-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700"
+            aria-label="Zoom out"
+            className="h-8 px-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700 cursor-pointer"
             onClick={() => setScale((s) => Math.max(0.5, s - 0.25))}
             title="Zoom Out"
           >
-            <ZoomOut className="w-4 h-4" />
+            <ZoomOut className="w-4 h-4" aria-hidden="true" />
           </Button>
-          <span className="text-xs font-mono text-slate-300 w-12 text-center">
+          <span className="text-xs font-mono text-slate-300 w-12 text-center" aria-live="polite">
             {Math.round(scale * 100)}%
           </span>
           <Button
             size="sm"
             variant="secondary"
-            className="h-8 px-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700"
+            aria-label="Zoom in"
+            className="h-8 px-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700 cursor-pointer"
             onClick={() => setScale((s) => Math.min(3, s + 0.25))}
             title="Zoom In"
           >
-            <ZoomIn className="w-4 h-4" />
+            <ZoomIn className="w-4 h-4" aria-hidden="true" />
           </Button>
           <Button
             size="sm"
             variant="secondary"
-            className="h-8 px-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700"
+            aria-label="Reset zoom to 100%"
+            className="h-8 px-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700 cursor-pointer"
             onClick={() => setScale(1)}
             title="Reset Zoom"
           >
-            <RotateCcw className="w-3.5 h-3.5" />
+            <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
           </Button>
           <a
             href={imageUrl}
             download
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center justify-center h-8 px-2.5 rounded-md text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors"
+            aria-label="Download image"
+            className="inline-flex items-center justify-center h-8 px-2.5 rounded-md text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors cursor-pointer"
             title="Download Image"
           >
-            <Download className="w-3.5 h-3.5" />
+            <Download className="w-3.5 h-3.5" aria-hidden="true" />
           </a>
           <Button
             size="sm"
             variant="ghost"
-            className="h-8 px-2.5 text-slate-400 hover:text-white hover:bg-slate-800 ml-2"
+            aria-label="Close image lightbox"
+            className="h-8 px-2.5 text-slate-400 hover:text-white hover:bg-slate-800 ml-2 cursor-pointer"
             onClick={onClose}
             title="Close (ESC)"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5" aria-hidden="true" />
           </Button>
         </div>
       </div>

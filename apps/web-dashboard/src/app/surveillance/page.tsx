@@ -42,10 +42,11 @@ export default function SurveillanceHistoryPage() {
         </div>
         
         <div className="relative w-full sm:w-72">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" aria-hidden="true" />
           <input
             type="text"
             placeholder="Search by name, camera, sector..."
+            aria-label="Search recordings by name, camera, or sector"
             className="w-full bg-secondary border border-border rounded-md pl-9 pr-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -61,7 +62,7 @@ export default function SurveillanceHistoryPage() {
         <CardContent>
           {loading ? (
             <div className="flex justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              <Loader2 className="w-8 h-8 animate-spin text-primary" aria-label="Loading recordings" />
             </div>
           ) : filteredUploads.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
