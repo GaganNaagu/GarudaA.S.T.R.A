@@ -2,13 +2,14 @@
 
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Search, Bell, Clock, Globe, Shield, Menu } from 'lucide-react'
+import { Search, Bell, Globe, Shield, Menu } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
+import { Input } from '@/components/ui/Input'
+import { Badge } from '@/components/ui/Badge'
 
 export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
   const router = useRouter()
   const { toast } = useToast()
-  // useAuth removed since we no longer display user info here
   const [searchQuery, setSearchQuery] = useState('')
   const [currentTime, setCurrentTime] = useState('')
 
@@ -24,14 +25,15 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
 
   const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && searchQuery.trim()) {
-      toast(`Searching for "${searchQuery}"...`, 'info')
+      toast(`Searching surveillance records for "${searchQuery}"...`, 'info')
       setSearchQuery('')
     }
   }
 
   return (
-    <header className="h-16 bg-card border-b border-border flex items-center justify-between px-4 md:px-8 sticky top-0 z-40 backdrop-blur-md bg-card/90">
+    <header className="h-16 bg-card/90 border-b border-border flex items-center justify-between px-4 md:px-8 sticky top-0 z-40 backdrop-blur-md select-none">
       <div className="flex items-center gap-4 flex-1">
+        {/* Mobile Menu Toggle */}
         <button 
           onClick={onMenuClick}
           aria-label="Toggle navigation menu"
@@ -40,51 +42,43 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
           <Menu className="w-5 h-5" />
         </button>
 
-        <div className="relative max-w-md w-full hidden sm:block">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
-          <input 
-            type="text" 
-            placeholder="Search surveillance records..." 
+        {/* Global Surveillance Search */}
+        <div className="max-w-md w-full hidden sm:block">
+          <Input
+            icon={<Search className="w-4 h-4" />}
+            type="text"
+            placeholder="Search cases, camera sectors, suspect IDs..."
             aria-label="Search surveillance records"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={handleSearch}
-            className="w-full bg-secondary/70 border border-border rounded-md py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder:text-muted-foreground/60"
           />
         </div>
         
-        <div className="hidden lg:flex items-center gap-4 text-xs font-mono text-muted-foreground">
-          <div className="flex items-center gap-2 px-3 py-1 bg-secondary/60 rounded-full border border-border/80">
-            <Globe className="w-3 h-3 text-primary" aria-hidden="true" />
-            <span>SYSTEM TIME (IST): {currentTime || '—'}</span>
+        {/* Tactical Telemetry Status Pills */}
+        <div className="hidden lg:flex items-center gap-3 text-xs font-mono">
+          <div className="flex items-center gap-2 px-2.5 py-1 bg-secondary/50 rounded-full border border-border">
+            <Globe className="w-3.5 h-3.5 text-primary" aria-hidden="true" />
+            <span className="text-muted-foreground">IST: <strong className="text-foreground">{currentTime || '—'}</strong></span>
           </div>
-          <div className="flex items-center gap-2 px-3 py-1 bg-secondary/60 rounded-full border border-border/80">
-            <Shield className="w-3 h-3 text-emerald-400" aria-hidden="true" />
-            <span className="text-emerald-400 font-semibold">STATUS: SECURE</span>
+          <div className="flex items-center gap-2 px-2.5 py-1 bg-secondary/50 rounded-full border border-border">
+            <Shield className="w-3.5 h-3.5 text-success" aria-hidden="true" />
+            <span className="text-success font-semibold">ONLINE: SECURE</span>
           </div>
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
+      {/* Right Action Icons */}
+      <div className="flex items-center gap-2">
         <button
           onClick={() => router.push('/alerts')}
+          className="relative p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md transition-colors cursor-pointer"
           aria-label="View live alerts"
-          className="p-2 hover:bg-secondary rounded-full transition-colors relative cursor-pointer text-muted-foreground hover:text-foreground"
-          title="View Live Alerts"
+          title="Active Alerts"
         >
-          <Bell className="w-5 h-5" />
-          <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-rose-500 rounded-full ring-2 ring-card animate-pulse" aria-hidden="true"></span>
+          <Bell className="w-4 h-4" />
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary" />
         </button>
-        <button
-          onClick={() => toast('Activity timeline coming soon', 'info')}
-          aria-label="Activity timeline"
-          className="p-2 hover:bg-secondary rounded-full transition-colors cursor-pointer text-muted-foreground hover:text-foreground"
-          title="Activity Timeline"
-        >
-          <Clock className="w-5 h-5" />
-        </button>
-        
-        <div className="h-6 w-[1px] bg-border mx-1" aria-hidden="true"></div>
       </div>
     </header>
   )

@@ -1,399 +1,420 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   StyleSheet,
   Text,
   View,
-  Animated,
-  Easing,
+  Pressable,
+  ScrollView,
+  ViewStyle,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SPACING, ROUNDED } from '../constants/theme';
 import { AlertItem } from '../utils/mockState';
-import PulseIndicator from '../components/PulseIndicator';
-import TacticalCard from '../components/TacticalCard';
+import { ScreenWrapper } from '../components/ScreenWrapper';
+import { SurfaceCard } from '../components/SurfaceCard';
 
 interface MapScreenProps {
   alerts: AlertItem[];
 }
 
 export const MapScreen: React.FC<MapScreenProps> = ({ alerts }) => {
-  const radarAnim = useRef(new Animated.Value(0)).current;
+  const [selectedAlertId, setSelectedAlertId] = useState<string>(alerts[0]?.id || '');
 
-  const aaravAlert = alerts.find((a) => a.id === 'missing-aarav');
-  const vikramAlert = alerts.find((a) => a.id === 'wanted-vikram');
-  const priyaAlert = alerts.find((a) => a.id === 'missing-priya');
-  const raviAlert = alerts.find((a) => a.title.toLowerCase().includes('ravi') || a.id.includes('ravi') || a.id.includes('884'));
-
-  useEffect(() => {
-    const animation = Animated.loop(
-      Animated.timing(radarAnim, {
-        toValue: 1,
-        duration: 4000,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      })
-    );
-    animation.start();
-
-    return () => animation.stop();
-  }, [radarAnim]);
-
-  const rotate = radarAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
-
-  // Helper to determine pulse indicator color based on alert status
-  const getPulseColor = (alert: AlertItem | undefined, defaultColor: string) => {
-    if (!alert) return 'rgba(155, 143, 122, 0.4)';
-    switch (alert.status) {
-      case 'ALERT':
-        return alert.threatLevel === 'HIGH' ? COLORS.primary : COLORS.secondary;
-      case 'INVESTIGATING':
-        return COLORS.primary;
-      case 'LOCATED':
-      case 'COMPLETED':
-        return COLORS.secondary; // Cyan glow
-      case 'FALSE ALERT':
-        return 'rgba(155, 143, 122, 0.4)'; // Off-duty gray
-      default:
-        return defaultColor;
-    }
-  };
+  const activeAlert = alerts.find((a) => a.id === selectedAlertId) || alerts[0];
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <ScreenWrapper scrollable contentContainerStyle={styles.scrollContent}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerTitleContainer}>
-          <MaterialIcons name="explore" size={24} color={COLORS.primary} style={{ marginRight: 8 }} />
-          <Text style={styles.headerTitle}>TACTICAL RADAR FEED</Text>
+          <MaterialIcons name="explore" size={22} color={COLORS.primary} style={{ marginRight: 8 }} />
+          <Text style={styles.headerTitle}>TACTICAL RADAR</Text>
         </View>
-        <View style={styles.headerRight}>
-          <View style={styles.radarDot} />
-          <Text style={styles.radarText}>GPS ACTIVE</Text>
-        </View>
-      </View>
-
-      <View style={styles.container}>
-        {/* Radar Map Sandbox */}
-        <View style={styles.radarBox}>
-          {/* Grid Background Dots */}
-          <View style={styles.gridDotsContainer}>
-            {Array.from({ length: 9 }).map((_, i) => (
-              <View key={i} style={styles.gridRow}>
-                {Array.from({ length: 9 }).map((_, j) => (
-                  <View key={j} style={styles.gridDot} />
-                ))}
-              </View>
-            ))}
-          </View>
-
-          {/* Radar Circles */}
-          <View style={[styles.radarCircle, { width: 100, height: 100, borderRadius: 50 }]} />
-          <View style={[styles.radarCircle, { width: 200, height: 200, borderRadius: 100 }]} />
-          <View style={[styles.radarCircle, { width: 300, height: 300, borderRadius: 150 }]} />
-
-          {/* Radar Sector Sweep Line */}
-          <Animated.View style={[styles.radarSweep, { transform: [{ rotate }] }]}>
-            <View style={styles.sweepLine} />
-          </Animated.View>
-
-          {/* Target Beacons (Mock Coordinate Overlays) */}
-          
-          {/* Target 1: Self Unit */}
-          <View style={[styles.targetNode, { top: '50%', left: '50%', transform: [{ translateX: -10 }, { translateY: -10 }] }]}>
-            <PulseIndicator color={COLORS.secondary} size={16} pulseSize={3} />
-            <Text style={styles.targetLabelSelf}>UNIT-042</Text>
-          </View>
-
-          {/* Target 2: Vikram Singh Match */}
-          {vikramAlert && (
-            <View style={[styles.targetNode, { top: '35%', left: '72%' }]}>
-              <PulseIndicator
-                color={getPulseColor(vikramAlert, COLORS.primary)}
-                size={12}
-                pulseSize={2.5}
-              />
-              <Text style={styles.targetLabelPrimary}>
-                VIKRAM ({vikramAlert.status})
-              </Text>
-            </View>
-          )}
-
-          {/* Target 3: Aarav Mehta Match */}
-          {aaravAlert && (
-            <View style={[styles.targetNode, { top: '22%', left: '42%' }]}>
-              <PulseIndicator
-                color={getPulseColor(aaravAlert, COLORS.primary)}
-                size={10}
-                pulseSize={2.5}
-              />
-              <Text style={styles.targetLabelPrimary}>
-                AARAV ({aaravAlert.status})
-              </Text>
-            </View>
-          )}
-
-          {/* Target 4: Priya Sharma Match */}
-          {priyaAlert && (
-            <View style={[styles.targetNode, { top: '65%', left: '25%' }]}>
-              <PulseIndicator
-                color={getPulseColor(priyaAlert, COLORS.secondary)}
-                size={10}
-                pulseSize={2.5}
-              />
-              <Text style={styles.targetLabelSecondary}>
-                PRIYA ({priyaAlert.status})
-              </Text>
-            </View>
-          )}
-
-          {/* Target 5: Ravi Kumar Match */}
-          {raviAlert && (
-            <View style={[styles.targetNode, { top: '48%', left: '78%' }]}>
-              <PulseIndicator
-                color={getPulseColor(raviAlert, COLORS.secondary)}
-                size={10}
-                pulseSize={2.5}
-              />
-              <Text style={styles.targetLabelSecondary}>
-                RAVI ({raviAlert.status})
-              </Text>
-            </View>
-          )}
-        </View>
-
-        {/* Telemetry panel details */}
-        <View style={styles.telemetryOverlay}>
-          <TacticalCard containerStyle={styles.telemetryCard}>
-            <View style={styles.cardPadding}>
-              <View style={styles.telHeader}>
-                <Text style={styles.telTitle}>GPS TRACKER READOUT</Text>
-                <Text style={styles.telSignal}>SIGNAL: EXCELLENT</Text>
-              </View>
-              <View style={styles.divider} />
-              
-              <View style={styles.telRow}>
-                <View style={styles.telCol}>
-                  <Text style={styles.telLabel}>CURRENT STATION</Text>
-                  <Text style={styles.telValue}>Marine Drive Sector 4</Text>
-                </View>
-                <View style={styles.telCol}>
-                  <Text style={styles.telLabel}>SECTOR RANGE</Text>
-                  <Text style={styles.telValueMono}>R-MAX: 12.4 KM</Text>
-                </View>
-              </View>
-
-              <View style={[styles.telRow, { marginTop: 12 }]}>
-                <View style={styles.telCol}>
-                  <Text style={styles.telLabel}>LATITUDE / LONGITUDE</Text>
-                  <Text style={styles.telValueMono}>18.9231° N, 72.8246° E</Text>
-                </View>
-                <View style={styles.telCol}>
-                  <Text style={styles.telLabel}>AZIMUTH SCAN</Text>
-                  <Text style={styles.telValueMono}>SWEEP 360° CONT</Text>
-                </View>
-              </View>
-            </View>
-          </TacticalCard>
+        <View style={styles.gpsTag}>
+          <View style={styles.gpsDot} />
+          <Text style={styles.gpsText}>BEACON ACTIVE</Text>
         </View>
       </View>
-    </SafeAreaView>
+
+      {/* Radar Map Visualizer */}
+      <View style={styles.radarContainer}>
+        {/* Radar Rings */}
+        <View style={[styles.radarRing, { width: 90, height: 90, borderRadius: 45 }]} />
+        <View style={[styles.radarRing, { width: 180, height: 180, borderRadius: 90 }]} />
+        <View style={[styles.radarRing, { width: 270, height: 270, borderRadius: 135 }]} />
+
+        {/* Crosshair lines */}
+        <View style={styles.crosshairH} />
+        <View style={styles.crosshairV} />
+
+        {/* Center Unit Beacon (Officer) */}
+        <View style={styles.unitBeacon}>
+          <View style={styles.unitCenterDot} />
+          <Text style={styles.unitLabel}>UNIT-042</Text>
+        </View>
+
+        {/* Dynamic Alert Targets */}
+        {alerts.slice(0, 4).map((alert, index) => {
+          const isSelected = alert.id === selectedAlertId;
+          // Deterministic radar offset positions
+          const positions: ViewStyle[] = [
+            { top: '22%', left: '30%' },
+            { top: '35%', right: '22%' },
+            { bottom: '26%', left: '24%' },
+            { bottom: '20%', right: '32%' },
+          ];
+          const pos = positions[index % positions.length];
+
+          return (
+            <Pressable
+              key={alert.id}
+              style={[styles.targetPin, pos]}
+              onPress={() => setSelectedAlertId(alert.id)}
+              hitSlop={12}
+            >
+              <View
+                style={[
+                  styles.targetDot,
+                  {
+                    backgroundColor:
+                      alert.threatLevel === 'HIGH' || alert.threatLevel === 'CRITICAL'
+                        ? COLORS.error
+                        : COLORS.primary,
+                  },
+                  isSelected && styles.targetDotSelected,
+                ]}
+              />
+              <Text
+                style={[
+                  styles.targetPinLabel,
+                  isSelected && { color: COLORS.primary, fontWeight: '700' },
+                ]}
+                numberOfLines={1}
+              >
+                {alert.title.split(' ')[0]}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      {/* Selected Sighting Detail Card */}
+      {activeAlert && (
+        <SurfaceCard style={styles.detailCard}>
+          <View style={styles.detailHeader}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.detailSubtitle}>SELECTED RADAR TARGET</Text>
+              <Text style={styles.detailTitle}>{activeAlert.title}</Text>
+            </View>
+            <View style={styles.matchBadge}>
+              <Text style={styles.matchText}>
+                {activeAlert.matchPercentage ? `${activeAlert.matchPercentage}% MATCH` : activeAlert.threatLevel}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.detailRow}>
+            <MaterialIcons name="place" size={16} color={COLORS.primary} style={{ marginRight: 6 }} />
+            <Text style={styles.detailLocation}>{activeAlert.lastSeenLocation}</Text>
+          </View>
+
+          <View style={styles.detailMetaGrid}>
+            <View style={styles.metaBox}>
+              <Text style={styles.metaBoxLabel}>GPS LAT / LNG</Text>
+              <Text style={styles.metaBoxVal}>
+                {activeAlert.latitude.toFixed(4)}, {activeAlert.longitude.toFixed(4)}
+              </Text>
+            </View>
+            <View style={styles.metaBox}>
+              <Text style={styles.metaBoxLabel}>DOSSIER FILE</Text>
+              <Text style={styles.metaBoxVal}>{activeAlert.fileNo}</Text>
+            </View>
+            <View style={styles.metaBox}>
+              <Text style={styles.metaBoxLabel}>TIME DETECTED</Text>
+              <Text style={styles.metaBoxVal}>{activeAlert.lastSeenTime}</Text>
+            </View>
+          </View>
+        </SurfaceCard>
+      )}
+
+      {/* Target Quick Switcher Strip */}
+      <Text style={styles.sectionHeader}>PROXIMITY TARGETS ({alerts.length})</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.targetsScroll}>
+        {alerts.map((alert) => {
+          const isSelected = alert.id === selectedAlertId;
+          return (
+            <Pressable
+              key={alert.id}
+              onPress={() => setSelectedAlertId(alert.id)}
+              style={[
+                styles.targetPill,
+                isSelected && styles.targetPillSelected,
+              ]}
+            >
+              <View
+                style={[
+                  styles.pillDot,
+                  {
+                    backgroundColor:
+                      alert.threatLevel === 'HIGH' || alert.threatLevel === 'CRITICAL'
+                        ? COLORS.error
+                        : COLORS.primary,
+                  },
+                ]}
+              />
+              <Text
+                style={[
+                  styles.pillText,
+                  isSelected && styles.pillTextSelected,
+                ]}
+              >
+                {alert.title}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+    </ScreenWrapper>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: COLORS.background,
+  scrollContent: {
+    padding: SPACING.gutter,
+    paddingBottom: 96,
   },
   header: {
-    height: SPACING.touchTargetMin + 12,
+    height: SPACING.touchTargetMin + 8,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.outlineVariant,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: SPACING.gutter,
+    marginBottom: SPACING.md,
   },
   headerTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  headerIcon: {
-    fontSize: 20,
-    marginRight: 8,
-  },
   headerTitle: {
     ...TYPOGRAPHY.headlineSmMobile,
-    color: COLORS.primary,
+    color: COLORS.onSurface,
     fontWeight: '700',
+    fontSize: 16,
   },
-  headerRight: {
+  gpsTag: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(246, 190, 57, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(246, 190, 57, 0.3)',
-    borderRadius: ROUNDED.sm,
+    backgroundColor: COLORS.surfaceContainer,
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 3,
+    borderRadius: ROUNDED.FULL,
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
   },
-  radarDot: {
+  gpsDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.secondary,
     marginRight: 6,
   },
-  radarText: {
-    ...TYPOGRAPHY.dataMono,
-    fontSize: 10,
-    color: COLORS.primary,
-    fontWeight: '700',
-  },
-  container: {
-    flex: 1,
-    padding: SPACING.gutter,
-    justifyContent: 'space-between',
-  },
-  radarBox: {
-    flex: 1,
-    position: 'relative',
-    backgroundColor: COLORS.surfaceLowest,
-    borderColor: COLORS.outlineVariant,
-    borderWidth: 1,
-    borderRadius: ROUNDED.lg,
-    overflow: 'hidden',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  gridDotsContainer: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-    justifyContent: 'space-around',
-    paddingVertical: 20,
-    opacity: 0.15,
-  },
-  gridRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '100%',
-  },
-  gridDot: {
-    width: 2,
-    height: 2,
-    backgroundColor: COLORS.onSurface,
-    borderRadius: 1,
-  },
-  radarCircle: {
-    position: 'absolute',
-    borderWidth: 1,
-    borderColor: 'rgba(79, 70, 52, 0.3)',
-  },
-  radarSweep: {
-    position: 'absolute',
-    width: 400,
-    height: 400,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  sweepLine: {
-    width: 2,
-    height: 200,
-    backgroundColor: 'rgba(3, 181, 211, 0.4)',
-    alignSelf: 'center',
-    transform: [{ translateY: -100 }],
-  },
-  targetNode: {
-    position: 'absolute',
-    alignItems: 'center',
-  },
-  targetLabelSelf: {
-    ...TYPOGRAPHY.labelCaps,
-    fontSize: 8,
-    color: COLORS.secondary,
-    fontWeight: '700',
-    marginTop: 4,
-  },
-  targetLabelPrimary: {
-    ...TYPOGRAPHY.labelCaps,
-    fontSize: 8,
-    color: COLORS.primary,
-    fontWeight: '700',
-    marginTop: 4,
-    backgroundColor: COLORS.background,
-    paddingHorizontal: 4,
-    borderRadius: 2,
-  },
-  targetLabelSecondary: {
-    ...TYPOGRAPHY.labelCaps,
-    fontSize: 8,
-    color: COLORS.secondary,
-    fontWeight: '700',
-    marginTop: 4,
-    backgroundColor: COLORS.background,
-    paddingHorizontal: 4,
-    borderRadius: 2,
-  },
-  telemetryOverlay: {
-    marginTop: 16,
-    marginBottom: 16,
-  },
-  telemetryCard: {
-    width: '100%',
-  },
-  cardPadding: {
-    padding: 16,
-  },
-  telHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  telTitle: {
-    ...TYPOGRAPHY.labelCaps,
-    color: COLORS.primary,
-    fontWeight: '700',
-  },
-  telSignal: {
+  gpsText: {
     ...TYPOGRAPHY.labelCaps,
     fontSize: 9,
     color: COLORS.secondary,
+    fontFamily: 'monospace',
+    fontWeight: '700',
   },
-  divider: {
+  radarContainer: {
+    width: '100%',
+    height: 300,
+    backgroundColor: COLORS.surfaceContainer,
+    borderRadius: ROUNDED.LG,
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    overflow: 'hidden',
+    marginBottom: SPACING.md,
+  },
+  radarRing: {
+    position: 'absolute',
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.15)',
+  },
+  crosshairH: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
     height: 1,
-    backgroundColor: COLORS.outlineVariant,
-    marginVertical: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
   },
-  telRow: {
-    flexDirection: 'row',
-    gap: 16,
+  crosshairV: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
   },
-  telCol: {
-    flex: 1,
+  unitBeacon: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
   },
-  telLabel: {
+  unitCenterDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: COLORS.secondary,
+    borderWidth: 2,
+    borderColor: COLORS.background,
+  },
+  unitLabel: {
     ...TYPOGRAPHY.labelCaps,
     fontSize: 8,
-    color: COLORS.outline,
-    lineHeight: 12,
+    color: COLORS.secondary,
+    fontFamily: 'monospace',
+    marginTop: 3,
+    fontWeight: '700',
   },
-  telValue: {
-    ...TYPOGRAPHY.bodyMd,
+  targetPin: {
+    position: 'absolute',
+    alignItems: 'center',
+    zIndex: 20,
+  },
+  targetDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: COLORS.background,
+  },
+  targetDotSelected: {
+    transform: [{ scale: 1.4 }],
+    borderColor: '#FFFFFF',
+    borderWidth: 2,
+  },
+  targetPinLabel: {
+    ...TYPOGRAPHY.labelCaps,
+    fontSize: 9,
+    color: COLORS.onSurfaceVariant,
+    marginTop: 2,
+  },
+  detailCard: {
+    padding: SPACING.md,
+    marginBottom: SPACING.md,
+  },
+  detailHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: SPACING.sm,
+  },
+  detailSubtitle: {
+    ...TYPOGRAPHY.labelCaps,
+    fontSize: 9,
+    color: COLORS.primary,
+    marginBottom: 2,
+  },
+  detailTitle: {
+    ...TYPOGRAPHY.titleMedium,
+    color: COLORS.onSurface,
+    fontWeight: '700',
+    fontSize: 16,
+  },
+  matchBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: ROUNDED.FULL,
+    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+  },
+  matchText: {
+    ...TYPOGRAPHY.labelCaps,
+    fontSize: 9,
+    color: COLORS.primary,
+    fontFamily: 'monospace',
+    fontWeight: '700',
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+  },
+  detailLocation: {
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.onSurface,
     fontSize: 12,
-    color: COLORS.onSurface,
-    fontWeight: '600',
-    marginTop: 2,
+    fontWeight: '500',
   },
-  telValueMono: {
-    ...TYPOGRAPHY.dataMono,
-    fontSize: 11,
+  detailMetaGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: COLORS.surfaceContainer,
+    borderRadius: ROUNDED.MD,
+    padding: 8,
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
+  },
+  metaBox: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  metaBoxLabel: {
+    ...TYPOGRAPHY.labelCaps,
+    fontSize: 8,
+    color: COLORS.onSurfaceVariant,
+    marginBottom: 2,
+  },
+  metaBoxVal: {
+    ...TYPOGRAPHY.bodySmall,
     color: COLORS.onSurface,
-    marginTop: 2,
+    fontSize: 10,
+    fontFamily: 'monospace',
+    fontWeight: '600',
+  },
+  sectionHeader: {
+    ...TYPOGRAPHY.labelCaps,
+    fontSize: 9,
+    color: COLORS.onSurfaceVariant,
+    letterSpacing: 0.8,
+    marginBottom: SPACING.xs,
+    marginLeft: 4,
+  },
+  targetsScroll: {
+    gap: 8,
+    paddingVertical: 4,
+  },
+  targetPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.surfaceContainer,
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
+    borderRadius: ROUNDED.FULL,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  targetPillSelected: {
+    borderColor: COLORS.primary,
+    backgroundColor: 'rgba(245, 158, 11, 0.12)',
+  },
+  pillDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 6,
+  },
+  pillText: {
+    ...TYPOGRAPHY.bodySmall,
+    fontSize: 11,
+    color: COLORS.onSurfaceVariant,
+  },
+  pillTextSelected: {
+    color: COLORS.primary,
+    fontWeight: '700',
   },
 });
-export default MapScreen;

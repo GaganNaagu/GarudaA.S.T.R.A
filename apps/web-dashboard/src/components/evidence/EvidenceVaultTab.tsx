@@ -73,7 +73,7 @@ export function EvidenceVaultTab({
   return (
     <div className="space-y-6">
       {/* Top Filter and Stats Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-lg bg-slate-900 border border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-3 rounded-lg bg-card border border-border">
         <div className="flex flex-wrap items-center gap-2">
           <Button
             size="sm"
@@ -87,7 +87,7 @@ export function EvidenceVaultTab({
           <Button
             size="sm"
             variant={filter === 'Unreviewed' ? 'default' : 'secondary'}
-            className="text-xs h-8 text-amber-300"
+            className="text-xs h-8 text-status-warning"
             onClick={() => setFilter('Unreviewed')}
           >
             <Clock className="w-3.5 h-3.5 mr-1" />
@@ -97,7 +97,7 @@ export function EvidenceVaultTab({
           <Button
             size="sm"
             variant={filter === 'Confirmed' ? 'default' : 'secondary'}
-            className="text-xs h-8 text-green-300"
+            className="text-xs h-8 text-status-active"
             onClick={() => setFilter('Confirmed')}
           >
             <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
@@ -107,7 +107,7 @@ export function EvidenceVaultTab({
           <Button
             size="sm"
             variant={filter === 'Rejected' ? 'default' : 'secondary'}
-            className="text-xs h-8 text-red-300"
+            className="text-xs h-8 text-status-critical"
             onClick={() => setFilter('Rejected')}
           >
             <XCircle className="w-3.5 h-3.5 mr-1" />
@@ -120,7 +120,7 @@ export function EvidenceVaultTab({
           size="sm"
           onClick={fetchEvidence}
           disabled={isLoading}
-          className="text-xs text-slate-400 hover:text-white"
+          className="text-xs text-muted-foreground hover:text-foreground"
         >
           <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${isLoading ? 'animate-spin' : ''}`} />
           Refresh Vault
@@ -129,17 +129,17 @@ export function EvidenceVaultTab({
 
       {/* Sighting Cards List */}
       {isLoading ? (
-        <div className="py-16 text-center text-slate-400 flex flex-col items-center gap-3">
-          <RefreshCw className="w-8 h-8 animate-spin text-blue-500" />
+        <div className="py-16 text-center text-muted-foreground flex flex-col items-center gap-3">
+          <RefreshCw className="w-8 h-8 animate-spin text-primary" />
           <p className="text-sm font-medium">Loading Evidence Vault artifacts...</p>
         </div>
       ) : filteredSightings.length === 0 ? (
-        <div className="py-16 px-6 text-center rounded-lg border border-dashed border-slate-800 bg-slate-900/40">
-          <ShieldAlert className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-          <h4 className="text-base font-semibold text-slate-200">
+        <div className="py-16 px-6 text-center rounded-lg border border-dashed border-border bg-card/30">
+          <ShieldAlert className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
+          <h4 className="text-base font-semibold text-foreground">
             {filter === 'ALL' ? 'No Forensic Evidence Recorded' : `No ${filter} Sightings`}
           </h4>
-          <p className="text-xs text-slate-400 max-w-md mx-auto mt-1">
+          <p className="text-xs text-muted-foreground max-w-md mx-auto mt-1">
             {filter === 'ALL'
               ? 'Run an AI Vector Search or upload CCTV footage to identify potential sightings for this case.'
               : `There are currently no sightings matching the filter "${filter}".`}

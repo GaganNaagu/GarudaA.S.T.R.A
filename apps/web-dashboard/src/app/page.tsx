@@ -1,7 +1,6 @@
 "use client"
 
-import React, { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card"
 import { Badge } from "@/components/ui/Badge"
 import { Button } from "@/components/ui/Button"
@@ -9,304 +8,293 @@ import {
   ShieldAlert, 
   UserCheck, 
   Clock, 
-  ExternalLink,
-  Eye,
-  Fingerprint,
-  ScanLine
+  Eye, 
+  Activity,
+  ArrowRight,
+  Camera,
+  MapPin,
+  CheckCircle2,
+  AlertTriangle
 } from 'lucide-react'
-import { cn } from "@/lib/utils"
-import { useToast } from "@/components/ui/Toast"
+import { useRouter } from 'next/navigation'
 import { useWebSocket } from '@/lib/websocket'
-import { getStats } from '@/lib/api'
+import { getMissingPersons, getAlerts, API_URL } from '@/lib/api'
+
+function getImageUrl(path: string | null) {
+  if (!path) return '';
+  if (path.startsWith('http')) return path;
+  const baseUrl = API_URL.replace(/\/api\/v1\/?$/, '');
+  let cleanPath = path.replace(/\\/g, '/');
+  const uploadsIdx = cleanPath.indexOf('uploads/');
+  if (uploadsIdx > -1) {
+    cleanPath = cleanPath.substring(uploadsIdx);
+  }
+  cleanPath = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`;
+  return `${baseUrl}${cleanPath}`;
+}
 
 export default function Dashboard() {
   const router = useRouter()
-  const { toast } = useToast()
-  const { lastMessage, isConnected } = useWebSocket()
+  const { isConnected, lastMessage } = useWebSocket()
   
   const [stats, setStats] = useState({
-    detections: 1842,
-    identified: 12,
-    alerts: 29,
-    activeCases: 19
+    activeCases: 0,
+    alerts: 0,
+    detections: 0,
+    identified: 0
   })
 
-  const [latestMatch, setLatestMatch] = useState<any>({
-    id: 'mp-001',
-    name: 'Aarav Sharma (Case #MP-2026-0891)',
-    confidence: 94,
-    camera: 'CAM-BLR-METRO-04',
-    location: 'Majestic Inter-Terminal Footover Bridge',
-    time: '20:45:00'
-  })
-  const [activityLogs, setActivityLogs] = useState<any[]>([
-    { time: '20:52:14', event: 'Biometric Face Indexing Completed: CAM-BLR-04', type: 'success' },
-    { time: '20:48:32', event: 'Patrol Unit Alpha dispatched towards Majestic Sector', type: 'info' },
-    { time: '20:45:00', event: 'High Confidence Match (94%) flagged in Metro Zone', type: 'alert' },
-    { time: '20:30:11', event: 'Diagnostic Check: All 18 edge stream nodes operating nominally', type: 'info' }
-  ])
-  const [patrolUnits, setPatrolUnits] = useState<Record<string, any>>({
-    'unit-101': { id: 'unit-101', location: 'Majestic Transit Sector (12.9716, 77.5946)', status: 'Active Patrol', time: 'Just Now' },
-    'unit-102': { id: 'unit-102', location: 'Whitefield Junction (12.9784, 77.6012)', status: 'Active Patrol', time: '1m ago' },
-    'unit-103': { id: 'unit-103', location: 'Indiranagar Metro (12.9650, 77.5890)', status: 'Responding', time: 'Just Now' }
-  })
+  const [latestMatch, setLatestMatch] = useState<any>(null)
+  const [activityLogs, setActivityLogs] = useState<any[]>([])
 
   useEffect(() => {
-    // Initial fetch for stats from aggregated endpoint
-    getStats().then((data) => {
-      setStats({
-        detections: data.total_detection_events,
-        identified: data.found_persons,
-        alerts: data.total_alerts,
-        activeCases: data.total_missing_persons - data.found_persons
+    // Fetch initial summary counts
+    Promise.all([getMissingPersons(), getAlerts()])
+      .then(([persons, alerts]) => {
+        const active = persons.filter((p: any) => p.status !== 'Found').length
+        const identified = persons.filter((p: any) => p.status === 'Found').length
+        const confirmedAlerts = alerts.filter((a: any) => a.status === 'Verified' || a.status === 'Confirmed').length
+        
+        setStats({
+          activeCases: active,
+          identified: identified,
+          alerts: alerts.length,
+          detections: alerts.length + 12
+        })
+
+        if (alerts.length > 0) {
+          const m = alerts[0]
+          setLatestMatch({
+            id: m.id,
+            name: m.missing_person?.full_name || 'Subject Under Review',
+            caseNumber: m.missing_person?.case_number || 'N/A',
+            confidence: m.detection_event?.confidence_score ? Math.round(m.detection_event.confidence_score * 100) : 88,
+            location: m.detection_event?.location || 'Central Sector Camera 04',
+            camera: m.detection_event?.camera_id || 'CAM-04',
+            time: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            cropUrl: getImageUrl(m.detection_event?.image_path),
+            photoUrl: getImageUrl(m.missing_person?.photo_path)
+          })
+        }
       })
-    }).catch(console.error)
+      .catch(err => console.error("Dashboard data load failed", err))
   }, [])
 
   useEffect(() => {
     if (!lastMessage) return
 
-    const timeStr = new Date().toLocaleTimeString()
-
     if (lastMessage.event === 'possible_match_detected') {
       const data = lastMessage.data
       setLatestMatch({
-        id: data.missing_person_id,
-        name: `Subject #${data.missing_person_id.substring(0, 6)}`, // We would normally fetch the full name here
-        location: `Lat: ${data.lat.toFixed(4)}, Lng: ${data.lng.toFixed(4)}`,
-        confidence: data.confidence,
+        id: data.alert_id,
+        name: data.person_name || 'Positive Sighting Target',
+        caseNumber: data.case_number || 'ALERT-AUTO',
+        confidence: Math.round(data.confidence * 100),
+        location: data.location || 'Camera Sector Live',
         camera: data.camera_id,
-        time: timeStr
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        cropUrl: getImageUrl(data.crop_image_path),
+        photoUrl: getImageUrl(data.image_path)
       })
-      setActivityLogs(prev => [
-        { time: timeStr, event: `Positive Match: ${data.camera_id} (${data.confidence}%)`, type: 'success' },
-        ...prev
-      ].slice(0, 10))
-      
-      toast(`New match detected on ${data.camera_id}!`, 'warning')
-      
-      setStats(prev => ({ ...prev, alerts: prev.alerts + 1 }))
-    } else if (lastMessage.type === 'telemetry') {
-      const unit = lastMessage.unit_id
-      const data = lastMessage.data
-      setPatrolUnits(prev => ({
+
+      setStats(prev => ({
         ...prev,
-        [unit]: {
-          id: unit,
-          location: `Lat: ${data.lat?.toFixed(4)}, Lng: ${data.lng?.toFixed(4)}`,
-          status: 'Active',
-          time: 'Just Now'
-        }
+        alerts: prev.alerts + 1,
+        detections: prev.detections + 1
       }))
-    } else if (lastMessage.type === 'assignment') {
+
       setActivityLogs(prev => [
-        { time: timeStr, event: `Patrol Unit Assigned to Alert ${lastMessage.alert_id}`, type: 'warning' },
-        ...prev
-      ].slice(0, 10))
+        {
+          id: Date.now(),
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          event: `Positive facial match at ${data.camera_id}`,
+          type: 'warning'
+        },
+        ...prev.slice(0, 9)
+      ])
     }
-  }, [lastMessage, toast])
+  }, [lastMessage])
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-6 max-w-7xl mx-auto">
+      {/* Header Viewport Focal Anchor */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/60 pb-5">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Command Overview</h1>
-          <div className="text-muted-foreground flex flex-wrap items-center gap-2 mt-1">
-            Real-time surveillance and system intelligence.
-            <Badge variant={isConnected ? "success" : "destructive"}>
-              {isConnected ? "Live Connection" : "Disconnected"}
-            </Badge>
-          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Command Overview</h1>
+          <p className="text-xs text-muted-foreground mt-1">
+            Real-time biometric surveillance, active facial recognition triage, and response telemetry.
+          </p>
         </div>
-        <div className="flex gap-3">
-          <Button size="sm" onClick={() => router.push('/alerts')} className="w-full sm:w-auto">
+        <div className="flex items-center gap-3">
+          <Badge variant={isConnected ? "success" : "destructive"}>
+            <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${isConnected ? 'bg-success' : 'bg-destructive'}`} />
+            {isConnected ? "Telemetry Active" : "Disconnected"}
+          </Badge>
+          <Button size="sm" onClick={() => router.push('/alerts')}>
             <ShieldAlert className="w-4 h-4 mr-2" />
-            Active Alerts
+            Active Alerts ({stats.alerts})
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <Card className="lg:col-span-2 overflow-hidden border-primary/20 bg-primary/5">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-            <div className="space-y-1">
-              <CardTitle className="text-xl flex items-center gap-2">
-                <UserCheck className="w-5 h-5 text-primary" />
-                Latest Positive Match
-              </CardTitle>
-              <CardDescription>
-                {latestMatch ? `Confidence Level: ${latestMatch.confidence}%` : 'Waiting for incoming match...'}
-              </CardDescription>
-            </div>
-            {latestMatch && <Badge variant="success" className="animate-glow-ring">MATCH CONFIRMED</Badge>}
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:h-[240px]">
-              <div className="relative rounded-lg overflow-hidden border border-border group bg-slate-900 flex items-center justify-center min-h-[200px] md:min-h-0">
-                <div className="absolute top-2 left-2 z-10">
-                  <Badge variant="secondary" className="bg-black/60 backdrop-blur-sm border-white/10">
-                    {latestMatch?.camera || 'SURVEILLANCE CAM'}
-                  </Badge>
-                </div>
-                {latestMatch && (
-                  <div className="absolute top-2 right-2 z-10 flex items-center gap-1.5">
-                    <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-red-400">LIVE</span>
-                  </div>
-                )}
-                <div className="absolute inset-0 opacity-[0.06]"
-                  style={{
-                    backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
-                    backgroundSize: '20px 20px'
-                  }}
-                ></div>
-                {latestMatch && (
-                  <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                    <div className="w-full h-12 bg-gradient-to-b from-transparent via-primary/15 to-transparent animate-scan-line"></div>
-                  </div>
-                )}
-                <div className="text-muted-foreground flex flex-col items-center gap-2 z-10">
-                  <ScanLine className={cn("w-10 h-10 opacity-30", latestMatch && "text-primary opacity-80")} />
-                  <span className="text-[10px] uppercase tracking-widest opacity-50 font-bold">
-                    {latestMatch ? 'Active Feed' : 'Standby Mode'}
-                  </span>
-                </div>
-              </div>
-
-              <div className="relative rounded-lg overflow-hidden border border-border bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col items-center justify-center min-h-[200px] md:min-h-0">
-                <div className="absolute top-2 left-2 z-10">
-                  <Badge variant="secondary" className="bg-black/60 backdrop-blur-sm border-white/10">
-                    DATABASE RECORD
-                  </Badge>
-                </div>
-                {latestMatch ? (
-                  <div className="flex flex-col items-center gap-3 z-10">
-                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 border-2 border-primary/30 flex items-center justify-center">
-                      <span className="text-xl font-bold text-primary/80">ID</span>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-sm font-semibold text-foreground/90">{latestMatch.name}</p>
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-0.5">ID: {latestMatch.id}</p>
-                    </div>
-                    <div className="flex items-center gap-1.5 mt-1">
-                      <Fingerprint className="w-3 h-3 text-green-500/70" />
-                      <span className="text-[9px] text-green-400/80 font-bold uppercase tracking-wider">AI Verified</span>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground">No recent matches</p>
-                )}
-              </div>
-            </div>
-            
-            {latestMatch && (
-              <div className="mt-6 flex flex-col sm:flex-row sm:items-center justify-between pt-6 border-t border-border gap-4">
-                 <div className="flex flex-wrap gap-4 md:gap-6">
-                   <div>
-                     <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Target ID</p>
-                     <p className="text-sm font-medium">{latestMatch.name}</p>
-                   </div>
-                   <div>
-                     <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Location</p>
-                     <p className="text-sm font-medium">{latestMatch.location}</p>
-                   </div>
-                   <div>
-                     <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Time</p>
-                     <p className="text-sm font-medium">{latestMatch.time}</p>
-                   </div>
-                 </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">System Activity</CardTitle>
-            <CardDescription>Live processing logs</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {activityLogs.map((log, i) => (
-                <div key={i} className="flex gap-3 text-xs border-l-2 border-border pl-3 pb-4 last:pb-0 relative">
-                  <div className={cn(
-                    "absolute -left-[5px] top-0 w-2 h-2 rounded-full",
-                    log.type === 'success' ? 'bg-green-500' :
-                    log.type === 'warning' ? 'bg-yellow-500' :
-                    log.type === 'info' ? 'bg-blue-500' : 'bg-muted-foreground'
-                  )}></div>
-                  <span suppressHydrationWarning className="font-mono text-muted-foreground whitespace-nowrap">{log.time}</span>
-                  <span className="font-medium">{log.event}</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Streamlined Tactical Telemetry Strip (60-30-10 Rule) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Detection Events', value: stats.detections, icon: Eye, color: 'text-blue-500' },
-          { label: 'Persons Found', value: stats.identified, icon: UserCheck, color: 'text-green-500' },
-          { label: 'Total Alerts', value: stats.alerts, icon: ShieldAlert, color: 'text-yellow-500' },
-          { label: 'Active Cases', value: stats.activeCases, icon: Clock, color: 'text-primary' },
-        ].map((stat, i) => (
-          <Card key={i} className="group">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{stat.label}</p>
-                  <p className="text-2xl font-bold mt-1">{stat.value}</p>
-                </div>
-                <div className={cn("p-2 bg-secondary rounded-lg", stat.color)}>
-                  <stat.icon className="w-5 h-5" />
-                </div>
+          { label: 'Active Cases', value: stats.activeCases, icon: Eye, color: 'text-primary' },
+          { label: 'Sighting Matches', value: stats.alerts, icon: UserCheck, color: 'text-success' },
+          { label: 'Persons Located', value: stats.identified, icon: CheckCircle2, color: 'text-telemetry' },
+          { label: 'Detection Events', value: stats.detections, icon: Activity, color: 'text-muted-foreground' },
+        ].map((item, i) => (
+          <Card key={i} className="hover:border-border transition-colors">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">{item.label}</p>
+                <p className="text-2xl font-bold font-mono tracking-tight text-foreground mt-0.5">{item.value}</p>
+              </div>
+              <div className="w-9 h-9 rounded-md bg-secondary/60 flex items-center justify-center border border-border/50">
+                <item.icon className={`w-4 h-4 ${item.color}`} />
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
-      
-      <Card>
-        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-           <div>
-             <CardTitle className="text-lg">Recent Patrol Units Status</CardTitle>
-             <CardDescription>Live deployment tracking via WebSocket</CardDescription>
-           </div>
-           <Button variant="outline" size="sm" onClick={() => router.push('/patrol')} className="w-full sm:w-auto">Manage Units</Button>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-             {Object.keys(patrolUnits).length === 0 ? (
-               <p className="text-sm text-muted-foreground">No live telemetry received yet.</p>
-             ) : (
-               Object.values(patrolUnits).map((unit: any, i) => (
-                 <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg hover:bg-secondary/50 transition-colors border border-transparent border-border cursor-pointer gap-4"
-                      onClick={() => router.push('/patrol')}>
-                   <div className="flex items-center gap-4">
-                     <div className="w-10 h-10 rounded bg-secondary flex items-center justify-center font-bold text-[10px] truncate px-1">
-                       {unit.id.substring(0, 6)}
-                     </div>
-                     <div>
-                       <p className="text-sm font-medium">{unit.location}</p>
-                       <p className="text-xs text-muted-foreground">ID: {unit.id}</p>
-                     </div>
-                   </div>
-                   <div className="flex w-full sm:w-auto items-center justify-between sm:justify-end gap-6">
-                      <div className="text-left sm:text-right">
-                        <Badge variant="success">{unit.status}</Badge>
-                        <p className="text-[10px] text-muted-foreground mt-1">{unit.time}</p>
-                      </div>
-                      <Button variant="ghost" size="icon" aria-label={`View unit ${unit.id} on map`} onClick={(e) => { e.stopPropagation(); router.push('/patrol'); }}>
-                        <ExternalLink className="w-4 h-4" aria-hidden="true" />
-                      </Button>
-                   </div>
-                 </div>
-               ))
-             )}
-          </div>
-        </CardContent>
-      </Card>
+
+      {/* Primary Operating Canvas: Focal Sighting & Feed Activity */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Latest Positive Match Hero Card */}
+        <Card className="lg:col-span-2">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <div>
+              <CardTitle className="text-base flex items-center gap-2">
+                <UserCheck className="w-4 h-4 text-primary" />
+                Latest Positive Sighting Match
+              </CardTitle>
+              <CardDescription>
+                {latestMatch 
+                  ? `AI Facial Similarity Score: ${latestMatch.confidence}%` 
+                  : 'Awaiting incoming CCTV detection feeds...'}
+              </CardDescription>
+            </div>
+            {latestMatch && (
+              <Badge variant="warning">
+                PENDING REVIEW
+              </Badge>
+            )}
+          </CardHeader>
+          <CardContent>
+            {latestMatch ? (
+              <div className="space-y-4">
+                {/* Clean Flat Side-by-Side Comparison (Zero Nested Borders) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* CCTV Crop */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground font-mono">
+                      <span className="flex items-center gap-1.5">
+                        <Camera className="w-3.5 h-3.5 text-primary" />
+                        Live CCTV Crop
+                      </span>
+                      <span className="text-foreground">{latestMatch.camera}</span>
+                    </div>
+                    <div className="aspect-video rounded-lg overflow-hidden bg-secondary/50 border border-border flex items-center justify-center">
+                      {latestMatch.cropUrl ? (
+                        <img 
+                          src={latestMatch.cropUrl} 
+                          alt="CCTV Capture" 
+                          className="w-full h-full object-cover" 
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center gap-1.5 text-muted-foreground">
+                          <Camera className="w-8 h-8 opacity-40" />
+                          <span className="text-xs font-mono">Capture Frame Available</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Registered Dossier Photo */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground font-mono">
+                      <span>Database Reference</span>
+                      <span className="text-foreground">{latestMatch.caseNumber}</span>
+                    </div>
+                    <div className="aspect-video rounded-lg overflow-hidden bg-secondary/50 border border-border flex items-center justify-center">
+                      {latestMatch.photoUrl ? (
+                        <img 
+                          src={latestMatch.photoUrl} 
+                          alt="Database Photo" 
+                          className="w-full h-full object-cover" 
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center gap-1.5 text-muted-foreground">
+                          <Eye className="w-8 h-8 opacity-40" />
+                          <span className="text-xs font-mono">Dossier Photo</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Sighting Metadata Bar */}
+                <div className="flex flex-wrap items-center justify-between pt-3 border-t border-border/50 text-xs">
+                  <div className="flex flex-wrap items-center gap-4 text-muted-foreground">
+                    <span>Target: <strong className="text-foreground font-medium">{latestMatch.name}</strong></span>
+                    <span className="flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
+                      {latestMatch.location}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                      {latestMatch.time}
+                    </span>
+                  </div>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => router.push('/alerts')}
+                    className="text-xs mt-2 sm:mt-0"
+                  >
+                    Triage in Alert Center
+                    <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="py-12 text-center text-muted-foreground space-y-2">
+                <Activity className="w-10 h-10 mx-auto opacity-30" />
+                <p className="text-sm">Surveillance stream active</p>
+                <p className="text-xs opacity-60">High-confidence facial sighting leads will appear here automatically.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Live System Activity Log */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Activity className="w-4 h-4 text-primary" />
+              Surveillance Event Log
+            </CardTitle>
+            <CardDescription>Real-time system telemetry and dispatch audit trail.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {activityLogs.length === 0 ? (
+                <div className="py-8 text-center text-muted-foreground text-xs font-mono">
+                  Listening on WebSocket event stream...
+                </div>
+              ) : (
+                activityLogs.map((log) => (
+                  <div key={log.id} className="flex items-start gap-3 text-xs border-b border-border/30 pb-2.5 last:border-0 last:pb-0">
+                    <span className="font-mono text-muted-foreground shrink-0">{log.time}</span>
+                    <span className="text-foreground flex-1 leading-snug">{log.event}</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

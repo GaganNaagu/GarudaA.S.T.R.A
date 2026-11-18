@@ -1,138 +1,164 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   StyleSheet,
   Text,
   View,
-  ScrollView,
+  FlatList,
   Image,
-  TouchableOpacity,
+  TextInput,
+  Pressable,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SPACING, ROUNDED } from '../constants/theme';
 import { CaseItem } from '../utils/mockState';
-import TacticalCard from '../components/TacticalCard';
+import { ScreenWrapper } from '../components/ScreenWrapper';
+import { SurfaceCard } from '../components/SurfaceCard';
 
 interface CasesScreenProps {
   cases: CaseItem[];
 }
 
 export const CasesScreen: React.FC<CasesScreenProps> = ({ cases }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredCases = useMemo(() => {
+    if (!searchQuery.trim()) return cases;
+    const q = searchQuery.toLowerCase();
+    return cases.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        c.lastSeen.toLowerCase().includes(q) ||
+        c.caseType.toLowerCase().includes(q)
+    );
+  }, [cases, searchQuery]);
+
+  const renderCaseItem = ({ item }: { item: CaseItem }) => {
+    const isWanted = item.caseType === 'WANTED';
+    const isActive = item.status === 'ACTIVE';
+
+    return (
+      <SurfaceCard style={styles.card}>
+        <View style={styles.cardRow}>
+          {/* Subject Photo */}
+          <View style={styles.photoContainer}>
+            <Image
+              source={{ uri: item.photoUrl }}
+              style={styles.photo}
+              defaultSource={require('../../assets/icon.png')}
+            />
+            <View
+              style={[
+                styles.typeTag,
+                { backgroundColor: isWanted ? 'rgba(239, 68, 68, 0.9)' : 'rgba(6, 182, 212, 0.9)' },
+              ]}
+            >
+              <Text style={styles.typeText}>{item.caseType}</Text>
+            </View>
+          </View>
+
+          {/* Case Details */}
+          <View style={styles.detailsCol}>
+            <View style={styles.titleRow}>
+              <Text style={styles.name} numberOfLines={1}>
+                {item.name}
+              </Text>
+              <View
+                style={[
+                  styles.statusBadge,
+                  {
+                    backgroundColor: isActive ? 'rgba(34, 197, 94, 0.15)' : 'rgba(148, 163, 184, 0.15)',
+                    borderColor: isActive ? COLORS.secondary : COLORS.outlineVariant,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.statusBadgeText,
+                    { color: isActive ? '#4ade80' : COLORS.onSurfaceVariant },
+                  ]}
+                >
+                  {item.status}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.grid}>
+              <View style={styles.gridItem}>
+                <Text style={styles.gridLabel}>PROFILE</Text>
+                <Text style={styles.gridVal}>
+                  {item.age} YRS · {item.gender}
+                </Text>
+              </View>
+
+              <View style={styles.gridItem}>
+                <Text style={styles.gridLabel}>LAST KNOWN LOCATION</Text>
+                <Text style={styles.gridVal} numberOfLines={1}>
+                  {item.lastSeen}
+                </Text>
+              </View>
+
+              <View style={styles.gridItem}>
+                <Text style={styles.gridLabel}>MISSING SINCE</Text>
+                <Text style={styles.gridValMono}>{item.missingSince}</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+      </SurfaceCard>
+    );
+  };
+
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <ScreenWrapper>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerTitleContainer}>
-          <MaterialIcons name="folder-shared" size={24} color={COLORS.primary} style={{ marginRight: 8 }} />
-          <Text style={styles.headerTitle}>ACTIVE CASES</Text>
+          <MaterialIcons name="folder-shared" size={22} color={COLORS.primary} style={{ marginRight: 8 }} />
+          <Text style={styles.headerTitle}>ACTIVE DOSSIERS</Text>
         </View>
-        <View style={styles.headerRight}>
-          <Text style={styles.headerCount}>{cases.length} UNRESOLVED</Text>
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{cases.length} REGISTERED</Text>
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {cases.map((item) => (
-          <TacticalCard
-            key={item.id}
-            accentColor={COLORS.primary}
-            containerStyle={styles.cardContainer}
-          >
-            <View style={styles.cardPadding}>
-              <View style={styles.row}>
-                {/* Image */}
-                <View style={styles.imageWrapper}>
-                  <Image source={{ uri: item.photoUrl }} style={styles.image} />
-                </View>
+      {/* Search Filter Strip */}
+      <View style={styles.searchStrip}>
+        <MaterialIcons name="search" size={18} color={COLORS.onSurfaceVariant} style={{ marginRight: 8 }} />
+        <TextInput
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholder="Filter by name or location..."
+          placeholderTextColor={COLORS.outline}
+          style={styles.searchInput}
+          keyboardAppearance="dark"
+        />
+        {searchQuery.length > 0 ? (
+          <Pressable onPress={() => setSearchQuery('')} hitSlop={8}>
+            <MaterialIcons name="close" size={16} color={COLORS.onSurfaceVariant} />
+          </Pressable>
+        ) : null}
+      </View>
 
-                {/* Details */}
-                <View style={styles.detailsCol}>
-                  <View style={styles.nameRow}>
-                    <Text style={styles.name}>{item.name}</Text>
-                    <View style={styles.badgeRow}>
-                      <View
-                        style={[
-                          styles.typeBadge,
-                          {
-                            backgroundColor:
-                              item.caseType === 'WANTED'
-                                ? 'rgba(255, 180, 171, 0.12)'
-                                : 'rgba(76, 215, 246, 0.12)',
-                            borderColor:
-                              item.caseType === 'WANTED'
-                                ? COLORS.error
-                                : COLORS.secondary,
-                          },
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.typeText,
-                            {
-                              color:
-                                item.caseType === 'WANTED'
-                                  ? COLORS.error
-                                  : COLORS.secondary,
-                            },
-                          ]}
-                        >
-                          {item.caseType}
-                        </Text>
-                      </View>
-                      <View style={styles.statusBadge}>
-                        <Text style={styles.statusText}>{item.status}</Text>
-                      </View>
-                    </View>
-                  </View>
-
-                  <View style={styles.grid}>
-                    <View style={styles.gridItem}>
-                      <Text style={styles.label}>AGE / GENDER</Text>
-                      <Text style={styles.value}>
-                        {item.age} YRS • {item.gender}
-                      </Text>
-                    </View>
-                    <View style={styles.gridItem}>
-                      <Text style={styles.label}>
-                        {item.caseType === 'WANTED' ? 'OUTSTANDING SINCE' : 'MISSING SINCE'}
-                      </Text>
-                      <Text style={styles.value}>{item.missingSince}</Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.lastSeenRow}>
-                    <Text style={styles.label}>LAST SEEN AREA</Text>
-                    <Text style={styles.value}>
-                      <MaterialIcons name="place" size={14} color={COLORS.primary} /> {item.lastSeen}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-
-              {item.description && (
-                <Text style={styles.descriptionText} numberOfLines={2}>
-                  {item.description}
-                </Text>
-              )}
-
-              <TouchableOpacity style={styles.footerButton}>
-                <Text style={styles.footerButtonText}>OPEN CASE DOSSIER</Text>
-              </TouchableOpacity>
-            </View>
-          </TacticalCard>
-        ))}
-      </ScrollView>
-    </SafeAreaView>
+      <FlatList
+        data={filteredCases}
+        keyExtractor={(item) => item.id}
+        renderItem={renderCaseItem}
+        contentContainerStyle={styles.listContent}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <MaterialIcons name="folder-open" size={48} color={COLORS.outline} style={{ marginBottom: 12 }} />
+            <Text style={styles.emptyTitle}>No Matching Cases</Text>
+            <Text style={styles.emptySubtitle}>Try adjusting your filter query or synchronize with headquarters.</Text>
+          </View>
+        }
+      />
+    </ScreenWrapper>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
   header: {
-    height: SPACING.touchTargetMin + 12,
+    height: SPACING.touchTargetMin + 8,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.outlineVariant,
     flexDirection: 'row',
@@ -144,149 +170,156 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  headerIcon: {
-    fontSize: 20,
-    marginRight: 8,
-  },
   headerTitle: {
     ...TYPOGRAPHY.headlineSmMobile,
-    color: COLORS.primary,
+    color: COLORS.onSurface,
     fontWeight: '700',
+    fontSize: 16,
   },
-  headerRight: {
-    backgroundColor: 'rgba(212, 160, 23, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(212, 160, 23, 0.3)',
-    borderRadius: ROUNDED.sm,
+  badge: {
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 3,
+    borderRadius: ROUNDED.FULL,
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
+    backgroundColor: COLORS.surfaceContainer,
   },
-  headerCount: {
-    ...TYPOGRAPHY.dataMono,
-    fontSize: 10,
+  badgeText: {
+    ...TYPOGRAPHY.labelCaps,
+    fontSize: 9,
     color: COLORS.primary,
+    fontFamily: 'monospace',
     fontWeight: '700',
   },
-  scrollContent: {
+  searchStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.surfaceContainer,
+    borderRadius: ROUNDED.MD,
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
+    marginHorizontal: SPACING.gutter,
+    marginTop: SPACING.md,
+    marginBottom: SPACING.sm,
+    paddingHorizontal: 12,
+    height: 40,
+  },
+  searchInput: {
+    flex: 1,
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.onSurface,
+    paddingVertical: 0,
+  },
+  listContent: {
     padding: SPACING.gutter,
-    paddingBottom: 48,
+    paddingBottom: 96,
   },
-  cardContainer: {
-    marginBottom: 16,
+  card: {
+    marginBottom: SPACING.md,
+    padding: SPACING.md,
   },
-  cardPadding: {
-    padding: 14,
-  },
-  row: {
+  cardRow: {
     flexDirection: 'row',
     gap: 12,
   },
-  imageWrapper: {
-    width: 100,
-    height: 120,
-    borderRadius: ROUNDED.DEFAULT,
+  photoContainer: {
+    width: 84,
+    height: 84,
+    borderRadius: ROUNDED.MD,
     overflow: 'hidden',
+    backgroundColor: COLORS.surfaceHigh,
     borderWidth: 1,
     borderColor: COLORS.outlineVariant,
-    backgroundColor: COLORS.surfaceLow,
+    position: 'relative',
   },
-  image: {
+  photo: {
     width: '100%',
     height: '100%',
     resizeMode: 'cover',
-    opacity: 0.8,
+  },
+  typeTag: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingVertical: 2,
+    alignItems: 'center',
+  },
+  typeText: {
+    ...TYPOGRAPHY.labelCaps,
+    fontSize: 8,
+    color: '#FFFFFF',
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   detailsCol: {
     flex: 1,
     justifyContent: 'space-between',
   },
-  nameRow: {
+  titleRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
   },
   name: {
-    ...TYPOGRAPHY.headlineSm,
+    ...TYPOGRAPHY.titleMedium,
     color: COLORS.onSurface,
     fontWeight: '700',
+    fontSize: 15,
+    flex: 1,
+    marginRight: 8,
   },
   statusBadge: {
-    backgroundColor: 'rgba(246, 190, 57, 0.12)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: ROUNDED.sm,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: ROUNDED.SM,
     borderWidth: 1,
-    borderColor: COLORS.primary,
-  },
-  statusText: {
-    ...TYPOGRAPHY.labelCaps,
-    fontSize: 8,
-    color: COLORS.primary,
-    fontWeight: '700',
-  },
-  badgeRow: {
-    flexDirection: 'row',
-    gap: 6,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  typeBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: ROUNDED.sm,
-    borderWidth: 1,
-  },
-  typeText: {
+  statusBadgeText: {
     ...TYPOGRAPHY.labelCaps,
     fontSize: 8,
     fontWeight: '700',
-  },
-  descriptionText: {
-    ...TYPOGRAPHY.bodyMd,
-    fontSize: 12,
-    color: COLORS.onSurfaceVariant,
-    marginTop: 10,
-    lineHeight: 16,
-    fontStyle: 'italic',
+    fontFamily: 'monospace',
   },
   grid: {
-    flexDirection: 'row',
-    marginTop: 8,
-    gap: 12,
+    gap: 3,
   },
-  gridItem: {
-    flex: 1,
-  },
-  label: {
+  gridItem: {},
+  gridLabel: {
     ...TYPOGRAPHY.labelCaps,
     fontSize: 8,
-    color: COLORS.outline,
-    lineHeight: 12,
+    color: COLORS.onSurfaceVariant,
   },
-  value: {
-    ...TYPOGRAPHY.bodyMd,
-    fontSize: 12,
+  gridVal: {
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.onSurface,
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  gridValMono: {
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.onSurfaceVariant,
+    fontSize: 11,
+    fontFamily: 'monospace',
+  },
+  emptyContainer: {
+    paddingVertical: 64,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+  },
+  emptyTitle: {
+    ...TYPOGRAPHY.titleMedium,
     color: COLORS.onSurface,
     fontWeight: '600',
-    marginTop: 2,
+    marginBottom: 4,
   },
-  lastSeenRow: {
-    marginTop: 8,
-  },
-  footerButton: {
-    borderWidth: 1,
-    borderColor: COLORS.outlineVariant,
-    borderRadius: ROUNDED.DEFAULT,
-    height: 36,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 14,
-    backgroundColor: COLORS.surfaceLow,
-  },
-  footerButtonText: {
-    ...TYPOGRAPHY.labelCaps,
-    fontSize: 10,
+  emptySubtitle: {
+    ...TYPOGRAPHY.bodySmall,
     color: COLORS.onSurfaceVariant,
-    fontWeight: '700',
+    textAlign: 'center',
   },
 });
-export default CasesScreen;

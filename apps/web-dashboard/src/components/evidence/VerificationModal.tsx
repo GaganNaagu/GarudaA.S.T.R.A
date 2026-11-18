@@ -59,17 +59,17 @@ export function VerificationModal({
       onClick={onClose}
     >
       <Card
-        className="w-full max-w-lg bg-slate-900 border-slate-700 shadow-2xl text-slate-100"
+        className="w-full max-w-lg shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <CardHeader className="flex flex-row items-center justify-between border-b border-slate-800 pb-4">
+        <CardHeader className="flex flex-row items-center justify-between border-b border-border pb-4">
           <div>
             <div className="flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-blue-400" />
+              <ShieldCheck className="w-5 h-5 text-accent" />
               <CardTitle className="text-lg font-bold">Investigator Sighting Verification</CardTitle>
             </div>
-            <CardDescription className="text-slate-400 text-xs mt-1">
-              Case <span className="font-mono font-semibold text-slate-200">{caseNumber}</span> · Sighting ID: {sighting.id.slice(0, 8)}...
+            <CardDescription className="text-xs mt-1">
+              Case <span className="font-mono font-semibold text-foreground">{caseNumber}</span> · Sighting ID: {sighting.id.slice(0, 8)}...
             </CardDescription>
           </div>
           <Button
@@ -77,7 +77,7 @@ export function VerificationModal({
             size="icon"
             onClick={onClose}
             aria-label="Close dialog"
-            className="text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
+            className="text-muted-foreground hover:text-foreground cursor-pointer"
           >
             <X className="w-4 h-4" aria-hidden="true" />
           </Button>
@@ -87,59 +87,59 @@ export function VerificationModal({
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Action Selector */}
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+              <label className="text-xs font-semibold text-foreground uppercase tracking-wider">
                 Verification Verdict
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => setSelectedStatus('Confirmed')}
-                  className={`flex flex-col items-center justify-center p-3 rounded-lg border text-sm font-medium transition-all ${
+                  className={`flex flex-col items-center justify-center p-3 rounded-lg border text-sm font-medium transition-all cursor-pointer ${
                     selectedStatus === 'Confirmed'
-                      ? 'bg-green-500/20 border-green-500 text-green-300 shadow-lg shadow-green-500/10'
-                      : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:border-slate-600'
+                      ? 'bg-status-active/20 border-status-active text-status-active shadow-sm'
+                      : 'bg-secondary/40 border-border text-muted-foreground hover:border-border/80'
                   }`}
                 >
-                  <CheckCircle2 className="w-6 h-6 mb-1.5 text-green-400" />
+                  <CheckCircle2 className="w-6 h-6 mb-1.5 text-status-active" />
                   <span>Confirm Match</span>
-                  <span className="text-[10px] text-slate-400 mt-0.5">Verified subject sighting lead</span>
+                  <span className="text-[10px] text-muted-foreground mt-0.5">Verified subject sighting lead</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setSelectedStatus('Rejected')}
-                  className={`flex flex-col items-center justify-center p-3 rounded-lg border text-sm font-medium transition-all ${
+                  className={`flex flex-col items-center justify-center p-3 rounded-lg border text-sm font-medium transition-all cursor-pointer ${
                     selectedStatus === 'Rejected'
-                      ? 'bg-red-500/20 border-red-500 text-red-300 shadow-lg shadow-red-500/10'
-                      : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:border-slate-600'
+                      ? 'bg-status-critical/20 border-status-critical text-status-critical shadow-sm'
+                      : 'bg-secondary/40 border-border text-muted-foreground hover:border-border/80'
                   }`}
                 >
-                  <XCircle className="w-6 h-6 mb-1.5 text-red-400" />
+                  <XCircle className="w-6 h-6 mb-1.5 text-status-critical" />
                   <span>Reject Match</span>
-                  <span className="text-[10px] text-slate-400 mt-0.5">Discard false positive</span>
+                  <span className="text-[10px] text-muted-foreground mt-0.5">Discard false positive</span>
                 </button>
               </div>
             </div>
 
             {/* Metric Snapshot */}
-            <div className="grid grid-cols-3 gap-2 p-3 bg-slate-950/60 rounded-md border border-slate-800 text-center font-mono">
+            <div className="grid grid-cols-3 gap-2 p-3 bg-secondary/30 rounded-md border border-border text-center font-mono">
               <div>
-                <p className="text-[10px] text-slate-500 uppercase">AI Similarity</p>
-                <p className="text-sm font-bold text-blue-400">{sighting.similarity_score.toFixed(1)}%</p>
+                <p className="text-[10px] text-muted-foreground uppercase">AI Similarity</p>
+                <p className="text-sm font-bold text-accent">{sighting.similarity_score.toFixed(1)}%</p>
               </div>
               <div>
-                <p className="text-[10px] text-slate-500 uppercase">Quality (Blur)</p>
-                <p className="text-sm font-bold text-slate-200">{sighting.quality_score.toFixed(1)}</p>
+                <p className="text-[10px] text-muted-foreground uppercase">Quality (Blur)</p>
+                <p className="text-sm font-bold text-foreground">{sighting.quality_score.toFixed(1)}</p>
               </div>
               <div>
-                <p className="text-[10px] text-slate-500 uppercase">Current Status</p>
+                <p className="text-[10px] text-muted-foreground uppercase">Current Status</p>
                 <Badge
                   className={`text-[10px] uppercase font-bold mt-0.5 border ${
                     sighting.verification_status === 'Confirmed'
-                      ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                      ? 'bg-status-active/20 text-status-active border-status-active/30'
                       : sighting.verification_status === 'Rejected'
-                      ? 'bg-red-500/20 text-red-400 border-red-500/30'
-                      : 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                      ? 'bg-status-critical/20 text-status-critical border-status-critical/30'
+                      : 'bg-status-warning/20 text-status-warning border-status-warning/30'
                   }`}
                 >
                   {sighting.verification_status}
@@ -149,28 +149,28 @@ export function VerificationModal({
 
             {/* Review Notes Input */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+              <label className="text-xs font-semibold text-foreground uppercase tracking-wider flex items-center justify-between">
                 <span>Investigator Notes</span>
-                <span className="text-[10px] text-slate-500 lowercase">Audited in ActivityLog</span>
+                <span className="text-[10px] text-muted-foreground lowercase">Audited in ActivityLog</span>
               </label>
               <textarea
                 rows={3}
                 required
                 placeholder="State basis for confirmation (e.g. 'Matching facial scar and navy blue hoodie from case report')..."
-                className="w-full bg-slate-950 border border-slate-700 rounded-md px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none font-sans"
+                className="w-full bg-secondary/30 border border-border rounded-md px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary resize-none font-sans"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
               />
             </div>
 
             {/* Modal Actions */}
-            <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-800">
+            <div className="flex items-center justify-end gap-3 pt-2 border-t border-border">
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
                 onClick={onClose}
-                className="text-slate-400 hover:text-white"
+                className="text-muted-foreground hover:text-foreground cursor-pointer"
               >
                 Cancel
               </Button>
@@ -178,11 +178,11 @@ export function VerificationModal({
                 type="submit"
                 size="sm"
                 disabled={isSubmitting}
-                className={
+                className={`font-medium active:scale-[0.98] transition-all cursor-pointer ${
                   selectedStatus === 'Confirmed'
-                    ? 'bg-green-600 hover:bg-green-500 text-white font-medium'
-                    : 'bg-red-600 hover:bg-red-500 text-white font-medium'
-                }
+                    ? 'bg-status-active hover:bg-status-active/90 text-white'
+                    : 'bg-status-critical hover:bg-status-critical/90 text-white'
+                }`}
               >
                 {isSubmitting ? 'Recording Verification...' : `Submit as ${selectedStatus}`}
               </Button>

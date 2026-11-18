@@ -1,10 +1,10 @@
 import React from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Image } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { StyleSheet, Text, View, Image } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SPACING, ROUNDED } from '../constants/theme';
-import ScanLine from '../components/ScanLine';
-import PulseIndicator from '../components/PulseIndicator';
+import { ScreenWrapper } from '../components/ScreenWrapper';
+import { PrimaryButton } from '../components/PrimaryButton';
+import { SurfaceCard } from '../components/SurfaceCard';
 
 interface DutyToggleScreenProps {
   officerName: string;
@@ -13,60 +13,64 @@ interface DutyToggleScreenProps {
 
 export const DutyToggleScreen: React.FC<DutyToggleScreenProps> = ({ officerName, onAcknowledge }) => {
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <View style={styles.headerTitleContainer}>
-            <MaterialIcons name="security" size={24} color={COLORS.primary} style={{ marginRight: 8 }} />
-            <Text style={styles.headerTitle}>DUTY CHECK</Text>
-          </View>
-        </View>
-
-        <View style={styles.content}>
-          <View style={styles.portraitWrapper}>
-            <View style={styles.portraitBorder}>
-              <ScanLine color={COLORS.secondary} duration={2500} />
-              <Image source={require('../../assets/icon.png')} style={styles.portrait} />
-            </View>
-            <Text style={styles.portraitTitle}>Welcome, {officerName}</Text>
-            <Text style={styles.portraitSubtitle}>Set your initial duty status to access the tactical terminal.</Text>
-          </View>
-
-          <TouchableOpacity
-            onPress={() => onAcknowledge('ACTIVE DUTY')}
-            style={styles.buttonActive}
-          >
-            <View style={{flexDirection: 'row', alignItems: 'center'}}>
-              <PulseIndicator color={COLORS.primary} size={10} pulseSize={3} />
-              <Text style={styles.buttonTextActive}>GO ON DUTY</Text>
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => onAcknowledge('STANDBY / STAND DOWN')}
-            style={styles.buttonStandby}
-          >
-             <Text style={styles.buttonTextStandby}>PROCEED OFF-DUTY (STANDBY)</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.footer}>
-          <Text style={styles.footerCopyright}>
-            © 2026 GARUDA ASTRA | TACTICAL OPS COMMAND
-          </Text>
+    <ScreenWrapper scrollable contentContainerStyle={styles.container}>
+      <View style={styles.header}>
+        <View style={styles.headerTitleContainer}>
+          <MaterialIcons name="security" size={24} color={COLORS.primary} style={{ marginRight: 8 }} />
+          <Text style={styles.headerTitle}>DUTY CHECK</Text>
         </View>
       </View>
-    </SafeAreaView>
+
+      <View style={styles.content}>
+        <View style={styles.portraitWrapper}>
+          <View style={styles.portraitBorder}>
+            <Image source={require('../../assets/icon.png')} style={styles.portrait} />
+          </View>
+          <Text style={styles.portraitTitle}>Welcome, {officerName}</Text>
+          <Text style={styles.portraitSubtitle}>
+            Select your operational field status to activate live GPS beaconing and dispatch alerts.
+          </Text>
+        </View>
+
+        <SurfaceCard style={styles.card}>
+          <View style={styles.cardContent}>
+            <View style={styles.statusRow}>
+              <View style={[styles.statusDot, { backgroundColor: COLORS.primary }]} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.statusTitle}>Active Patrol Duty</Text>
+                <Text style={styles.statusDesc}>
+                  Live telemetry streamed to Central Dispatch. Receive instant geolocation sighting alerts.
+                </Text>
+              </View>
+            </View>
+
+            <PrimaryButton
+              title="GO ON ACTIVE DUTY"
+              onPress={() => onAcknowledge('ACTIVE DUTY')}
+              variant="primary"
+              size="lg"
+              icon="radio-button-checked"
+              style={styles.btnPrimary}
+            />
+          </View>
+        </SurfaceCard>
+
+        <PrimaryButton
+          title="PROCEED OFF-DUTY (STANDBY)"
+          onPress={() => onAcknowledge('STANDBY / STAND DOWN')}
+          variant="secondary"
+          size="md"
+          icon="power-settings-new"
+          style={styles.btnSecondary}
+        />
+      </View>
+    </ScreenWrapper>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
   container: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: 'space-between',
   },
   header: {
@@ -91,81 +95,76 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     paddingHorizontal: SPACING.gutter,
+    paddingVertical: SPACING.xxl,
+    maxWidth: 420,
+    width: '100%',
+    alignSelf: 'center',
   },
   portraitWrapper: {
     alignItems: 'center',
-    marginBottom: 48,
+    marginBottom: SPACING.xl,
   },
   portraitBorder: {
-    position: 'relative',
-    width: 96,
-    height: 96,
-    borderRadius: 48,
+    width: 72,
+    height: 72,
+    borderRadius: ROUNDED.LG,
     borderWidth: 1,
     borderColor: COLORS.outlineVariant,
-    overflow: 'hidden',
     backgroundColor: COLORS.surfaceContainer,
-    marginBottom: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.md,
   },
   portrait: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
+    width: 52,
+    height: 52,
+    borderRadius: ROUNDED.MD,
   },
   portraitTitle: {
-    ...TYPOGRAPHY.headlineMd,
+    ...TYPOGRAPHY.headlineSmMobile,
     color: COLORS.onSurface,
-    textAlign: 'center',
+    fontWeight: '700',
+    marginBottom: 4,
   },
   portraitSubtitle: {
-    ...TYPOGRAPHY.bodyLg,
-    fontSize: 14,
+    ...TYPOGRAPHY.bodySmall,
     color: COLORS.onSurfaceVariant,
     textAlign: 'center',
-    marginTop: 8,
+    lineHeight: 18,
   },
-  buttonActive: {
-    height: 56,
-    borderWidth: 1,
-    borderColor: COLORS.primary,
-    backgroundColor: 'rgba(246, 190, 57, 0.1)',
-    borderRadius: ROUNDED.lg,
+  card: {
+    marginBottom: SPACING.lg,
+  },
+  cardContent: {
+    padding: SPACING.lg,
+  },
+  statusRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
+    alignItems: 'flex-start',
+    marginBottom: SPACING.lg,
   },
-  buttonTextActive: {
-    ...TYPOGRAPHY.headlineSm,
+  statusDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginTop: 4,
+    marginRight: 12,
+  },
+  statusTitle: {
+    ...TYPOGRAPHY.titleMedium,
+    color: COLORS.onSurface,
     fontWeight: '700',
-    color: COLORS.primary,
-    marginLeft: 12,
+    marginBottom: 2,
   },
-  buttonStandby: {
-    height: 56,
-    borderWidth: 1,
-    borderColor: COLORS.outlineVariant,
-    backgroundColor: 'rgba(79, 70, 52, 0.05)',
-    borderRadius: ROUNDED.lg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonTextStandby: {
-    ...TYPOGRAPHY.headlineSm,
-    fontSize: 14,
-    fontWeight: '600',
+  statusDesc: {
+    ...TYPOGRAPHY.bodySmall,
     color: COLORS.onSurfaceVariant,
+    lineHeight: 18,
   },
-  footer: {
-    alignItems: 'center',
-    paddingVertical: 16,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(79, 70, 52, 0.2)',
+  btnPrimary: {
+    width: '100%',
   },
-  footerCopyright: {
-    ...TYPOGRAPHY.labelCaps,
-    fontSize: 9,
-    color: COLORS.outlineVariant,
+  btnSecondary: {
+    width: '100%',
   },
 });

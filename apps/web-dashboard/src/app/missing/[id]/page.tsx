@@ -40,7 +40,6 @@ export default function CaseDetailPage() {
       const data = await getMissingPerson(id)
       setPerson(data)
 
-      // Check confirmed sightings count
       const evidence = await getCaseEvidence(id)
       const confirmed = evidence.filter((s: SightingEvidence) => s.verification_status === 'Confirmed').length
       setConfirmedCount(confirmed)
@@ -67,7 +66,7 @@ export default function CaseDetailPage() {
         toast(`Search complete! Found ${res.matches_found} candidate sightings. Check Evidence Vault.`, 'success')
         fetchCase()
       } else {
-        toast('Search complete. No new matches found.', 'info')
+        toast('Search complete. No new matches found in video database.', 'info')
       }
     } catch (err: any) {
       toast(err.message || 'Search execution failed', 'error')
@@ -78,19 +77,19 @@ export default function CaseDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="py-20 text-center text-slate-400">
-        <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-        <p className="text-sm">Loading case dossier...</p>
+      <div className="py-20 text-center text-muted-foreground">
+        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+        <p className="text-xs font-mono">Loading case dossier...</p>
       </div>
     )
   }
 
   if (!person) {
     return (
-      <div className="py-20 text-center space-y-4">
-        <ShieldAlert className="w-12 h-12 text-red-500 mx-auto" />
-        <h2 className="text-xl font-bold text-white">Case Not Found</h2>
-        <p className="text-xs text-slate-400">The requested missing person case could not be retrieved.</p>
+      <div className="py-20 text-center space-y-4 max-w-md mx-auto">
+        <ShieldAlert className="w-10 h-10 text-destructive mx-auto" />
+        <h2 className="text-lg font-bold text-foreground">Case Not Found</h2>
+        <p className="text-xs text-muted-foreground">The requested case dossier could not be retrieved from the central archive.</p>
         <Button size="sm" onClick={() => router.push('/missing')}>
           Back to Registry
         </Button>
@@ -102,188 +101,147 @@ export default function CaseDetailPage() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
-      {/* Top Navigation & Breadcrumbs */}
+      {/* Top Breadcrumb Navigation */}
       <div className="flex items-center justify-between">
         <Button
           variant="ghost"
           size="sm"
-          className="text-xs text-slate-400 hover:text-white"
+          className="text-xs text-muted-foreground hover:text-foreground"
           onClick={() => router.push('/missing')}
         >
           <ArrowLeft className="w-4 h-4 mr-1.5" />
-          Back to Cases Registry
+          Back to Case Registry
         </Button>
 
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            className="text-xs bg-blue-600 hover:bg-blue-500"
-            onClick={handleRunSearch}
-            disabled={isSearching}
-          >
-            <Search className={`w-3.5 h-3.5 mr-1.5 ${isSearching ? 'animate-spin' : ''}`} />
-            {isSearching ? 'Scanning CCTV Database...' : 'Run AI Match Search'}
-          </Button>
-        </div>
+        <Button
+          size="sm"
+          onClick={handleRunSearch}
+          disabled={isSearching}
+        >
+          <Search className={`w-3.5 h-3.5 mr-1.5 ${isSearching ? 'animate-spin' : ''}`} />
+          {isSearching ? 'Scanning CCTV Archive...' : 'Scan Video Archive'}
+        </Button>
       </div>
 
-      {/* Case Header Hero Banner */}
-      <div className="p-6 rounded-xl bg-slate-900 border border-slate-800 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-        <div className="flex items-center gap-5">
-          <div className="w-20 h-20 rounded-lg overflow-hidden bg-slate-800 border-2 border-slate-700 shrink-0">
-            {photoUrl ? (
-              <img src={photoUrl} alt={person.full_name} className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-slate-500">
-                <User className="w-8 h-8" />
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-1.5">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-bold tracking-tight text-white">{person.full_name}</h1>
-              <Badge variant="outline" className="font-mono bg-slate-800 text-slate-200 border-slate-700 text-xs">
-                {person.case_number}
-              </Badge>
-              <Badge
-                variant={
-                  person.priority === 'URGENT'
-                    ? 'destructive'
-                    : person.priority === 'High'
-                    ? 'warning'
-                    : 'secondary'
-                }
-              >
-                {person.priority} PRIORITY
-              </Badge>
-
-              {/* Lead Indicator (EVID-03) */}
-              {confirmedCount > 0 && (
-                <Badge className="bg-green-600 hover:bg-green-500 text-white font-bold flex items-center gap-1.5 shadow-md shadow-green-600/20">
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  CONFIRMED SIGHTING LEAD ({confirmedCount})
-                </Badge>
+      {/* Case Header Dossier Card */}
+      <Card>
+        <CardContent className="p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div className="flex items-center gap-5">
+            <div className="w-20 h-20 rounded-lg overflow-hidden bg-secondary border border-border shrink-0 flex items-center justify-center">
+              {photoUrl ? (
+                <img src={photoUrl} alt={person.full_name} className="w-full h-full object-cover" />
+              ) : (
+                <User className="w-8 h-8 text-muted-foreground opacity-40" />
               )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400">
-              <span className="flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5 text-slate-500" />
-                Last seen: {person.last_seen_location || 'Unknown Location'}
-              </span>
-              <span className="flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5 text-slate-500" />
-                Reported: {new Date(person.created_at).toLocaleDateString()}
-              </span>
-              <span>
-                Age: <strong className="text-slate-200">{person.age || 'Unknown'}</strong> · Gender: <strong className="text-slate-200">{person.gender || 'Unknown'}</strong>
-              </span>
+            <div className="space-y-1.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-2xl font-bold tracking-tight text-foreground">{person.full_name}</h1>
+                <Badge variant="outline" className="font-mono text-xs">
+                  {person.case_number}
+                </Badge>
+                <Badge
+                  variant={
+                    person.priority === 'URGENT' || person.priority === 'Critical'
+                      ? 'destructive'
+                      : person.priority === 'High'
+                      ? 'warning'
+                      : 'secondary'
+                  }
+                >
+                  {person.priority} PRIORITY
+                </Badge>
+
+                {confirmedCount > 0 && (
+                  <Badge variant="success">
+                    <ShieldCheck className="w-3.5 h-3.5 mr-1" />
+                    CONFIRMED SIGHTINGS ({confirmedCount})
+                  </Badge>
+                )}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
+                  Last seen: {person.last_seen_location || 'Unknown Location'}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+                  Reported: {new Date(person.created_at).toLocaleDateString()}
+                </span>
+                <span>
+                  Age: <strong className="text-foreground">{person.age || '—'}</strong> · Gender: <strong className="text-foreground">{person.gender || '—'}</strong>
+                </span>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="flex items-center gap-2 self-end md:self-center">
-          <Badge variant="outline" className="text-xs bg-slate-950 text-slate-300 border-slate-800 px-3 py-1">
-            Status: <span className="font-bold text-white ml-1">{person.status}</span>
-          </Badge>
-        </div>
-      </div>
+          <div className="flex items-center gap-2 self-end md:self-center">
+            <Badge variant="outline" className="text-xs px-3 py-1 font-mono">
+              Status: <span className="font-bold text-foreground ml-1">{person.status}</span>
+            </Badge>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Tabs Navigation */}
-      <div className="border-b border-slate-800 flex items-center gap-4" role="tablist" aria-label="Case Dossier Sections">
+      <div className="border-b border-border flex items-center gap-4" role="tablist">
         <button
           role="tab"
           aria-selected={activeTab === 'evidence'}
-          aria-controls="panel-evidence"
-          id="tab-evidence"
           onClick={() => setActiveTab('evidence')}
-          className={`pb-3 px-2 text-sm font-semibold flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${
+          className={`pb-3 text-xs font-semibold flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${
             activeTab === 'evidence'
-              ? 'border-blue-500 text-blue-400'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
         >
-          <FileBox className="w-4 h-4" aria-hidden="true" />
-          Evidence Vault
-          {confirmedCount > 0 && (
-            <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-emerald-500/20 text-emerald-400 font-mono font-bold">
-              {confirmedCount} confirmed
-            </span>
-          )}
+          <FileBox className="w-4 h-4" />
+          Evidence Vault ({confirmedCount > 0 ? `${confirmedCount} Confirmed` : 'Sightings'})
         </button>
 
         <button
           role="tab"
           aria-selected={activeTab === 'overview'}
-          aria-controls="panel-overview"
-          id="tab-overview"
           onClick={() => setActiveTab('overview')}
-          className={`pb-3 px-2 text-sm font-semibold flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${
+          className={`pb-3 text-xs font-semibold flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${
             activeTab === 'overview'
-              ? 'border-blue-500 text-blue-400'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
         >
-          <Info className="w-4 h-4" aria-hidden="true" />
-          Case Overview
+          <Info className="w-4 h-4" />
+          Case Notes & Profile
         </button>
       </div>
 
-      {/* Tab Panels */}
+      {/* Active Tab View */}
       {activeTab === 'evidence' ? (
-        <div id="panel-evidence" role="tabpanel" aria-labelledby="tab-evidence">
-          <EvidenceVaultTab
-            caseId={person.id}
-            person={person}
-            onEvidenceChange={(count) => setConfirmedCount(count)}
-          />
-        </div>
+        <EvidenceVaultTab
+          caseId={id}
+          person={{
+            id: person.id,
+            case_number: person.case_number,
+            full_name: person.full_name,
+            photo_path: person.photo_path,
+          }}
+          onEvidenceChange={(count) => setConfirmedCount(count)}
+        />
       ) : (
-        <div id="panel-overview" role="tabpanel" aria-labelledby="tab-overview" className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="bg-slate-900 border-slate-800 md:col-span-2">
-            <CardHeader>
-              <CardTitle className="text-base text-white">Physical & Incident Description</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 text-xs text-slate-300">
-              <p className="leading-relaxed bg-slate-950/60 p-4 rounded-md border border-slate-800">
-                {person.description || 'No physical description recorded for this subject.'}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Forensic Case Notes</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 text-sm">
+            <div>
+              <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Subject Description</h4>
+              <p className="text-foreground leading-relaxed">
+                {person.description || 'No physical identifying marks or clothing description recorded for this subject.'}
               </p>
-
-              <div className="grid grid-cols-2 gap-4 pt-2">
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">
-                    Last Known Location
-                  </span>
-                  <p className="text-sm font-medium text-slate-200 mt-1">{person.last_seen_location || 'Not reported'}</p>
-                </div>
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">
-                    Last Seen Date & Time
-                  </span>
-                  <p className="text-sm font-medium text-slate-200 mt-1">
-                    {person.last_seen_at ? new Date(person.last_seen_at).toLocaleString() : 'Unknown'}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-slate-900 border-slate-800">
-            <CardHeader>
-              <CardTitle className="text-base text-white">Reference Photo</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="rounded-lg overflow-hidden bg-slate-950 border border-slate-800 h-64 flex items-center justify-center">
-                {photoUrl ? (
-                  <img src={photoUrl} alt={person.full_name} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="text-slate-500 text-xs">No Photo Available</div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   )

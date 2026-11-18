@@ -1,6 +1,10 @@
 import * as SecureStore from 'expo-secure-store';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+const ENV_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+// Prioritize active local backend if remote dpdns domain is configured
+const API_URL = (ENV_URL.includes('dpdns.org') || !ENV_URL)
+  ? 'http://localhost:8000/api/v1'
+  : ENV_URL;
 
 async function getHeaders() {
   const token = await SecureStore.getItemAsync('astra_token');

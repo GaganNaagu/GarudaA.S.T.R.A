@@ -14,49 +14,59 @@ import {
   Cpu,
   Users,
   Settings,
-  ChevronRight,
-  Construction
+  LogOut,
+  Radio
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth-context'
 
-const navigation = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+const operationsNavigation = [
+  { name: 'Command Overview', href: '/', icon: LayoutDashboard },
   { name: 'Live Alerts', href: '/alerts', icon: Bell },
-  { name: 'Surveillance Uploads', href: '/uploads', icon: Upload },
-  { name: 'Detection Logs', href: '/logs', icon: History, premium: true },
   { name: 'Missing Persons', href: '/missing', icon: UserSearch },
-  { name: 'Patrol Units', href: '/patrol', icon: ShieldAlert },
-  { name: 'Response Status', href: '/status', icon: CheckCircle2, premium: true },
+  { name: 'Surveillance Feeds', href: '/uploads', icon: Upload },
+  { name: 'Footage Archive', href: '/surveillance', icon: History },
+  { name: 'Patrol & Telemetry', href: '/patrol', icon: ShieldAlert },
+  { name: 'Response Board', href: '/status', icon: CheckCircle2 },
 ]
 
 const systemNavigation = [
-  { name: 'AI Services', href: '/system/services', icon: Cpu, premium: true },
-  { name: 'Users', href: '/system/users', icon: Users },
-  { name: 'Settings', href: '/system/settings', icon: Settings },
+  { name: 'Detection Logs', href: '/logs', icon: Radio, roles: ['admin', 'dispatcher', 'officer', 'patrol'] },
+  { name: 'Personnel & Users', href: '/system/users', icon: Users, roles: ['admin'] },
+  { name: 'System Settings', href: '/system/settings', icon: Settings, roles: ['admin'] },
 ]
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { role, fullName, logout } = useAuth()
+  const { fullName, role, logout } = useAuth()
 
   return (
-    <div className="flex flex-col w-64 bg-card border-r border-border h-full overflow-y-auto">
-      <div className="p-4 border-b border-border/40 flex items-center justify-center bg-secondary/10 shrink-0">
+    <aside className="flex flex-col w-64 bg-card border-r border-border h-full select-none">
+      {/* Brand Header */}
+      <div className="h-16 px-5 border-b border-border/60 flex items-center gap-3 bg-card shrink-0">
         <img
           src="/GarudASTRAtransparent.png"
-          alt="Garuda ASTRA Logo"
-          className="h-16 w-auto object-contain"
+          alt="Garuda A.S.T.R.A"
+          className="h-9 w-auto object-contain"
         />
+        <div className="flex flex-col">
+          <span className="text-sm font-bold tracking-tight text-foreground">
+            GARUDA A.S.T.R.A
+          </span>
+          <span className="text-[10px] font-mono tracking-widest text-muted-foreground uppercase">
+            Command Center
+          </span>
+        </div>
       </div>
 
-      <nav className="flex-1 px-4 space-y-8">
+      {/* Navigation Sections */}
+      <nav className="flex-1 px-3 py-4 space-y-6 overflow-y-auto">
         <div>
-          <h3 className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">
-            OPERATIONS
+          <h3 className="px-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2">
+            Tactical Operations
           </h3>
-          <ul className="space-y-1">
-            {navigation.map((item) => {
+          <ul className="space-y-0.5">
+            {operationsNavigation.map((item) => {
               const isActive = pathname === item.href
               return (
                 <li key={item.name}>
@@ -64,25 +74,14 @@ export function Sidebar() {
                     href={item.href}
                     aria-current={isActive ? "page" : undefined}
                     className={cn(
-                      "flex items-center justify-between px-4 py-2 text-sm font-medium rounded-md transition-all",
+                      "flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md transition-all relative",
                       isActive
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                        ? "bg-secondary text-foreground font-semibold before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-1 before:rounded-r before:bg-primary text-primary"
+                        : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
                     )}
                   >
-                    <div className="flex items-center gap-3">
-                      <item.icon className="w-5 h-5" />
-                      {item.name}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      {(item as any).premium && (
-                        <span className="flex items-center gap-0.5 text-[9px] font-bold text-primary/70 bg-primary/10 px-1.5 py-0.5 rounded-full">
-                          <Construction className="w-2.5 h-2.5" />
-                          V2
-                        </span>
-                      )}
-                      {isActive && <ChevronRight className="w-4 h-4" />}
-                    </div>
+                    <item.icon className={cn("w-4 h-4 shrink-0", isActive ? "text-primary" : "text-muted-foreground")} />
+                    <span>{item.name}</span>
                   </Link>
                 </li>
               )
@@ -91,11 +90,13 @@ export function Sidebar() {
         </div>
 
         <div>
-          <h3 className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">
-            SYSTEM
+          <h3 className="px-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2">
+            System & Governance
           </h3>
-          <ul className="space-y-1">
-            {systemNavigation.map((item) => {
+          <ul className="space-y-0.5">
+            {systemNavigation
+              .filter((item) => !item.roles || item.roles.includes(role?.toLowerCase() || 'officer'))
+              .map((item) => {
               const isActive = pathname === item.href
               return (
                 <li key={item.name}>
@@ -103,78 +104,43 @@ export function Sidebar() {
                     href={item.href}
                     aria-current={isActive ? "page" : undefined}
                     className={cn(
-                      "flex items-center justify-between px-4 py-2 text-sm font-medium rounded-md transition-all",
+                      "flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-md transition-all relative",
                       isActive
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                        ? "bg-secondary text-foreground font-semibold before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-1 before:rounded-r before:bg-primary text-primary"
+                        : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
                     )}
                   >
-                    <div className="flex items-center gap-3">
-                      <item.icon className="w-5 h-5" />
-                      {item.name}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      {item.premium && (
-                        <span className="flex items-center gap-0.5 text-[9px] font-bold text-primary/70 bg-primary/10 px-1.5 py-0.5 rounded-full">
-                          <Construction className="w-2.5 h-2.5" />
-                          V2
-                        </span>
-                      )}
-                      {isActive && <ChevronRight className="w-4 h-4" />}
-                    </div>
+                    <item.icon className={cn("w-4 h-4 shrink-0", isActive ? "text-primary" : "text-muted-foreground")} />
+                    <span>{item.name}</span>
                   </Link>
                 </li>
               )
             })}
-            
-            {role === 'admin' && (
-              <li className="mt-4 pt-4 border-t border-border/40">
-                <Link
-                  href="/admin/users"
-                  className="flex items-center justify-between px-4 py-2 text-sm font-bold rounded-md transition-all text-red-500 hover:bg-red-500/10"
-                >
-                  <div className="flex items-center gap-3">
-                    <img src="/GarudASTRAtransparent.png" alt="Logo" className="w-5 h-5 object-contain" />
-                    Admin Portal
-                  </div>
-                  <ChevronRight className="w-4 h-4" />
-                </Link>
-              </li>
-            )}
           </ul>
         </div>
       </nav>
 
-      <div className="p-4 border-t border-border">
-        <div className="flex items-center justify-between px-4 py-2">
-          <div className="flex items-center gap-3">
-            <img
-              src="/GarudaASTRApfp.png"
-              alt="User Profile"
-              className="w-9 h-9 rounded-full object-cover border border-border/60"
-            />
-            <div className="flex flex-col">
-              <span className="text-sm font-medium truncate max-w-[100px]" title={fullName || 'COMMAND CENTER'}>
-                {fullName || 'COMMAND CENTER'}
-              </span>
-              <span className="text-[10px] text-muted-foreground uppercase">
-                {role ? role : 'Level 4 Clearance'}
-              </span>
-            </div>
+      {/* Operator Session Info Footer */}
+      <div className="p-3 border-t border-border/60 bg-secondary/20 shrink-0">
+        <div className="flex items-center justify-between px-2 py-1.5">
+          <div className="flex flex-col min-w-0 pr-2">
+            <span className="text-xs font-semibold text-foreground truncate">
+              {fullName || 'Duty Officer'}
+            </span>
+            <span className="text-[10px] font-mono text-muted-foreground uppercase truncate">
+              {role ? `Role: ${role}` : 'Sector Command'}
+            </span>
           </div>
           <button
-            onClick={() => {
-              logout()
-              window.location.href = '/login'
-            }}
-            aria-label="Log Out"
-            className="p-2 hover:bg-red-500/10 text-red-500 rounded-full transition-colors cursor-pointer"
-            title="Log Out"
+            onClick={() => logout?.()}
+            title="Sign Out"
+            aria-label="Sign Out"
+            className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors cursor-pointer"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+            <LogOut className="w-4 h-4" />
           </button>
         </div>
       </div>
-    </div>
+    </aside>
   )
 }

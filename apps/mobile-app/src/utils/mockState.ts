@@ -14,7 +14,7 @@ export interface AlertItem {
   title: string;
   subtitle: string;
   matchPercentage?: number;
-  threatLevel: 'HIGH' | 'MODERATE' | 'LOW';
+  threatLevel: 'HIGH' | 'MODERATE' | 'LOW' | 'CRITICAL' | 'MEDIUM';
   fileNo: string;
   lastSeenLocation: string;
   lastSeenTime: string;
@@ -23,7 +23,22 @@ export interface AlertItem {
   confidence?: string;
   latitude: number;
   longitude: number;
-  status: 'ALERT' | 'EN-ROUTE' | 'INVESTIGATING' | 'FALSE ALARM' | 'TARGET LOST' | 'FOUND';
+  status:
+    | 'ALERT'
+    | 'EN-ROUTE'
+    | 'INVESTIGATING'
+    | 'FALSE ALARM'
+    | 'TARGET LOST'
+    | 'FOUND'
+    | 'COMPLETED'
+    | 'LOCATED'
+    | 'FALSE ALERT'
+    | 'Rejected False Positive';
+  assignedOfficer?: {
+    name: string;
+    unitId: string;
+    rank?: string;
+  };
   assignments?: Array<{
     status: string;
     officer?: {
@@ -83,6 +98,8 @@ export interface OfficerProfile {
   shift: string;
   status: string;
   commsLink: string;
+  radioChannel?: string;
+  assignedSector?: string;
 }
 
 // ==================== OFFICER ====================

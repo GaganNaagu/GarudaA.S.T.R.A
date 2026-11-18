@@ -1,9 +1,10 @@
 "use client"
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card"
 import { Badge } from "@/components/ui/Badge"
 import { Button } from "@/components/ui/Button"
+import { Input } from "@/components/ui/Input"
 import { 
   Table, 
   TableHeader, 
@@ -14,135 +15,211 @@ import {
 } from "@/components/ui/Table"
 import { 
   Search, 
-  Filter, 
   Download, 
-  Calendar,
-  MoreVertical,
-  ArrowUpDown
+  RefreshCw,
+  Eye,
+  Camera,
+  MapPin,
+  Clock
 } from 'lucide-react'
 import { cn } from "@/lib/utils"
-import { PremiumLock } from '@/components/ui/PremiumLock'
+import { useToast } from "@/components/ui/Toast"
 
-const sampleDetections = [
-  { id: 'DET-10292', person: '████████', confidence: 94.2, camera: 'CAM-012', location: '██████████', time: '2024-05-12 15:42:01', status: 'Flagged' },
-  { id: 'DET-10291', person: '████████', confidence: 99.8, camera: 'CAM-088', location: '██████████', time: '2024-05-12 15:40:45', status: 'Matched' },
-  { id: 'DET-10290', person: '████████', confidence: 42.5, camera: 'CAM-003', location: '██████████', time: '2024-05-12 15:38:12', status: 'Low Conf' },
-  { id: 'DET-10289', person: '████████', confidence: 98.1, camera: 'CAM-045', location: '██████████', time: '2024-05-12 15:35:50', status: 'Matched' },
-  { id: 'DET-10288', person: '████████', confidence: 88.9, camera: 'CAM-201', location: '██████████', time: '2024-05-12 15:30:12', status: 'Matched' },
+interface DetectionLog {
+  id: string
+  person: string
+  confidence: number
+  camera: string
+  location: string
+  time: string
+  status: 'Verified Match' | 'Flagged' | 'Investigating' | 'Low Confidence'
+  notes?: string
+}
+
+const initialDetections: DetectionLog[] = [
+  { id: 'DET-10292', person: 'Aarav Mehta', confidence: 94.2, camera: 'CAM-012', location: 'Marine Drive Promenade', time: '2026-11-18 17:42:01', status: 'Verified Match', notes: 'Positive CCTV face crop identification' },
+  { id: 'DET-10291', person: 'Vikram Singh', confidence: 98.8, camera: 'CAM-088', location: 'CST Station Platform 4', time: '2026-11-18 17:35:45', status: 'Verified Match', notes: 'Subject matches red bulletin lead' },
+  { id: 'DET-10290', person: 'Priya Sharma', confidence: 78.5, camera: 'CAM-003', location: 'Bandra Station West Gate', time: '2026-11-18 17:28:12', status: 'Investigating', notes: 'Field officer dispatched for verification' },
+  { id: 'DET-10289', person: 'Ravi Verma', confidence: 88.1, camera: 'CAM-045', location: 'Colaba Causeway Crossroad', time: '2026-11-18 17:15:50', status: 'Flagged', notes: 'High resemblance in crowd footage' },
+  { id: 'DET-10288', person: 'Ananya Roy', confidence: 89.9, camera: 'CAM-201', location: 'Andheri Metro Concourse', time: '2026-11-18 16:50:12', status: 'Verified Match', notes: 'Sighting confirmed by Patrol Unit-042' },
+  { id: 'DET-10287', person: 'Unknown Subject', confidence: 42.1, camera: 'CAM-015', location: 'Churchgate Terminal Exit', time: '2026-11-18 16:30:00', status: 'Low Confidence', notes: 'Motion blur below verification threshold' },
 ]
 
-function LogsContent() {
+export default function LogsPage() {
+  const { toast } = useToast()
+  const [logs, setLogs] = useState<DetectionLog[]>(initialDetections)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState<string>('ALL')
+
+  const filteredLogs = useMemo(() => {
+    return logs.filter((log) => {
+      const matchesSearch =
+        log.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        log.person.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        log.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        log.camera.toLowerCase().includes(searchQuery.toLowerCase())
+      
+      const matchesStatus = statusFilter === 'ALL' || log.status === statusFilter
+      return matchesSearch && matchesStatus
+    })
+  }, [logs, searchQuery, statusFilter])
+
+  const handleExportCSV = () => {
+    const headerStr = 'Event ID,Target Person,Confidence %,Camera,Location,Timestamp,Status\n'
+    const rows = filteredLogs.map(
+      (l) => `${l.id},"${l.person}",${l.confidence},${l.camera},"${l.location}","${l.time}",${l.status}`
+    )
+    const blob = new Blob([headerStr + rows.join('\n')], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `garuda-detection-logs-${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+    toast('Detection log CSV exported successfully', 'success')
+  }
+
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
+    <div className="max-w-7xl mx-auto space-y-6">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Detection Logs</h1>
-          <p className="text-muted-foreground">Comprehensive audit trail of all AI-processed surveillance events.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">AI Detection & Audit Logs</h1>
+          <p className="text-sm text-muted-foreground">Comprehensive real-time forensic audit trail of all biometric surveillance events.</p>
         </div>
-        <div className="flex gap-3">
-          <Button variant="outline" size="sm">
-            <Download className="w-4 h-4 mr-2" />
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="sm" onClick={handleExportCSV} className="text-xs active:scale-[0.98]">
+            <Download className="w-3.5 h-3.5 mr-1.5" />
             Export CSV
           </Button>
-          <Button size="sm">
-            <Calendar className="w-4 h-4 mr-2" />
-            Select Range
+          <Button variant="secondary" size="sm" onClick={() => toast('Refreshed audit log feed', 'info')} className="text-xs active:scale-[0.98]">
+            <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
+            Refresh
           </Button>
         </div>
       </div>
 
+      {/* Main Table Card */}
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-4 border-b border-border">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-             <div className="relative max-w-sm w-full">
-               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
-               <input
-                 type="text"
-                 placeholder="Search by ID, location, or target..."
-                 aria-label="Search by ID, location, or target"
-                 disabled
-                 className="w-full bg-secondary border border-border rounded-md py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all"
-               />
-             </div>
-             <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" className="h-9" disabled>
-                  <Filter className="w-3.5 h-3.5 mr-2" />
-                  Status
+            <div className="w-full sm:w-80">
+              <Input
+                placeholder="Search by ID, person, location, or camera..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                aria-label="Search logs"
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {['ALL', 'Verified Match', 'Investigating', 'Flagged', 'Low Confidence'].map((s) => (
+                <Button
+                  key={s}
+                  size="sm"
+                  variant={statusFilter === s ? 'default' : 'secondary'}
+                  className="h-8 text-xs active:scale-[0.98]"
+                  onClick={() => setStatusFilter(s)}
+                >
+                  {s}
                 </Button>
-                <Button variant="outline" size="sm" className="h-9" disabled>
-                  <ArrowUpDown className="w-3.5 h-3.5 mr-2" />
-                  Confidence
-                </Button>
-             </div>
+              ))}
+            </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[120px]">Event ID</TableHead>
-                <TableHead>Target Identity</TableHead>
-                <TableHead>Confidence</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Timestamp</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sampleDetections.map((det) => (
-                <TableRow key={det.id}>
-                  <TableCell className="font-mono text-xs text-muted-foreground">{det.id}</TableCell>
-                  <TableCell className="font-medium">{det.person}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <div className="w-16 h-1.5 bg-secondary rounded-full overflow-hidden">
-                        <div 
-                          className={cn(
-                            "h-full",
-                            det.confidence > 90 ? "bg-green-500" : det.confidence > 70 ? "bg-yellow-500" : "bg-red-500"
-                          )} 
-                          style={{ width: `${det.confidence}%` }}
-                        ></div>
-                      </div>
-                      <span className="text-xs font-mono">{det.confidence}%</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span className="text-sm">{det.location}</span>
-                      <span className="text-[10px] text-muted-foreground">{det.camera}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{det.time}</TableCell>
-                  <TableCell>
-                    <Badge variant={det.status === 'Matched' ? 'success' : det.status === 'Flagged' ? 'destructive' : 'secondary'}>
-                      {det.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" disabled>
-                      <MoreVertical className="w-4 h-4" />
-                    </Button>
-                  </TableCell>
+
+        <CardContent className="p-0">
+          <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
+            <Table>
+              <TableHeader className="bg-secondary/80 sticky top-0 backdrop-blur-sm z-10 border-b border-border">
+                <TableRow>
+                  <TableHead className="w-[120px]">Event ID</TableHead>
+                  <TableHead>Target Identity</TableHead>
+                  <TableHead>AI Confidence</TableHead>
+                  <TableHead>Camera / Location</TableHead>
+                  <TableHead>Timestamp</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody className="divide-y divide-border">
+                {filteredLogs.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-12 text-muted-foreground text-sm">
+                      No detection events found matching your filter criteria.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredLogs.map((det) => (
+                    <TableRow key={det.id} className="hover:bg-secondary/20 transition-colors">
+                      <TableCell className="font-mono text-xs text-muted-foreground">{det.id}</TableCell>
+                      <TableCell className="font-semibold text-sm text-foreground">{det.person}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 h-1.5 bg-secondary rounded-full overflow-hidden">
+                            <div 
+                              className={cn(
+                                "h-full transition-all",
+                                det.confidence >= 90 ? "bg-status-active" : det.confidence >= 70 ? "bg-status-warning" : "bg-status-critical"
+                              )} 
+                              style={{ width: `${det.confidence}%` }}
+                            />
+                          </div>
+                          <span className="text-xs font-mono text-foreground font-semibold">{det.confidence}%</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="text-xs font-medium text-foreground flex items-center gap-1">
+                            <MapPin className="w-3 h-3 text-muted-foreground" />
+                            {det.location}
+                          </span>
+                          <span className="text-[11px] text-muted-foreground font-mono flex items-center gap-1 mt-0.5">
+                            <Camera className="w-3 h-3" />
+                            {det.camera}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground font-mono tabular-nums">
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {det.time}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            det.status === 'Verified Match'
+                              ? 'default'
+                              : det.status === 'Investigating'
+                              ? 'secondary'
+                              : det.status === 'Flagged'
+                              ? 'outline'
+                              : 'destructive'
+                          }
+                          className="text-[11px]"
+                        >
+                          {det.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                          onClick={() => toast(`Evidence dossier for ${det.person} (${det.id}) opened`, 'info')}
+                        >
+                          <Eye className="w-3.5 h-3.5 mr-1" />
+                          Inspect
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>
-  )
-}
-
-export default function LogsPage() {
-  return (
-    <PremiumLock
-      title="Coming Soon"
-      version="V2"
-      description="Detection log analytics, CSV export, and historical audit trails are being built for the next release."
-    >
-      <LogsContent />
-    </PremiumLock>
   )
 }

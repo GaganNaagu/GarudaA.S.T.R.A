@@ -23,14 +23,22 @@ import {
 } from 'lucide-react'
 import { useToast } from "@/components/ui/Toast"
 import { getUsers } from '@/lib/api'
+import { useAuth } from '@/lib/auth-context'
+import { useRouter } from 'next/navigation'
 
 export default function UsersPage() {
   const { toast } = useToast()
+  const { role, isLoading: authLoading } = useAuth()
+  const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
   const [allUsers, setAllUsers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!authLoading && role && role.toLowerCase() !== 'admin') {
+      setLoading(false)
+      return
+    }
     const fetchUsers = async () => {
       try {
         setLoading(true)
@@ -67,6 +75,21 @@ export default function UsersPage() {
       case 'officer': return 'text-blue-500'
       default: return 'text-muted-foreground'
     }
+  }
+
+  if (!authLoading && role && role.toLowerCase() !== 'admin') {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-8 space-y-4">
+        <Shield className="w-12 h-12 text-amber-500 opacity-80" />
+        <h2 className="text-xl font-bold tracking-tight text-foreground">Restricted to System Administrators</h2>
+        <p className="text-sm text-muted-foreground max-w-md">
+          Your current active clearance level ({role.toUpperCase()}) does not have permission to manage operator credentials or system personnel.
+        </p>
+        <Button onClick={() => router.push('/')} variant="outline" className="mt-2">
+          Return to Command Overview
+        </Button>
+      </div>
+    )
   }
 
   return (

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/Card"
 import { Badge } from "@/components/ui/Badge"
 import { Button } from "@/components/ui/Button"
@@ -13,11 +13,10 @@ import {
   Filter,
   User,
   ArrowUpDown,
-  ArrowUp,
-  ArrowDown,
-  AlertTriangle
+  Camera,
+  AlertTriangle,
+  RefreshCw
 } from 'lucide-react'
-import { cn } from "@/lib/utils"
 import { useToast } from "@/components/ui/Toast"
 import { getAlerts, updateAlertStatus, API_URL } from '@/lib/api'
 import { useWebSocket } from '@/lib/websocket'
@@ -26,7 +25,6 @@ function getImageUrl(path: string | null) {
   if (!path) return '';
   if (path.startsWith('http')) return path;
   const baseUrl = API_URL.replace(/\/api\/v1\/?$/, '');
-  // Normalize backslashes to forward slashes first to handle Windows paths
   let cleanPath = path.replace(/\\/g, '/');
   const uploadsIdx = cleanPath.indexOf('uploads/');
   if (uploadsIdx > -1) {
@@ -42,23 +40,22 @@ function mapAlert(a: any) {
     personName: a.missing_person?.full_name ?? 'Unknown Subject',
     caseNumber: a.missing_person?.case_number ?? '—',
     confidence: a.detection_event?.confidence_score != null
-      ? `${a.detection_event.confidence_score.toFixed(1)}`
+      ? `${(a.detection_event.confidence_score * 100).toFixed(0)}%`
       : '—',
     status: a.status === 'pending' || a.status === 'Pending'
       ? 'Pending'
-      : a.status === 'Verified'
+      : a.status === 'Verified' || a.status === 'Confirmed'
       ? 'Verified'
-      : a.status === 'Rejected False Positive'
+      : a.status === 'Rejected False Positive' || a.status === 'Rejected'
       ? 'Rejected'
       : a.status,
-    rawTime: a.created_at, // ISO string for sorting
-    time: new Date(a.created_at).toLocaleTimeString(),
+    rawTime: a.created_at,
+    time: new Date(a.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     camera: a.detection_event?.camera_id
       ? String(a.detection_event.camera_id).substring(0, 8)
-      : 'Unknown',
+      : 'CAM-01',
     cropImagePath: a.detection_event?.image_path ?? null,
     personImagePath: a.missing_person?.photo_path ?? null,
-    imagePath: a.detection_event?.image_path ?? a.missing_person?.photo_path ?? null,
     assignments: a.assignments || [],
   }
 }
@@ -67,7 +64,8 @@ export default function AlertsPage() {
   const { toast } = useToast()
   const [alerts, setAlerts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [sortDir, setSortDir] = useState<'desc' | 'asc'>('desc') // newest first by default
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'Pending' | 'Verified' | 'Rejected'>('ALL')
+  const [sortDir, setSortDir] = useState<'desc' | 'asc'>('desc')
   const { lastMessage } = useWebSocket()
 
   const fetchAlerts = useCallback(async (silent = false) => {
@@ -82,253 +80,226 @@ export default function AlertsPage() {
     }
   }, [])
 
-  // Initial load — defer slightly so auth token is available
   useEffect(() => {
-    const timer = setTimeout(() => fetchAlerts(false), 100)
-    return () => clearTimeout(timer)
+    fetchAlerts(false)
   }, [fetchAlerts])
 
-  // Real-time update: prepend alert from WS immediately, then silently re-fetch full data
   useEffect(() => {
     if (lastMessage && lastMessage.event === 'possible_match_detected') {
       const d = lastMessage.data
-      // Optimistic UI: show immediately with partial data
       const optimistic = {
         id: String(d.alert_id),
-        personName: 'Unknown Subject',
-        caseNumber: '—',
-        confidence: String(d.confidence),
+        personName: d.person_name || 'Possible Target Match',
+        caseNumber: d.case_number || 'AUTO',
+        confidence: `${Math.round(d.confidence * 100)}%`,
         status: 'Pending',
         rawTime: new Date().toISOString(),
-        time: new Date().toLocaleTimeString(),
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         camera: String(d.camera_id).substring(0, 8),
         cropImagePath: d.crop_image_path ?? null,
         personImagePath: d.image_path ?? null,
-        imagePath: d.crop_image_path ?? d.image_path ?? null,
+        assignments: [],
       }
-      setAlerts(prev => {
-        // avoid duplicate if already exists
-        if (prev.find(a => a.id === optimistic.id)) return prev
-        return [optimistic, ...prev]
-      })
-      // Silent background refresh to replace optimistic entry with full data
-      setTimeout(() => fetchAlerts(true), 800)
+      setAlerts(prev => [optimistic, ...prev.filter(a => a.id !== optimistic.id)])
+      setTimeout(() => fetchAlerts(true), 1000)
     } else if (lastMessage && lastMessage.event === 'alert_status_updated') {
       const updatedAlert = mapAlert(lastMessage.data)
       setAlerts(prev => prev.map(a => a.id === updatedAlert.id ? updatedAlert : a))
     }
   }, [lastMessage, fetchAlerts])
 
-  // Sorted list derived from state
-  const sortedAlerts = [...alerts].sort((a, b) => {
-    const ta = new Date(a.rawTime ?? a.time).getTime()
-    const tb = new Date(b.rawTime ?? b.time).getTime()
-    return sortDir === 'desc' ? tb - ta : ta - tb
-  })
-
   const handleConfirm = async (id: string) => {
     try {
       await updateAlertStatus(id, 'Verified')
       setAlerts(prev => prev.map(a => a.id === id ? { ...a, status: 'Verified' } : a))
-      toast(`Alert ${id.substring(0, 8)} confirmed`, 'success')
+      toast(`Alert confirmed as verified sighting lead`, 'success')
     } catch (err) {
-      toast('Failed to confirm alert', 'error')
+      toast('Failed to confirm alert status', 'error')
     }
   }
 
   const handleDismiss = async (id: string) => {
     try {
       await updateAlertStatus(id, 'Rejected False Positive')
-      setAlerts(prev => prev.map(a => a.id === id ? { ...a, status: 'Rejected False Positive' } : a))
-      toast(`Alert ${id.substring(0, 8)} rejected`, 'warning')
+      setAlerts(prev => prev.map(a => a.id === id ? { ...a, status: 'Rejected' } : a))
+      toast(`Alert flagged as false positive`, 'warning')
     } catch (err) {
-      toast('Failed to reject alert', 'error')
+      toast('Failed to dismiss alert', 'error')
     }
   }
 
-  const badgeVariant = (status: string) => {
-    if (status === 'Verified') return 'destructive'
-    if (status === 'Rejected False Positive' || status === 'Rejected') return 'success'
-    return 'warning'
-  }
+  const filteredAlerts = useMemo(() => {
+    let result = alerts
+    if (statusFilter !== 'ALL') {
+      result = result.filter(a => a.status === statusFilter)
+    }
+    return result.sort((a, b) => {
+      const ta = new Date(a.rawTime).getTime()
+      const tb = new Date(b.rawTime).getTime()
+      return sortDir === 'desc' ? tb - ta : ta - tb
+    })
+  }, [alerts, statusFilter, sortDir])
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-6 max-w-7xl mx-auto">
+      {/* Top Header & Triage Filters */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/60 pb-5">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Live Alerts</h1>
-          <p className="text-muted-foreground">High-confidence facial recognition alerts across the network.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Active Alert Center</h1>
+          <p className="text-xs text-muted-foreground mt-1">
+            High-confidence facial similarity matches awaiting verification and response dispatch.
+          </p>
         </div>
-        <div className="flex gap-3 w-full sm:w-auto">
+
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Status Filter Chips */}
+          <div className="flex items-center gap-1 bg-secondary/40 p-1 rounded-md border border-border">
+            {(['ALL', 'Pending', 'Verified', 'Rejected'] as const).map(tab => (
+              <button
+                key={tab}
+                onClick={() => setStatusFilter(tab)}
+                className={`px-3 py-1 text-xs rounded font-medium transition-colors cursor-pointer ${
+                  statusFilter === tab 
+                    ? 'bg-card text-foreground shadow-sm font-semibold' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+
           <Button
             variant="outline"
             size="sm"
-            aria-label={sortDir === 'desc' ? "Sort newest first" : "Sort oldest first"}
-            className="w-full sm:w-auto"
             onClick={() => setSortDir(d => d === 'desc' ? 'asc' : 'desc')}
+            title="Toggle sort order"
           >
-            {sortDir === 'desc'
-              ? <ArrowDown className="w-4 h-4 mr-2" aria-hidden="true" />
-              : <ArrowUp className="w-4 h-4 mr-2" aria-hidden="true" />}
-            {sortDir === 'desc' ? 'Newest First' : 'Oldest First'}
+            <ArrowUpDown className="w-3.5 h-3.5 mr-1.5" />
+            {sortDir === 'desc' ? 'Newest' : 'Oldest'}
           </Button>
+
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            aria-label="Refresh alerts list"
-            className="w-full sm:w-auto"
             onClick={() => fetchAlerts(false)}
+            aria-label="Refresh alerts"
           >
-            <Filter className="w-4 h-4 mr-2" aria-hidden="true" />
-            Refresh
+            <RefreshCw className="w-3.5 h-3.5" />
           </Button>
         </div>
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-16">
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" aria-label="Loading alerts"></div>
+        <div className="flex justify-center py-20 text-muted-foreground">
+          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : filteredAlerts.length === 0 ? (
+        <div className="py-20 text-center border border-border rounded-xl bg-card">
+          <ShieldAlert className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
+          <p className="text-sm font-semibold text-foreground">No alerts match the selected criteria</p>
+          <p className="text-xs text-muted-foreground mt-1">All surveillance sectors are operating nominally.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {sortedAlerts.length === 0 ? (
-            <div className="col-span-full py-16 text-center border border-dashed border-border rounded-xl bg-card/40">
-              <ShieldAlert className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" aria-hidden="true" />
-              <p className="text-sm font-semibold text-foreground">No active tactical alerts</p>
-              <p className="text-xs text-muted-foreground mt-1">All surveillance sectors are currently operating nominally.</p>
-            </div>
-          ) : (
-            sortedAlerts.map((alert) => (
-              <Card key={alert.id} className={cn(
-                "group transition-all hover:border-primary/50 animate-fade-in",
-                alert.status === 'Verified' ? "border-red-500/20 bg-red-500/5" : "",
-                alert.status === 'Pending' ? "border-yellow-500/20" : ""
-              )}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {filteredAlerts.map(alert => (
+            <Card key={alert.id} className="flex flex-col justify-between">
+              <div>
                 <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <Badge variant={badgeVariant(alert.status)}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <Badge variant={
+                      alert.status === 'Verified' ? 'success' :
+                      alert.status === 'Pending' ? 'warning' : 'secondary'
+                    }>
                       {alert.status}
                     </Badge>
-                    <span className="text-[10px] font-mono text-muted-foreground truncate w-24 text-right" title={alert.id}>
+                    <span className="text-[11px] font-mono text-muted-foreground">
                       #{alert.id.substring(0, 8)}
                     </span>
                   </div>
-                  <CardTitle className="text-lg leading-tight">{alert.personName}</CardTitle>
-                  <CardDescription className="flex items-center gap-2 mt-1">
-                    <Clock className="w-3 h-3" />
-                    {alert.time} • Camera {alert.camera}
+                  <CardTitle className="text-base text-foreground font-semibold">
+                    {alert.personName}
+                  </CardTitle>
+                  <CardDescription className="flex items-center gap-2 mt-0.5 font-mono text-[11px]">
+                    <Clock className="w-3 h-3 text-muted-foreground" />
+                    {alert.time} · Camera {alert.camera} · Case {alert.caseNumber}
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="aspect-video bg-secondary/50 rounded-lg flex mb-4 relative overflow-hidden border border-border">
-                    {alert.status === 'Pending' && (
-                      <div className="absolute inset-0 overflow-hidden pointer-events-none z-10">
-                        <div className="w-full h-8 bg-gradient-to-b from-transparent via-primary/10 to-transparent animate-scan-line"></div>
-                      </div>
-                    )}
-                    
-                    <div className="w-1/2 h-full border-r border-border bg-black/20 flex items-center justify-center relative">
-                      {(alert.cropImagePath || alert.personImagePath) ? (
+
+                <CardContent className="space-y-3">
+                  {/* Clean Side-by-Side Sighting Comparison */}
+                  <div className="grid grid-cols-2 gap-2 aspect-[16/9] rounded-lg overflow-hidden bg-secondary/40 border border-border">
+                    {/* CCTV Detected Crop */}
+                    <div className="relative bg-black/40 flex items-center justify-center overflow-hidden">
+                      {alert.cropImagePath ? (
                         <img 
-                          src={getImageUrl(alert.cropImagePath || alert.personImagePath)} 
-                          alt="Detection Crop" 
+                          src={getImageUrl(alert.cropImagePath)} 
+                          alt="CCTV Crop" 
                           className="w-full h-full object-cover" 
-                          onError={(e) => {
-                             e.currentTarget.onerror = null;
-                             (e.currentTarget.parentElement as HTMLElement).innerHTML = '<div class="flex flex-col items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="opacity-30"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg><span class="text-[10px] opacity-30">Image unavailable</span></div>';
-                          }}
                         />
                       ) : (
-                        <ShieldAlert className={cn("w-8 h-8 opacity-20", alert.status === 'Rejected' && "text-green-500")} />
+                        <Camera className="w-6 h-6 text-muted-foreground opacity-40" />
                       )}
-                      <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-black/60 rounded text-[10px] text-white font-medium uppercase tracking-wider backdrop-blur-sm border border-white/10">
-                        Detected
-                      </div>
+                      <span className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded bg-background/80 text-[9px] font-mono font-bold text-muted-foreground uppercase border border-border">
+                        Live Sighting
+                      </span>
                     </div>
 
-                    <div className="w-1/2 h-full bg-black/20 flex items-center justify-center relative">
+                    {/* Database Photo */}
+                    <div className="relative bg-black/40 flex items-center justify-center overflow-hidden">
                       {alert.personImagePath ? (
                         <img 
                           src={getImageUrl(alert.personImagePath)} 
-                          alt="Missing Person" 
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                             e.currentTarget.onerror = null;
-                             (e.currentTarget.parentElement as HTMLElement).innerHTML = '<div class="flex flex-col items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="opacity-30"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="text-[10px] opacity-30">Photo unavailable</span></div>';
-                          }}
+                          alt="Dossier Reference" 
+                          className="w-full h-full object-cover" 
                         />
                       ) : (
-                        <User className="w-8 h-8 opacity-20" />
+                        <User className="w-6 h-6 text-muted-foreground opacity-40" />
                       )}
-                      <div className="absolute top-2 right-2 px-1.5 py-0.5 bg-black/60 rounded text-[10px] text-white font-medium uppercase tracking-wider backdrop-blur-sm border border-white/10">
-                        Database
-                      </div>
-                    </div>
-
-                    <div className="absolute bottom-2 right-2 z-10">
-                      <Badge variant="secondary" className="bg-black/60 backdrop-blur-md border-white/10">
-                        {alert.confidence}% Match
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 bg-secondary/30 rounded-lg border border-border/50">
-                    <div className="w-10 h-10 rounded bg-secondary flex items-center justify-center">
-                      <User className="w-5 h-5 text-muted-foreground" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold uppercase tracking-tighter text-muted-foreground">Missing Person</p>
-                      <p className="text-sm font-medium">{alert.personName}</p>
-                      <p className="text-xs text-muted-foreground">Case #{alert.caseNumber}</p>
+                      <span className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded bg-background/80 text-[9px] font-mono font-bold text-primary uppercase border border-border">
+                        {alert.confidence} Match
+                      </span>
                     </div>
                   </div>
                 </CardContent>
+              </div>
+
+              {/* Action Bar (60-30-10 Rule) */}
+              <CardFooter className="pt-3">
                 {alert.status === 'Pending' ? (
-                  <CardFooter className="flex gap-2">
-                    <Button size="sm" className="flex-1" onClick={() => handleConfirm(alert.id)}>
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Confirm
+                  <div className="flex items-center gap-2 w-full">
+                    <Button 
+                      size="sm" 
+                      className="flex-1 text-xs" 
+                      onClick={() => handleConfirm(alert.id)}
+                    >
+                      <CheckCircle className="w-3.5 h-3.5 mr-1.5" />
+                      Confirm Lead
                     </Button>
-                    <Button size="sm" variant="outline" className="flex-1" onClick={() => handleDismiss(alert.id)}>
-                      <XCircle className="w-4 h-4 mr-2" />
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="text-xs" 
+                      onClick={() => handleDismiss(alert.id)}
+                    >
+                      <XCircle className="w-3.5 h-3.5 mr-1.5 text-muted-foreground" />
                       Dismiss
                     </Button>
-                  </CardFooter>
+                  </div>
                 ) : (
-                  <CardFooter className="flex-col gap-2">
-                    <div className="flex items-center gap-2 w-full justify-center py-1 text-xs text-muted-foreground">
+                  <div className="flex items-center justify-between w-full text-xs text-muted-foreground font-mono">
+                    <span className="flex items-center gap-1.5">
                       <Eye className="w-3.5 h-3.5" />
-                      <span className="font-medium">
-                        {alert.status === 'Verified' ? 'Dispatch Triggered' : 
-                         alert.status === 'EN-ROUTE' ? 'Officers Responding' :
-                         alert.status === 'Rejected False Positive' || alert.status === 'Rejected' ? 'Marked as False Positive' : alert.status}
-                      </span>
-                    </div>
-                    {(alert.status !== 'Pending' && alert.status !== 'Rejected' && alert.status !== 'Rejected False Positive') && (
-                      <div className="w-full text-center text-xs p-2 rounded-md bg-secondary/30">
-                        {alert.assignments?.length > 0 ? (
-                          <div className="space-y-1">
-                            <span className="font-semibold text-primary block mb-1">Assigned Officers:</span>
-                            {alert.assignments.map((assignment: any, index: number) => (
-                              <div key={index} className="text-muted-foreground">
-                                {assignment.officer?.user?.full_name || 'Unknown Officer'} 
-                                {assignment.officer?.badge_number ? ` (${assignment.officer.badge_number})` : ''}
-                                {assignment.status ? ` - ${assignment.status === 'Accepted' ? 'En Route' : assignment.status}` : ''}
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <span className="text-amber-400 font-medium flex items-center justify-center gap-1.5">
-                            <AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />
-                            Unassigned to field officer
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </CardFooter>
+                      {alert.status === 'Verified' ? 'Lead Confirmed & Dispatched' : 'Flagged False Positive'}
+                    </span>
+                    <Badge variant="outline" className="text-[10px]">
+                      RESOLVED
+                    </Badge>
+                  </div>
                 )}
-              </Card>
-            ))
-          )}
+              </CardFooter>
+            </Card>
+          ))}
         </div>
       )}
     </div>

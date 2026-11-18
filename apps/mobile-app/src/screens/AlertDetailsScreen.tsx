@@ -1,20 +1,17 @@
 import React, { useState } from 'react';
 import {
   StyleSheet,
-  Text,
   View,
-  ScrollView,
-  TouchableOpacity,
+  Text,
   Image,
-  Alert,
+  Pressable,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SPACING, ROUNDED } from '../constants/theme';
 import { AlertItem } from '../utils/mockState';
-import ScanLine from '../components/ScanLine';
-import PulseIndicator from '../components/PulseIndicator';
-import TacticalCard from '../components/TacticalCard';
+import { ScreenWrapper } from '../components/ScreenWrapper';
+import { SurfaceCard } from '../components/SurfaceCard';
+import { PrimaryButton } from '../components/PrimaryButton';
 
 interface AlertDetailsScreenProps {
   alert: AlertItem;
@@ -30,708 +27,388 @@ export const AlertDetailsScreen: React.FC<AlertDetailsScreenProps> = ({
   currentOfficerId,
 }) => {
   const [currentStatus, setCurrentStatus] = useState<AlertItem['status']>(alert.status);
+  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
 
   // Determine assignment rules
   const assignments = alert.assignments || [];
   const isAssigned = assignments.length > 0;
-  const isAssignedToMe = isAssigned && assignments.some(a => a.officer?.badge_number === currentOfficerId);
+  const isAssignedToMe = isAssigned && assignments.some((a) => a.officer?.badge_number === currentOfficerId);
   const isAssignedToOther = isAssigned && !isAssignedToMe;
   const otherOfficerAssignment = isAssignedToOther ? assignments[0] : null;
 
   const handleStatusChange = (status: AlertItem['status']) => {
     setCurrentStatus(status);
     onUpdateStatus(alert.id, status);
-    
-    Alert.alert(
-      'TELEMETRY LOGGED',
-      `Unit-042 field report successfully transmitted to command server:\nSTATUS: ${status}`,
-      [{ text: 'ACKNOWLEDGE', style: 'default' }],
-      { cancelable: true }
-    );
+    setFeedbackMessage(`Status updated to ${status}. Transmitted to dispatch.`);
+    setTimeout(() => {
+      setFeedbackMessage(null);
+    }, 4000);
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <ScreenWrapper scrollable contentContainerStyle={styles.scrollContent}>
       {/* Top Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <MaterialIcons name="keyboard-arrow-left" size={22} color={COLORS.primary} />
+        <Pressable onPress={onBack} hitSlop={8} style={styles.backButton}>
+          <MaterialIcons name="keyboard-arrow-left" size={24} color={COLORS.primary} />
           <Text style={styles.backText}>BACK</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>PATROL UNIT-042</Text>
-        <View style={styles.headerRight}>
-          <PulseIndicator color={COLORS.secondary} size={8} pulseSize={2.5} />
+        </Pressable>
+        <Text style={styles.headerTitle}>DOSSIER #{alert.fileNo}</Text>
+        <View style={styles.threatBadge}>
+          <Text style={styles.threatBadgeText}>{alert.threatLevel}</Text>
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Title Block */}
-        <View style={styles.titleBlock}>
-          <View style={styles.titleRow}>
-            <MaterialIcons name="warning" size={24} color={COLORS.primary} style={{ marginRight: 4 }} />
-            <Text style={styles.titleText}>CRITICAL ALERT</Text>
-          </View>
-          <View style={styles.monitoringBadge}>
-            <View style={styles.monitoringDot} />
-            <Text style={styles.monitoringText}>ACTIVE MONITORING</Text>
-          </View>
+      {/* Inline Feedback Banner */}
+      {feedbackMessage && (
+        <View style={styles.feedbackBanner}>
+          <MaterialIcons name="check-circle" size={16} color={COLORS.secondary} style={{ marginRight: 6 }} />
+          <Text style={styles.feedbackText}>{feedbackMessage}</Text>
         </View>
+      )}
 
-        {/* Subject Image */}
-        <View style={styles.feedsGrid}>
-          <TacticalCard containerStyle={styles.feedCard}>
-            <View style={styles.feedHeader}>
-              <Text style={styles.feedLabelPrimary}>SUBJECT DATABASE MATCH</Text>
-              <Text style={styles.feedValue}>REC: {alert.fileNo}</Text>
-            </View>
-            <View style={styles.feedImageWrapper}>
-              <Image
-                source={{
-                  uri: alert.mugshotUrl || 'https://via.placeholder.com/150',
-                }}
-                style={styles.feedImageColor}
-              />
-              {currentStatus === 'ALERT' && (
-                <ScanLine color={COLORS.secondary} duration={3000} />
-              )}
-              {alert.confidence || alert.matchPercentage ? (
-                <View style={styles.confidenceBadge}>
-                  <Text style={styles.confidenceNumber}>
-                    {alert.confidence || `${alert.matchPercentage}%`}
-                  </Text>
-                  <Text style={styles.confidenceLabel}>CONFIDENCE</Text>
-                </View>
-              ) : null}
-            </View>
-          </TacticalCard>
-        </View>
-
-        {/* Telemetry metadata */}
-        <View style={styles.metaRow}>
-          <TacticalCard
-            accentColor={COLORS.primary}
-            containerStyle={styles.mainMetaCard}
-          >
-            <View style={styles.cardPadding}>
-              <View style={styles.metaHeader}>
-                <View>
-                  <Text style={styles.metaTitle}>{alert.title}</Text>
-                  <Text style={styles.metaWarrant}>
-                    Warrant Status:{' '}
-                    <Text style={styles.warrantOutstanding}>OUTSTANDING</Text>
-                  </Text>
-                </View>
-                <View style={styles.timeContainer}>
-                  <Text style={styles.timeLabel}>LAST SEEN</Text>
-                  <Text style={styles.timeValue}>{alert.lastSeenTime}</Text>
-                </View>
+      {/* Main Forensic Evidence Section */}
+      <SurfaceCard style={styles.evidenceCard}>
+        <View style={styles.evidenceRow}>
+          <View style={styles.imageBox}>
+            <Image
+              source={{ uri: alert.mugshotUrl || 'https://via.placeholder.com/150' }}
+              style={styles.image}
+            />
+            {alert.confidence || alert.matchPercentage ? (
+              <View style={styles.matchTag}>
+                <Text style={styles.matchTagText}>
+                  {alert.confidence || `${alert.matchPercentage}%`} MATCH
+                </Text>
               </View>
+            ) : null}
+          </View>
 
-              <View style={styles.divider} />
+          <View style={styles.metaCol}>
+            <Text style={styles.personName}>{alert.title}</Text>
+            <Text style={styles.personSubtitle}>{alert.subtitle}</Text>
 
-              <View style={styles.metaDetailsGrid}>
-                <View style={styles.metaDetailItem}>
-                  <Text style={styles.metaDetailLabel}>PRIMARY LOCATION</Text>
-                  <Text style={styles.metaDetailValue}>
-                    <MaterialIcons name="place" size={14} color={COLORS.primary} /> {alert.lastSeenLocation}
-                  </Text>
-                </View>
-                <View style={styles.metaDetailItem}>
-                  <Text style={styles.metaDetailLabel}>THREAT LEVEL</Text>
-                  <View style={styles.threatBarWrapper}>
-                    <View style={[styles.threatSegment, styles.threatSegmentActive]} />
-                    <View style={[styles.threatSegment, styles.threatSegmentActive]} />
-                    <View style={[styles.threatSegment, styles.threatSegmentActive]} />
-                    <View style={styles.threatSegment} />
-                    <Text style={styles.threatText}>HIGH</Text>
-                  </View>
-                </View>
-              </View>
-            </View>
-          </TacticalCard>
-
-          <TacticalCard containerStyle={styles.cameraTelemetryCard}>
-            <View style={styles.cardPadding}>
-              <Text style={styles.telemetryLabel}>CAMERA TELEMETRY</Text>
-              {alert.telemetry ? (
-                <View style={styles.telemetryGrid}>
-                  <View style={styles.telemetryRow}>
-                    <Text style={styles.telemetryKey}>AZIMUTH</Text>
-                    <Text style={styles.telemetryVal}>{alert.telemetry.azimuth}</Text>
-                  </View>
-                  <View style={styles.telemetryRow}>
-                    <Text style={styles.telemetryKey}>ZOOM</Text>
-                    <Text style={styles.telemetryVal}>{alert.telemetry.zoom}</Text>
-                  </View>
-                  <View style={styles.telemetryRow}>
-                    <Text style={styles.telemetryKey}>LENS</Text>
-                    <Text style={styles.telemetryVal}>{alert.telemetry.lens}</Text>
-                  </View>
-                  <View style={styles.telemetryRow}>
-                    <Text style={styles.telemetryKey}>SIGNAL</Text>
-                    <Text style={styles.telemetryVal}>{alert.telemetry.signal}</Text>
-                  </View>
-                </View>
-              ) : (
-                <Text style={styles.telemetryEmpty}>No direct camera telemetry active.</Text>
-              )}
-            </View>
-          </TacticalCard>
-        </View>
-
-        {/* Assigned Officers Block */}
-        <View style={styles.assignmentsContainer}>
-          <Text style={styles.actionsTitle}>ASSIGNMENT STATUS</Text>
-          <TacticalCard containerStyle={{ marginBottom: 16 }}>
-            <View style={styles.cardPadding}>
-              {alert.assignments && alert.assignments.length > 0 ? (
-                alert.assignments.map((assignment, idx) => (
-                  <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 4 }}>
-                    <MaterialIcons name="local-police" size={20} color={COLORS.primary} style={{ marginRight: 8 }} />
-                    <Text style={{ color: COLORS.onSurface, fontFamily: TYPOGRAPHY.medium, fontSize: 14 }}>
-                      {assignment.officer?.user?.full_name || 'Unknown Officer'} 
-                      {assignment.officer?.badge_number ? ` (${assignment.officer.badge_number})` : ''}
-                    </Text>
-                    {assignment.status && (
-                      <Text style={{ 
-                        color: assignment.status === 'Accepted' ? COLORS.primary : COLORS.secondary, 
-                        marginLeft: 8, 
-                        fontSize: 12, 
-                        fontFamily: TYPOGRAPHY.bold 
-                      }}>
-                        [ {assignment.status === 'Accepted' ? 'EN-ROUTE' : assignment.status.toUpperCase()} ]
-                      </Text>
-                    )}
-                  </View>
-                ))
-              ) : (
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <MaterialIcons name="warning" size={20} color={COLORS.error} style={{ marginRight: 8 }} />
-                  <Text style={{ color: COLORS.error, fontFamily: TYPOGRAPHY.medium, fontSize: 14 }}>
-                    NOT ASSIGNED TO ANYONE
-                  </Text>
-                </View>
-              )}
-            </View>
-          </TacticalCard>
-        </View>
-
-        {/* Operational Field Actions */}
-        <View style={styles.actionsContainer}>
-          <Text style={styles.actionsTitle}>OPERATIONAL FIELD CONTROLS</Text>
-          {isAssignedToOther ? (
-            <View style={{
-              backgroundColor: 'rgba(246, 190, 57, 0.05)',
-              borderWidth: 1,
-              borderColor: 'rgba(246, 190, 57, 0.2)',
-              borderRadius: 8,
-              padding: 16,
-              alignItems: 'center',
-              marginTop: 12
-            }}>
-              <MaterialIcons name="lock" size={24} color={COLORS.primary} style={{ marginBottom: 8 }} />
-              <Text style={{ color: COLORS.onSurface, fontFamily: TYPOGRAPHY.bold, fontSize: 14, textAlign: 'center' }}>
-                ACTION LOCKED
-              </Text>
-              <Text style={{ color: COLORS.onSurfaceVariant, fontFamily: TYPOGRAPHY.medium, fontSize: 13, textAlign: 'center', marginTop: 4 }}>
-                This alert is currently being handled by {otherOfficerAssignment?.officer?.user?.full_name || 'another officer'}.
+            <View style={styles.metaRow}>
+              <MaterialIcons name="place" size={14} color={COLORS.primary} style={{ marginRight: 4 }} />
+              <Text style={styles.metaLocation} numberOfLines={2}>
+                {alert.lastSeenLocation}
               </Text>
             </View>
-          ) : (
-            <View style={styles.buttonsGrid}>
-              <TouchableOpacity
-                onPress={() => handleStatusChange('EN-ROUTE')}
-                style={[
-                  styles.actionButton,
-                  currentStatus === 'EN-ROUTE'
-                    ? styles.btnEnRouteActive
-                    : styles.btnEnRoute,
-                ]}
-              >
-                <MaterialIcons
-                  name="directions-car"
-                  size={18}
-                  color={currentStatus === 'EN-ROUTE' ? COLORS.primary : COLORS.onSurfaceVariant}
-                />
-                <Text
-                  style={[
-                    styles.actionBtnLabel,
-                    { color: currentStatus === 'EN-ROUTE' ? COLORS.primary : COLORS.onSurfaceVariant }
-                  ]}
-                >
-                  EN-ROUTE
-                </Text>
-              </TouchableOpacity>
 
-              <TouchableOpacity
-                onPress={() => handleStatusChange('INVESTIGATING')}
-                style={[
-                  styles.actionButton,
-                  currentStatus === 'INVESTIGATING'
-                    ? styles.btnInvestigatingActive
-                    : styles.btnInvestigating,
-                ]}
-              >
-                <MaterialIcons
-                  name="search"
-                  size={18}
-                  color={currentStatus === 'INVESTIGATING' ? COLORS.primary : COLORS.onSurfaceVariant}
-                />
-                <Text
-                  style={[
-                    styles.actionBtnLabel,
-                    { color: currentStatus === 'INVESTIGATING' ? COLORS.primary : COLORS.onSurfaceVariant }
-                  ]}
-                >
-                  INVESTIGATE
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => handleStatusChange('FALSE ALARM')}
-                style={[
-                  styles.actionButton,
-                  currentStatus === 'FALSE ALARM' || currentStatus === 'Rejected False Positive'
-                    ? styles.btnFalseActive
-                    : styles.btnFalse,
-                ]}
-              >
-                <MaterialIcons
-                  name="cancel"
-                  size={18}
-                  color={currentStatus === 'FALSE ALARM' || currentStatus === 'Rejected False Positive' ? COLORS.error : COLORS.onSurfaceVariant}
-                />
-                <Text
-                  style={[
-                    styles.actionBtnLabel,
-                    { color: currentStatus === 'FALSE ALARM' || currentStatus === 'Rejected False Positive' ? COLORS.error : COLORS.onSurfaceVariant }
-                  ]}
-                >
-                  FALSE ALARM
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => handleStatusChange('TARGET LOST')}
-                style={[
-                  styles.actionButton,
-                  currentStatus === 'TARGET LOST'
-                    ? styles.btnLostActive
-                    : styles.btnLost,
-                ]}
-              >
-                <MaterialIcons
-                  name="directions-run"
-                  size={18}
-                  color={currentStatus === 'TARGET LOST' ? COLORS.error : COLORS.onSurfaceVariant}
-                />
-                <Text
-                  style={[
-                    styles.actionBtnLabel,
-                    { color: currentStatus === 'TARGET LOST' ? COLORS.error : COLORS.onSurfaceVariant }
-                  ]}
-                >
-                  TARGET LOST
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => handleStatusChange('FOUND')}
-                style={[
-                  styles.actionButton,
-                  { width: '100%' },
-                  currentStatus === 'FOUND'
-                    ? styles.btnCompleteActive
-                    : styles.btnComplete,
-                ]}
-              >
-                <MaterialIcons
-                  name="check-circle"
-                  size={18}
-                  color={currentStatus === 'FOUND' ? COLORS.onSecondary : COLORS.secondary}
-                />
-                <Text
-                  style={[
-                    styles.actionBtnLabel,
-                    { color: currentStatus === 'FOUND' ? COLORS.onSecondary : COLORS.secondary }
-                  ]}
-                >
-                  FOUND
-                </Text>
-              </TouchableOpacity>
+            <View style={styles.metaRow}>
+              <MaterialIcons name="schedule" size={14} color={COLORS.onSurfaceVariant} style={{ marginRight: 4 }} />
+              <Text style={styles.metaTime}>Last seen {alert.lastSeenTime}</Text>
             </View>
-          )}
+          </View>
         </View>
-      </ScrollView>
-    </SafeAreaView>
+      </SurfaceCard>
+
+      {/* Camera Telemetry Specs */}
+      {alert.telemetry && (
+        <SurfaceCard style={styles.telemetryCard}>
+          <Text style={styles.sectionTitle}>CAMERA TELEMETRY</Text>
+          <View style={styles.telemetryGrid}>
+            <View style={styles.telemetryItem}>
+              <Text style={styles.telemetryKey}>AZIMUTH</Text>
+              <Text style={styles.telemetryVal}>{alert.telemetry.azimuth}</Text>
+            </View>
+            <View style={styles.telemetryItem}>
+              <Text style={styles.telemetryKey}>ZOOM</Text>
+              <Text style={styles.telemetryVal}>{alert.telemetry.zoom}</Text>
+            </View>
+            <View style={styles.telemetryItem}>
+              <Text style={styles.telemetryKey}>OPTICS</Text>
+              <Text style={styles.telemetryVal}>{alert.telemetry.lens}</Text>
+            </View>
+            <View style={styles.telemetryItem}>
+              <Text style={styles.telemetryKey}>SIGNAL</Text>
+              <Text style={styles.telemetryVal}>{alert.telemetry.signal}</Text>
+            </View>
+          </View>
+        </SurfaceCard>
+      )}
+
+      {/* Assignment Status */}
+      <SurfaceCard style={styles.assignmentCard}>
+        <Text style={styles.sectionTitle}>DISPATCH ASSIGNMENT</Text>
+        {isAssignedToOther ? (
+          <View style={styles.lockedAssignment}>
+            <MaterialIcons name="lock" size={20} color={COLORS.primary} style={{ marginRight: 8 }} />
+            <Text style={styles.lockedText}>
+              Assigned to {otherOfficerAssignment?.officer?.user?.full_name || 'another patrol unit'}.
+            </Text>
+          </View>
+        ) : alert.assignments && alert.assignments.length > 0 ? (
+          <View style={styles.assignedRow}>
+            <MaterialIcons name="local-police" size={18} color={COLORS.primary} style={{ marginRight: 8 }} />
+            <Text style={styles.assignedText}>
+              {alert.assignments[0]?.officer?.user?.full_name || 'Active Patrol'} (Badge: {alert.assignments[0]?.officer?.badge_number || 'N/A'}) · [ {alert.assignments[0]?.status?.toUpperCase()} ]
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.unassignedRow}>
+            <MaterialIcons name="info-outline" size={18} color={COLORS.outline} style={{ marginRight: 8 }} />
+            <Text style={styles.unassignedText}>Unassigned · Ready for field response.</Text>
+          </View>
+        )}
+      </SurfaceCard>
+
+      {/* Operational Field Action Grid */}
+      <View style={styles.actionsSection}>
+        <Text style={styles.sectionTitle}>OPERATIONAL FIELD CONTROLS</Text>
+        <View style={styles.actionGrid}>
+          <PrimaryButton
+            title="EN-ROUTE"
+            onPress={() => handleStatusChange('EN-ROUTE')}
+            variant={currentStatus === 'EN-ROUTE' ? 'primary' : 'secondary'}
+            size="sm"
+            icon="directions-car"
+            style={styles.actionButton}
+          />
+
+          <PrimaryButton
+            title="INVESTIGATING"
+            onPress={() => handleStatusChange('INVESTIGATING')}
+            variant={currentStatus === 'INVESTIGATING' ? 'primary' : 'secondary'}
+            size="sm"
+            icon="search"
+            style={styles.actionButton}
+          />
+
+          <PrimaryButton
+            title="LOCATED / FOUND"
+            onPress={() => handleStatusChange('FOUND')}
+            variant={currentStatus === 'FOUND' ? 'primary' : 'secondary'}
+            size="sm"
+            icon="check-circle"
+            style={styles.actionButton}
+          />
+
+          <PrimaryButton
+            title="FALSE ALARM"
+            onPress={() => handleStatusChange('FALSE ALARM')}
+            variant={currentStatus === 'FALSE ALARM' ? 'destructive' : 'secondary'}
+            size="sm"
+            icon="cancel"
+            style={styles.actionButton}
+          />
+        </View>
+      </View>
+    </ScreenWrapper>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: COLORS.background,
+  scrollContent: {
+    padding: SPACING.gutter,
+    paddingBottom: 96,
   },
   header: {
-    height: SPACING.touchTargetMin + 12,
+    height: SPACING.touchTargetMin + 8,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.outlineVariant,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: SPACING.gutter,
+    marginBottom: SPACING.md,
   },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-  },
-  backIcon: {
-    fontSize: 12,
-    color: COLORS.primary,
+    paddingVertical: 6,
+    paddingRight: 8,
   },
   backText: {
     ...TYPOGRAPHY.labelCaps,
+    fontSize: 12,
     color: COLORS.primary,
+    fontWeight: '700',
+    marginLeft: 2,
   },
   headerTitle: {
-    ...TYPOGRAPHY.headlineSmMobile,
+    ...TYPOGRAPHY.titleMedium,
     color: COLORS.onSurface,
     fontWeight: '700',
+    fontFamily: 'monospace',
+    fontSize: 14,
   },
-  headerRight: {
-    width: 48,
-    alignItems: 'flex-end',
+  threatBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: ROUNDED.FULL,
+    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+    borderWidth: 1,
+    borderColor: COLORS.error,
   },
-  scrollContent: {
-    padding: SPACING.gutter,
-    paddingBottom: 48,
-  },
-  titleBlock: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  alertIcon: {
-    fontSize: 20,
-  },
-  titleText: {
-    ...TYPOGRAPHY.headlineMd,
-    color: COLORS.primary,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-  monitoringBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.primaryContainer,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 9999,
-  },
-  monitoringDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: COLORS.onPrimaryContainer,
-    marginRight: 6,
-  },
-  monitoringText: {
+  threatBadgeText: {
     ...TYPOGRAPHY.labelCaps,
     fontSize: 9,
-    color: COLORS.onPrimaryContainer,
-  },
-  feedsGrid: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 20,
-  },
-  feedCard: {
-    flex: 1,
-  },
-  feedHeader: {
-    backgroundColor: COLORS.surfaceHigh,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.outlineVariant,
-  },
-  feedLabel: {
-    ...TYPOGRAPHY.labelCaps,
-    fontSize: 9,
-    color: COLORS.secondary,
-  },
-  feedLabelPrimary: {
-    ...TYPOGRAPHY.labelCaps,
-    fontSize: 9,
-    color: COLORS.primary,
-  },
-  feedValue: {
-    ...TYPOGRAPHY.dataMono,
-    fontSize: 10,
-    color: COLORS.onSurfaceVariant,
-  },
-  feedImageWrapper: {
-    position: 'relative',
-    aspectRatio: 1,
-    backgroundColor: COLORS.surfaceLow,
-  },
-  feedImageGray: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-    opacity: 0.8,
-  },
-  feedImageColor: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  confidenceBadge: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: ROUNDED.DEFAULT,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
-    alignItems: 'center',
-  },
-  confidenceNumber: {
-    ...TYPOGRAPHY.headlineSm,
-    color: COLORS.onPrimary,
-    fontWeight: '800',
-    lineHeight: 20,
-  },
-  confidenceLabel: {
-    ...TYPOGRAPHY.labelCaps,
-    fontSize: 7,
-    color: COLORS.onPrimary,
-    lineHeight: 8,
-    marginTop: -2,
-  },
-  metaRow: {
-    flexDirection: 'column',
-    gap: 16,
-    marginBottom: 24,
-  },
-  mainMetaCard: {
-    width: '100%',
-  },
-  cardPadding: {
-    padding: 16,
-  },
-  metaHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  metaTitle: {
-    ...TYPOGRAPHY.headlineMd,
-    color: COLORS.primary,
-    fontWeight: '700',
-  },
-  metaWarrant: {
-    ...TYPOGRAPHY.dataMono,
-    color: COLORS.onSurfaceVariant,
-    fontSize: 12,
-    marginTop: 4,
-  },
-  warrantOutstanding: {
     color: COLORS.error,
-    fontWeight: '700',
+    fontWeight: '800',
   },
-  timeContainer: {
-    alignItems: 'flex-end',
-  },
-  timeLabel: {
-    ...TYPOGRAPHY.labelCaps,
-    color: COLORS.outline,
-    fontSize: 9,
-  },
-  timeValue: {
-    ...TYPOGRAPHY.bodyMd,
-    fontWeight: '600',
-    color: COLORS.onSurface,
-    marginTop: 2,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: COLORS.outlineVariant,
-    marginVertical: 16,
-  },
-  metaDetailsGrid: {
+  feedbackBanner: {
     flexDirection: 'row',
-    gap: 24,
+    alignItems: 'center',
+    backgroundColor: 'rgba(6, 182, 212, 0.12)',
+    borderWidth: 1,
+    borderColor: COLORS.secondary,
+    borderRadius: ROUNDED.MD,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: SPACING.md,
   },
-  metaDetailItem: {
+  feedbackText: {
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.secondary,
+    fontSize: 12,
     flex: 1,
   },
-  metaDetailLabel: {
+  evidenceCard: {
+    padding: SPACING.md,
+    marginBottom: SPACING.md,
+  },
+  evidenceRow: {
+    flexDirection: 'row',
+    gap: 14,
+  },
+  imageBox: {
+    width: 100,
+    height: 110,
+    borderRadius: ROUNDED.MD,
+    overflow: 'hidden',
+    backgroundColor: COLORS.surfaceHigh,
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
+    position: 'relative',
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  matchTag: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(9, 13, 22, 0.85)',
+    paddingVertical: 2,
+    alignItems: 'center',
+  },
+  matchTagText: {
     ...TYPOGRAPHY.labelCaps,
-    color: COLORS.onSurfaceVariant,
-    fontSize: 10,
+    fontSize: 8,
+    color: COLORS.primary,
+    fontFamily: 'monospace',
+    fontWeight: '700',
+  },
+  metaCol: {
+    flex: 1,
+    justifyContent: 'space-around',
+  },
+  personName: {
+    ...TYPOGRAPHY.titleMedium,
+    color: COLORS.onSurface,
+    fontWeight: '700',
+    fontSize: 16,
+  },
+  personSubtitle: {
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.primary,
+    fontSize: 11,
     marginBottom: 4,
   },
-  metaDetailValue: {
-    ...TYPOGRAPHY.bodyMd,
-    color: COLORS.onSurface,
-    fontWeight: '600',
-  },
-  threatBarWrapper: {
+  metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginTop: 4,
+    marginVertical: 2,
   },
-  threatSegment: {
-    width: 24,
-    height: 6,
-    backgroundColor: COLORS.outlineVariant,
-    borderRadius: 3,
+  metaLocation: {
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.onSurface,
+    fontSize: 12,
+    flex: 1,
   },
-  threatSegmentActive: {
-    backgroundColor: COLORS.primary,
-  },
-  threatText: {
-    ...TYPOGRAPHY.dataMono,
-    color: COLORS.primary,
-    fontSize: 11,
-    marginLeft: 6,
-    fontWeight: '700',
-  },
-  cameraTelemetryCard: {
-    width: '100%',
-  },
-  telemetryLabel: {
-    ...TYPOGRAPHY.labelCaps,
+  metaTime: {
+    ...TYPOGRAPHY.bodySmall,
     color: COLORS.onSurfaceVariant,
     fontSize: 11,
-    marginBottom: 12,
+  },
+  sectionTitle: {
+    ...TYPOGRAPHY.labelCaps,
+    fontSize: 9,
+    color: COLORS.onSurfaceVariant,
+    letterSpacing: 0.8,
+    marginBottom: SPACING.sm,
+  },
+  telemetryCard: {
+    padding: SPACING.md,
+    marginBottom: SPACING.md,
   },
   telemetryGrid: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  telemetryRow: {
-    flexDirection: 'row',
     justifyContent: 'space-between',
-    width: '47%',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(79, 70, 52, 0.2)',
-    paddingBottom: 6,
+  },
+  telemetryItem: {
+    alignItems: 'center',
   },
   telemetryKey: {
-    ...TYPOGRAPHY.dataMono,
-    color: COLORS.outline,
-    fontSize: 11,
+    ...TYPOGRAPHY.labelCaps,
+    fontSize: 8,
+    color: COLORS.onSurfaceVariant,
+    marginBottom: 2,
   },
   telemetryVal: {
-    ...TYPOGRAPHY.dataMono,
-    color: COLORS.secondary,
-    fontWeight: '700',
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.onSurface,
+    fontFamily: 'monospace',
+    fontWeight: '600',
     fontSize: 11,
   },
-  telemetryEmpty: {
-    ...TYPOGRAPHY.bodyMd,
-    color: COLORS.outline,
-    fontStyle: 'italic',
+  assignmentCard: {
+    padding: SPACING.md,
+    marginBottom: SPACING.md,
   },
-  actionsContainer: {
-    marginTop: 12,
-  },
-  actionsTitle: {
-    ...TYPOGRAPHY.labelCaps,
-    color: COLORS.onSurfaceVariant,
-    fontSize: 11,
-    marginBottom: 16,
-    paddingLeft: 4,
-  },
-  buttonsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  actionButton: {
-    width: '47%',
-    height: 64,
-    borderRadius: ROUNDED.DEFAULT,
+  lockedAssignment: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    gap: 10,
-    borderWidth: 1,
   },
-  actionIcon: {
-    fontSize: 18,
+  lockedText: {
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.onSurfaceVariant,
+    fontSize: 12,
+    flex: 1,
   },
-  actionBtnLabel: {
-    ...TYPOGRAPHY.labelCaps,
-    fontSize: 9,
-    fontWeight: '700',
+  assignedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  btnInvestigating: {
-    backgroundColor: COLORS.surfaceContainer,
-    borderColor: 'rgba(246, 190, 57, 0.4)',
+  assignedText: {
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.onSurface,
+    fontSize: 12,
+    flex: 1,
   },
-  btnInvestigatingActive: {
-    backgroundColor: 'rgba(246, 190, 57, 0.2)',
-    borderColor: COLORS.primary,
+  unassignedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  btnLocated: {
-    backgroundColor: COLORS.surfaceContainer,
-    borderColor: COLORS.primary,
+  unassignedText: {
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.onSurfaceVariant,
+    fontSize: 12,
   },
-  btnLocatedActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
+  actionsSection: {
+    marginTop: SPACING.xs,
   },
-  btnFalse: {
-    backgroundColor: COLORS.surfaceContainer,
-    borderColor: COLORS.outlineVariant,
+  actionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
   },
-  btnFalseActive: {
-    backgroundColor: COLORS.surfaceHigh,
-    borderColor: COLORS.outline,
-  },
-  btnEnRoute: {
-    backgroundColor: COLORS.surfaceContainer,
-    borderColor: 'rgba(57, 190, 246, 0.4)',
-  },
-  btnEnRouteActive: {
-    backgroundColor: 'rgba(57, 190, 246, 0.2)',
-    borderColor: COLORS.primary,
-  },
-  btnLost: {
-    backgroundColor: COLORS.surfaceContainer,
-    borderColor: 'rgba(246, 57, 57, 0.4)',
-  },
-  btnLostActive: {
-    backgroundColor: 'rgba(246, 57, 57, 0.2)',
-    borderColor: COLORS.error,
-  },
-  btnComplete: {
-    backgroundColor: COLORS.surfaceContainer,
-    borderColor: COLORS.secondaryContainer,
-  },
-  btnCompleteActive: {
-    backgroundColor: COLORS.secondaryContainer,
-    borderColor: COLORS.secondaryContainer,
+  actionButton: {
+    width: '48%',
   },
 });
+
 export default AlertDetailsScreen;

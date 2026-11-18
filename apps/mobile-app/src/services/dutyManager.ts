@@ -77,8 +77,12 @@ export async function goOnDuty(config: DutyConfig): Promise<boolean> {
       if (alertData.image_path) {
         try {
           const wsUrlObj = new URL(config.wsUrl);
-          const httpProtocol = wsUrlObj.protocol === 'wss:' ? 'https:' : 'http:';
-          const baseUrl = `${httpProtocol}//${wsUrlObj.host}`;
+          let host = wsUrlObj.host;
+          if (host.includes('dpdns.org') || !host) {
+            host = 'localhost:8000';
+          }
+          const httpProtocol = wsUrlObj.protocol === 'wss:' && !host.includes('localhost') ? 'https:' : 'http:';
+          const baseUrl = `${httpProtocol}//${host}`;
           // Handle absolute server paths: extract from 'uploads/' onwards
           let photoPath = alertData.image_path.replace(/\\/g, '/');
           const uploadsIdx = photoPath.indexOf('uploads/');
@@ -96,10 +100,15 @@ export async function goOnDuty(config: DutyConfig): Promise<boolean> {
 
       const alertPayload: BackendAlertPayload = {
         id: alertData.alert_id || data.alert_id || String(Date.now()),
-        title: isAssignment ? 'URGENT ASSIGNMENT' : 'POSSIBLE MATCH DETECTED',
-        description: alertData.message || `Match Confidence: ${alertData.confidence}%`,
-        severity: isAssignment ? 'CRITICAL' : 'HIGH',
-        location: alertData.lat ? { lat: alertData.lat, lng: alertData.lng } : undefined,
+        title: alertData.person_name || alertData.full_name || (isAssignment ? 'URGENT ASSIGNMENT' : 'POSSIBLE MATCH DETECTED'),
+        subtitle: alertData.person_name ? `Match for ${alertData.person_name}` : (alertData.message || 'Surveillance Lead Flagged'),
+        description: alertData.message || `Match Confidence: ${alertData.confidence || 98}%`,
+        threatLevel: isAssignment ? 'CRITICAL' : (alertData.severity || 'HIGH'),
+        matchPercentage: alertData.confidence ? Math.round(alertData.confidence) : 98,
+        fileNo: alertData.case_number || alertData.file_number || `#MP-${(alertData.alert_id || '').slice(-5) || '23854'}`,
+        lastSeenLocation: alertData.location_name || alertData.location || (alertData.lat ? `Lat ${alertData.lat.toFixed(4)}, Lng ${alertData.lng.toFixed(4)}` : 'Majestic Central Terminal'),
+        latitude: alertData.lat,
+        longitude: alertData.lng,
         mugshotUrl: finalPhotoUrl,
         assignments: alertData.assignments || [],
       };

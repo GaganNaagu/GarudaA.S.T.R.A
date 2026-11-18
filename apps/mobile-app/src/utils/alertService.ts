@@ -23,7 +23,8 @@ export interface BackendAlertPayload {
   title: string;
   subtitle?: string;
   description?: string;
-  threatLevel?: 'HIGH' | 'MODERATE' | 'LOW';
+  severity?: string;
+  threatLevel?: 'HIGH' | 'MODERATE' | 'LOW' | 'CRITICAL' | string;
   matchPercentage?: number;
   fileNo?: string;
   lastSeenLocation?: string;
@@ -31,6 +32,7 @@ export interface BackendAlertPayload {
   mugshotUrl?: string;
   latitude?: number;
   longitude?: number;
+  location?: { lat: number; lng: number };
   assignments?: Array<{
     status: string;
     officer?: {
@@ -72,7 +74,7 @@ export function normalizeAlert(payload: BackendAlertPayload): AlertItem {
     id: payload.id || `alert-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     title: payload.title,
     subtitle: payload.subtitle || 'Incoming Alert',
-    threatLevel: payload.threatLevel || 'HIGH',
+    threatLevel: (payload.threatLevel || (payload.severity as any) || 'HIGH') as AlertItem['threatLevel'],
     matchPercentage: payload.matchPercentage,
     fileNo: payload.fileNo || `#AUTO-${Date.now().toString().slice(-5)}`,
     lastSeenLocation: payload.lastSeenLocation || 'Location Pending',
@@ -94,6 +96,8 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 });
 

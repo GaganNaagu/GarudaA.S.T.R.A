@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Alert, BackHandler, ToastAndroid, Platform } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Pressable, Alert, BackHandler, ToastAndroid, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { MaterialIcons } from '@expo/vector-icons';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as IntentLauncher from 'expo-intent-launcher';
 
 // Theme & Mock Data
@@ -56,8 +56,8 @@ export default function App() {
   const [dutyAcknowledged, setDutyAcknowledged] = useState(false);
 
   // Live state tracking
-  const [alerts, setAlerts] = useState<AlertItem[]>([]);
-  const [cases, setCases] = useState<CaseItem[]>([]);
+  const [alerts, setAlerts] = useState<AlertItem[]>(INITIAL_ALERTS);
+  const [cases, setCases] = useState<CaseItem[]>(INITIAL_CASES);
   const [messages, setMessages] = useState<MessageItem[]>(INITIAL_MESSAGES);
   const [officer, setOfficer] = useState<OfficerProfile>(INITIAL_OFFICER);
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>(INITIAL_AUDIT_LOGS);
@@ -73,12 +73,17 @@ export default function App() {
   // DUTY LIFECYCLE HOOK — Controls entire background layer
   // =====================================================
   useEffect(() => {
-    let simulatedAlertTimer: NodeJS.Timeout;
+    let simulatedAlertTimer: NodeJS.Timeout | null = null;
 
     if (isAuthorized) {
       // Register alert callbacks (for both WebSocket and simulated alerts)
       registerAlertCallbacks({
-        onNewAlert: (alert) => setAlerts((prev) => [alert, ...prev]),
+        onNewAlert: (alert) => {
+          setAlerts((prev) => {
+            if (prev.some((a) => a.id === alert.id)) return prev;
+            return [alert, ...prev];
+          });
+        },
         onTacticalPopup: (alert) => {
           setIncomingTacticalAlert(alert);
           setTacticalAlertVisible(true);
@@ -124,7 +129,8 @@ export default function App() {
           
           const getSafePhotoUrl = (rawPath: string | undefined, fallbackName = 'Unknown') => {
             if (!rawPath) return `https://ui-avatars.com/api/?name=${fallbackName}`;
-            const baseUrl = process.env.EXPO_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:8000';
+            const rawBase = process.env.EXPO_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:8000';
+            const baseUrl = (rawBase.includes('dpdns.org') || !rawBase) ? 'http://localhost:8000' : rawBase;
             let photoPath = rawPath.replace(/\\/g, '/');
             const uploadsIdx = photoPath.indexOf('uploads/');
             if (uploadsIdx > -1) photoPath = photoPath.substring(uploadsIdx);
@@ -172,7 +178,7 @@ export default function App() {
               latitude: a.detection_event?.location_lat || 18.9431,
               longitude: a.detection_event?.location_lng || 72.8246,
               status: 'ALERT',
-              assignedOfficer: { name: officer.name, unitId: officer.id, rank: officer.rank },
+              assignedOfficer: { name: officer.name, unitId: officer.unitId, rank: officer.rank },
               telemetry: { azimuth: '045°', zoom: '2.4x', lens: '50mm', signal: 'STRONG' }
             };
           });
@@ -572,85 +578,76 @@ export default function App() {
 
         {/* Standardized Bottom Navigation Shell (hidden in details view) */}
         {currentScreen !== 'details' && (
-          <View style={styles.bottomNav}>
-            <TouchableOpacity
-              style={styles.navItem}
-              onPress={() => setCurrentScreen('alerts')}
-            >
-              <View style={[styles.navItemInner, currentScreen === 'alerts' && styles.navItemActive]}>
-                <MaterialIcons
-                  name="notifications-active"
-                  size={22}
-                  color={currentScreen === 'alerts' ? COLORS.primary : COLORS.onSurfaceVariant}
-                  style={{ opacity: currentScreen === 'alerts' ? 1 : 0.6 }}
-                />
-                <Text style={[styles.navLabel, currentScreen === 'alerts' && styles.navLabelActive]}>ALERTS</Text>
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.navItem}
-              onPress={() => setCurrentScreen('cases')}
-            >
-              <View style={[styles.navItemInner, currentScreen === 'cases' && styles.navItemActive]}>
-                <MaterialIcons
-                  name="folder-shared"
-                  size={22}
-                  color={currentScreen === 'cases' ? COLORS.primary : COLORS.onSurfaceVariant}
-                  style={{ opacity: currentScreen === 'cases' ? 1 : 0.6 }}
-                />
-                <Text style={[styles.navLabel, currentScreen === 'cases' && styles.navLabelActive]}>CASES</Text>
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.navItem}
-              onPress={() => setCurrentScreen('logs')}
-            >
-              <View style={[styles.navItemInner, currentScreen === 'logs' && styles.navItemActive]}>
-                <MaterialIcons
-                  name="history"
-                  size={22}
-                  color={currentScreen === 'logs' ? COLORS.primary : COLORS.onSurfaceVariant}
-                  style={{ opacity: currentScreen === 'logs' ? 1 : 0.6 }}
-                />
-                <Text style={[styles.navLabel, currentScreen === 'logs' && styles.navLabelActive]}>LOGS</Text>
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.navItem}
-              onPress={() => setCurrentScreen('map')}
-            >
-              <View style={[styles.navItemInner, currentScreen === 'map' && styles.navItemActive]}>
-                <MaterialIcons
-                  name="explore"
-                  size={22}
-                  color={currentScreen === 'map' ? COLORS.primary : COLORS.onSurfaceVariant}
-                  style={{ opacity: currentScreen === 'map' ? 1 : 0.6 }}
-                />
-                <Text style={[styles.navLabel, currentScreen === 'map' && styles.navLabelActive]}>MAP</Text>
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.navItem}
-              onPress={() => setCurrentScreen('profile')}
-            >
-              <View style={[styles.navItemInner, currentScreen === 'profile' && styles.navItemActive]}>
-                <MaterialIcons
-                  name="account-circle"
-                  size={22}
-                  color={currentScreen === 'profile' ? COLORS.primary : COLORS.onSurfaceVariant}
-                  style={{ opacity: currentScreen === 'profile' ? 1 : 0.6 }}
-                />
-                <Text style={[styles.navLabel, currentScreen === 'profile' && styles.navLabelActive]}>PROFILE</Text>
-              </View>
-            </TouchableOpacity>
-          </View>
+          <BottomNavigationBar
+            currentScreen={currentScreen}
+            onSelectScreen={(screen) => setCurrentScreen(screen)}
+          />
         )}
       </View>
     </SafeAreaProvider>
+  );
+}
+
+function BottomNavigationBar({
+  currentScreen,
+  onSelectScreen,
+}: {
+  currentScreen: ScreenType;
+  onSelectScreen: (screen: ScreenType) => void;
+}) {
+  const insets = useSafeAreaInsets();
+  const tabs: { key: ScreenType; label: string; icon: keyof typeof MaterialIcons.glyphMap }[] = [
+    { key: 'alerts', label: 'ALERTS', icon: 'notifications-active' },
+    { key: 'cases', label: 'CASES', icon: 'folder-shared' },
+    { key: 'logs', label: 'LOGS', icon: 'history' },
+    { key: 'map', label: 'MAP', icon: 'explore' },
+    { key: 'profile', label: 'PROFILE', icon: 'account-circle' },
+  ];
+
+  return (
+    <View
+      style={[
+        styles.bottomNav,
+        { paddingBottom: Math.max(insets.bottom, 12) },
+      ]}
+    >
+      {tabs.map((tab) => {
+        const isActive = currentScreen === tab.key;
+        return (
+          <Pressable
+            key={tab.key}
+            style={styles.navItem}
+            onPress={() => onSelectScreen(tab.key)}
+            hitSlop={8}
+          >
+            {({ pressed }) => (
+              <View
+                style={[
+                  styles.navItemInner,
+                  isActive && styles.navItemActive,
+                  pressed && { opacity: 0.75, transform: [{ scale: 0.94 }] },
+                ]}
+              >
+                <MaterialIcons
+                  name={tab.icon}
+                  size={20}
+                  color={isActive ? COLORS.primary : COLORS.onSurfaceVariant}
+                  style={{ opacity: isActive ? 1 : 0.6 }}
+                />
+                <Text
+                  style={[
+                    styles.navLabel,
+                    isActive && styles.navLabelActive,
+                  ]}
+                >
+                  {tab.label}
+                </Text>
+              </View>
+            )}
+          </Pressable>
+        );
+      })}
+    </View>
   );
 }
 

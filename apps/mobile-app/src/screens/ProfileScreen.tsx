@@ -3,17 +3,16 @@ import {
   StyleSheet,
   Text,
   View,
-  ScrollView,
-  TouchableOpacity,
   Image,
+  Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SPACING, ROUNDED } from '../constants/theme';
 import { OfficerProfile } from '../utils/mockState';
-import ScanLine from '../components/ScanLine';
-import PulseIndicator from '../components/PulseIndicator';
-import TacticalCard from '../components/TacticalCard';
+import { ScreenWrapper } from '../components/ScreenWrapper';
+import { SurfaceCard } from '../components/SurfaceCard';
+import { ListItem } from '../components/ListItem';
+import { PrimaryButton } from '../components/PrimaryButton';
 
 interface ProfileScreenProps {
   officer: OfficerProfile;
@@ -33,255 +32,185 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     onUpdateStatus(nextStatus);
   };
 
+  const handleConfirmLogout = () => {
+    Alert.alert(
+      'DISENGAGE TERMINAL',
+      'Are you sure you want to log out of the active tactical patrol terminal?',
+      [
+        { text: 'CANCEL', style: 'cancel' },
+        { text: 'LOG OUT', style: 'destructive', onPress: onLogout },
+      ]
+    );
+  };
+
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <ScreenWrapper scrollable contentContainerStyle={styles.scrollContent}>
       {/* Top Header */}
       <View style={styles.header}>
         <View style={styles.headerTitleContainer}>
-          <MaterialIcons name="security" size={24} color={COLORS.primary} style={{ marginRight: 8 }} />
+          <MaterialIcons name="security" size={22} color={COLORS.primary} style={{ marginRight: 8 }} />
           <Text style={styles.headerTitle}>OFFICER PROFILE</Text>
         </View>
-        <View style={styles.headerRight}>
+        <View style={styles.badge}>
           <Text style={styles.badgeText}>{officer.unitId}</Text>
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Officer Identity Card */}
-        <TacticalCard
-          accentColor={isOnDuty ? COLORS.primary : COLORS.outlineVariant}
-          containerStyle={styles.identityCard}
-        >
-          <View style={styles.cardPadding}>
-            <ScanLine color={COLORS.secondary} duration={2800} />
-            <View style={styles.identityRow}>
-              {/* Portrait */}
-              <View style={styles.portraitWrapper}>
-                <Image
-                  source={require('../../assets/icon.png')}
-                  style={styles.portrait}
-                />
-                <View
-                  style={[
-                    styles.portraitDot,
-                    { backgroundColor: isOnDuty ? COLORS.primary : COLORS.outline },
-                  ]}
-                />
-              </View>
-
-              {/* Title & Metadata */}
-              <View style={styles.identityDetails}>
-                <Text style={styles.officerName}>{officer.name}</Text>
-                <Text style={styles.officerMeta}>
-                  {officer.rank} • {officer.unitId}
-                </Text>
-                <Text style={styles.officerShift}>{officer.shift}</Text>
-              </View>
-            </View>
+      {/* Identity Card */}
+      <SurfaceCard style={styles.identityCard}>
+        <View style={styles.identityRow}>
+          <View style={styles.portraitWrapper}>
+            <Image
+              source={require('../../assets/icon.png')}
+              style={styles.portrait}
+            />
+            <View
+              style={[
+                styles.statusDot,
+                { backgroundColor: isOnDuty ? COLORS.primary : COLORS.outline },
+              ]}
+            />
           </View>
-        </TacticalCard>
 
-        {/* Duty Status Interactive Button */}
-        <TouchableOpacity
-          onPress={handleStatusToggle}
-          style={[styles.statusButton, !isOnDuty && styles.statusButtonStandby]}
-          activeOpacity={0.8}
-        >
-          <View style={styles.statusButtonInner}>
-            <View style={styles.statusRow}>
-              <PulseIndicator
-                color={isOnDuty ? COLORS.primary : COLORS.outline}
-                size={12}
-                pulseSize={2.5}
-              />
-              <Text
-                style={[
-                  styles.statusText,
-                  { color: isOnDuty ? COLORS.primary : COLORS.onSurfaceVariant },
-                ]}
-              >
-                {isOnDuty ? 'ON DUTY / ACTIVE SCANNING' : 'OFF DUTY / STANDBY MODE'}
-              </Text>
-            </View>
-            <Text style={styles.statusTapText}>TAP TO TOGGLE PATROL DUTY STATUS</Text>
+          <View style={styles.identityDetails}>
+            <Text style={styles.officerName}>{officer.name}</Text>
+            <Text style={styles.officerRank}>{officer.rank}</Text>
+            <Text style={styles.officerShift}>Shift: {officer.shift}</Text>
           </View>
-        </TouchableOpacity>
-
-        {/* Performance Metrics Section */}
-        <Text style={styles.sectionHeader}>PERFORMANCE METRICS</Text>
-
-        <View style={styles.metricsGrid}>
-          {/* Resolved Cases Card */}
-          <TacticalCard accentColor={COLORS.secondary} containerStyle={styles.metricCard}>
-            <View style={styles.metricPadding}>
-              <View style={styles.metricHeaderRow}>
-                <View>
-                  <Text style={styles.metricLabel}>RESOLVED CASES</Text>
-                  <Text style={styles.metricValueLarge}>142</Text>
-                  <Text style={styles.metricLabelSub}>YTD Performance</Text>
-                </View>
-                <MaterialIcons name="assignment" size={20} color={COLORS.secondary} style={{ opacity: 0.6 }} />
-              </View>
-            </View>
-          </TacticalCard>
-
-          {/* Response Time Card */}
-          <TacticalCard accentColor={COLORS.tertiary} containerStyle={styles.metricCard}>
-            <View style={styles.metricPadding}>
-              <View style={styles.metricHeaderRow}>
-                <View>
-                  <Text style={styles.metricLabel}>AVG RESPONSE TIME</Text>
-                  <Text style={[styles.metricValueLarge, { color: COLORS.tertiary }]}>3:12</Text>
-                  <Text style={styles.metricLabelSub}>Minutes / Seconds</Text>
-                </View>
-                <MaterialIcons name="timer" size={20} color={COLORS.tertiary} style={{ opacity: 0.6 }} />
-              </View>
-            </View>
-          </TacticalCard>
-
-          {/* Performance Index card */}
-          <TacticalCard accentColor={COLORS.primary} containerStyle={styles.fullWidthCard}>
-            <View style={styles.metricPadding}>
-              <View style={styles.performanceHeaderRow}>
-                <View style={styles.iconTextRow}>
-                  <MaterialIcons name="trending-up" size={18} color={COLORS.primary} />
-                  <Text style={styles.perfLabel}>WEEKLY PERFORMANCE INDEX</Text>
-                </View>
-                <Text style={styles.perfValue}>98.4%</Text>
-              </View>
-              {/* Progress bar */}
-              <View style={styles.progressBarBg}>
-                <View style={styles.progressBarFill} />
-              </View>
-            </View>
-          </TacticalCard>
         </View>
+      </SurfaceCard>
 
-        {/* Operational info */}
-        <Text style={styles.sectionHeader}>OPERATIONAL TELEMETRY</Text>
-        <TacticalCard containerStyle={styles.telemetryCard}>
-          <View style={styles.infoRow}>
-            <View style={styles.infoCol}>
-              <Text style={styles.infoLabel}>ENCRYPTION KEY</Text>
-              <Text style={styles.infoValueMono}>{officer.encryptionKey}</Text>
-            </View>
-            <View style={styles.dividerCol} />
-            <View style={styles.infoCol}>
-              <Text style={styles.infoLabel}>COMMS SERVER LINK</Text>
-              <Text style={styles.infoValueMono}>{officer.commsLink}</Text>
-            </View>
+      {/* Duty Status Switcher Card */}
+      <SurfaceCard style={styles.dutyCard}>
+        <View style={styles.dutyRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.dutyLabel}>OPERATIONAL STATUS</Text>
+            <Text
+              style={[
+                styles.dutyStatusText,
+                { color: isOnDuty ? COLORS.primary : COLORS.onSurfaceVariant },
+              ]}
+            >
+              {isOnDuty ? 'ACTIVE ON-DUTY' : 'STANDBY / OFF-DUTY'}
+            </Text>
           </View>
+          <PrimaryButton
+            title={isOnDuty ? 'GO OFF-DUTY' : 'GO ON-DUTY'}
+            onPress={handleStatusToggle}
+            variant={isOnDuty ? 'secondary' : 'primary'}
+            size="sm"
+            icon={isOnDuty ? 'power-settings-new' : 'radio-button-checked'}
+          />
+        </View>
+      </SurfaceCard>
 
-          <View style={styles.horizontalDivider} />
+      {/* Grouped Terminal Settings / Telemetry Items */}
+      <Text style={styles.sectionHeader}>TERMINAL TELEMETRY</Text>
+      <SurfaceCard style={styles.groupedList}>
+        <ListItem
+          title="Radio Channel"
+          subtitle="Direct Municipal Command Link"
+          meta={officer.radioChannel || 'TAC-CH-04'}
+          leftAdornment={<MaterialIcons name="settings-remote" size={20} color={COLORS.primary} />}
+          showDivider
+        />
+        <ListItem
+          title="Assigned Sector"
+          subtitle="Tactical Patrol Zone"
+          meta={officer.assignedSector || 'Sector Alpha'}
+          leftAdornment={<MaterialIcons name="map" size={20} color={COLORS.secondary} />}
+          showDivider
+        />
+        <ListItem
+          title="Telemetry Encryption"
+          subtitle="Hardware Cryptographic Module"
+          meta="AES-256-GCM"
+          leftAdornment={<MaterialIcons name="vpn-key" size={20} color={COLORS.onSurfaceVariant} />}
+          showDivider
+        />
+        <ListItem
+          title="Server Connection"
+          subtitle="WebSocket Dispatch Stream"
+          meta="ONLINE"
+          leftAdornment={<MaterialIcons name="sensors" size={20} color={COLORS.secondary} />}
+          showDivider={false}
+        />
+      </SurfaceCard>
 
-          <View style={styles.singleInfoRow}>
-            <Text style={styles.infoTextLeft}>Application Version</Text>
-            <Text style={styles.infoTextRight}>v2.4.1 [STABLE BUILD]</Text>
-          </View>
-
-          <View style={styles.horizontalDivider} />
-
-          <View style={styles.singleInfoRow}>
-            <Text style={styles.infoTextLeft}>System Connection</Text>
-            <View style={styles.secureConnectionRow}>
-              <Text style={styles.secureConnectionText}>SECURE PROTOCOL</Text>
-              <View style={styles.secureConnectionDot} />
-            </View>
-          </View>
-        </TacticalCard>
-
-        {/* Logout Button */}
-        <TouchableOpacity
-          onPress={onLogout}
-          style={styles.logoutButton}
-          activeOpacity={0.8}
-        >
-          <MaterialIcons name="logout" size={20} color={COLORS.onPrimary} />
-          <Text style={styles.logoutButtonText}>LOGOUT SESSION</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.sessionTimeoutText}>
-          SECURE ENCRYPTED TERMINAL SESSION ACTIVE
-        </Text>
-      </ScrollView>
-    </SafeAreaView>
+      {/* Logout Action */}
+      <View style={styles.logoutWrapper}>
+        <PrimaryButton
+          title="LOGOUT & SECURE TERMINAL"
+          onPress={handleConfirmLogout}
+          variant="destructive"
+          size="md"
+          icon="logout"
+          style={styles.logoutBtn}
+        />
+      </View>
+    </ScreenWrapper>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: COLORS.background,
+  scrollContent: {
+    padding: SPACING.gutter,
+    paddingBottom: 96,
   },
   header: {
-    height: SPACING.touchTargetMin + 12,
+    height: SPACING.touchTargetMin + 8,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.outlineVariant,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: SPACING.gutter,
+    marginBottom: SPACING.md,
   },
   headerTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  headerIcon: {
-    fontSize: 20,
-    marginRight: 8,
-  },
   headerTitle: {
     ...TYPOGRAPHY.headlineSmMobile,
-    color: COLORS.primary,
+    color: COLORS.onSurface,
     fontWeight: '700',
+    fontSize: 16,
   },
-  headerRight: {
+  badge: {
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 3,
+    borderRadius: ROUNDED.FULL,
     borderWidth: 1,
     borderColor: COLORS.outlineVariant,
-    borderRadius: ROUNDED.sm,
+    backgroundColor: COLORS.surfaceContainer,
   },
   badgeText: {
-    ...TYPOGRAPHY.dataMono,
-    fontSize: 10,
+    ...TYPOGRAPHY.labelCaps,
+    fontSize: 9,
     color: COLORS.primary,
+    fontFamily: 'monospace',
     fontWeight: '700',
   },
-  scrollContent: {
-    padding: SPACING.gutter,
-    paddingBottom: 48,
-  },
   identityCard: {
-    marginBottom: 16,
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  cardPadding: {
-    padding: 16,
+    padding: SPACING.md,
+    marginBottom: SPACING.md,
   },
   identityRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
-    zIndex: 2,
+    gap: 14,
   },
   portraitWrapper: {
     position: 'relative',
-    width: 72,
-    height: 72,
-    borderRadius: ROUNDED.DEFAULT,
-    borderWidth: 1,
-    borderColor: COLORS.outlineVariant,
-    overflow: 'hidden',
-    backgroundColor: COLORS.surfaceLow,
   },
   portrait: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
+    width: 64,
+    height: 64,
+    borderRadius: ROUNDED.MD,
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
   },
-  portraitDot: {
+  statusDot: {
     position: 'absolute',
     bottom: -2,
     right: -2,
@@ -289,248 +218,66 @@ const styles = StyleSheet.create({
     height: 14,
     borderRadius: 7,
     borderWidth: 2,
-    borderColor: '#17130a',
+    borderColor: COLORS.surfaceContainer,
   },
   identityDetails: {
     flex: 1,
-    justifyContent: 'center',
   },
   officerName: {
-    ...TYPOGRAPHY.headlineSm,
-    color: COLORS.primary,
+    ...TYPOGRAPHY.titleMedium,
+    color: COLORS.onSurface,
     fontWeight: '700',
-    fontSize: 20,
+    fontSize: 16,
+    marginBottom: 2,
   },
-  officerMeta: {
-    ...TYPOGRAPHY.dataMono,
-    color: COLORS.secondary,
+  officerRank: {
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.primary,
+    fontWeight: '600',
+    fontSize: 12,
+  },
+  officerShift: {
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.onSurfaceVariant,
     fontSize: 11,
     marginTop: 2,
   },
-  officerShift: {
-    ...TYPOGRAPHY.bodyMd,
-    fontSize: 12,
-    color: COLORS.onSurfaceVariant,
-    marginTop: 4,
+  dutyCard: {
+    padding: SPACING.md,
+    marginBottom: SPACING.lg,
   },
-  statusButton: {
-    borderWidth: 1,
-    borderColor: COLORS.primary,
-    backgroundColor: 'rgba(246, 190, 57, 0.05)',
-    borderRadius: ROUNDED.lg,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  statusButtonStandby: {
-    borderColor: COLORS.outlineVariant,
-    backgroundColor: 'rgba(79, 70, 52, 0.05)',
-  },
-  statusButtonInner: {
-    alignItems: 'center',
-    width: '100%',
-  },
-  statusRow: {
+  dutyRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'space-between',
   },
-  statusText: {
-    ...TYPOGRAPHY.headlineSm,
-    fontSize: 14,
-    fontWeight: '700',
-    letterSpacing: 1,
-  },
-  statusTapText: {
+  dutyLabel: {
     ...TYPOGRAPHY.labelCaps,
     fontSize: 8,
-    color: COLORS.outline,
-    marginTop: 4,
-    opacity: 0.7,
+    color: COLORS.onSurfaceVariant,
+    marginBottom: 2,
+  },
+  dutyStatusText: {
+    ...TYPOGRAPHY.titleMedium,
+    fontWeight: '700',
+    fontSize: 14,
   },
   sectionHeader: {
     ...TYPOGRAPHY.labelCaps,
-    color: COLORS.onSurfaceVariant,
-    fontSize: 11,
-    marginBottom: 12,
-    paddingLeft: 4,
-  },
-  metricsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 20,
-  },
-  metricCard: {
-    width: '47%',
-  },
-  metricPadding: {
-    padding: 14,
-  },
-  metricHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  metricLabel: {
-    ...TYPOGRAPHY.labelCaps,
-    fontSize: 8,
-    color: COLORS.onSurfaceVariant,
-  },
-  metricValueLarge: {
-    ...TYPOGRAPHY.headlineSm,
-    fontSize: 28,
-    color: COLORS.secondary,
-    fontWeight: '800',
-    marginVertical: 4,
-  },
-  metricLabelSub: {
-    ...TYPOGRAPHY.labelCaps,
-    fontSize: 8,
-    color: COLORS.outline,
-  },
-  metricIcon: {
-    fontSize: 18,
-    opacity: 0.6,
-  },
-  fullWidthCard: {
-    width: '100%',
-  },
-  performanceHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  iconTextRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  perfIcon: {
-    fontSize: 16,
-  },
-  perfLabel: {
-    ...TYPOGRAPHY.labelCaps,
     fontSize: 9,
     color: COLORS.onSurfaceVariant,
+    letterSpacing: 0.8,
+    marginBottom: SPACING.xs,
+    marginLeft: 4,
   },
-  perfValue: {
-    ...TYPOGRAPHY.dataMono,
-    color: COLORS.primary,
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  progressBarBg: {
-    height: 6,
-    backgroundColor: COLORS.surfaceContainer,
-    borderRadius: 3,
+  groupedList: {
     overflow: 'hidden',
+    marginBottom: SPACING.xl,
   },
-  progressBarFill: {
-    height: '100%',
-    width: '98%',
-    backgroundColor: COLORS.primary,
+  logoutWrapper: {
+    marginTop: SPACING.sm,
   },
-  telemetryCard: {
+  logoutBtn: {
     width: '100%',
-    marginBottom: 24,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    padding: 14,
-  },
-  infoCol: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  infoLabel: {
-    ...TYPOGRAPHY.labelCaps,
-    fontSize: 8,
-    color: COLORS.outline,
-    lineHeight: 12,
-  },
-  infoValueMono: {
-    ...TYPOGRAPHY.dataMono,
-    color: COLORS.onSurface,
-    fontSize: 12,
-    marginTop: 2,
-  },
-  dividerCol: {
-    width: 1,
-    backgroundColor: COLORS.outlineVariant,
-    marginHorizontal: 12,
-  },
-  horizontalDivider: {
-    height: 1,
-    backgroundColor: COLORS.outlineVariant,
-  },
-  singleInfoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-  },
-  infoTextLeft: {
-    ...TYPOGRAPHY.bodyMd,
-    fontSize: 13,
-    color: COLORS.onSurface,
-  },
-  infoTextRight: {
-    ...TYPOGRAPHY.dataMono,
-    fontSize: 11,
-    color: COLORS.onSurfaceVariant,
-  },
-  secureConnectionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  secureConnectionText: {
-    ...TYPOGRAPHY.labelCaps,
-    fontSize: 9,
-    color: COLORS.secondary,
-    fontWeight: '700',
-  },
-  secureConnectionDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: COLORS.secondary,
-  },
-  logoutButton: {
-    height: 56,
-    borderRadius: ROUNDED.lg,
-    backgroundColor: COLORS.primary,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 8,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-    marginBottom: 16,
-  },
-  logoutButtonText: {
-    ...TYPOGRAPHY.headlineSm,
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.onPrimary,
-    letterSpacing: 1,
-  },
-  logoutIcon: {
-    fontSize: 20,
-  },
-  sessionTimeoutText: {
-    ...TYPOGRAPHY.labelCaps,
-    fontSize: 8,
-    color: COLORS.outline,
-    textAlign: 'center',
-    letterSpacing: 0.5,
   },
 });
-export default ProfileScreen;

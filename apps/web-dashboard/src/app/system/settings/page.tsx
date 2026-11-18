@@ -8,20 +8,28 @@ import {
   Bell, 
   Cpu,
   Save,
-  RotateCcw
+  RotateCcw,
+  Shield
 } from 'lucide-react'
 import { cn } from "@/lib/utils"
 import { useToast } from "@/components/ui/Toast"
 import { getSettings, updateSettings } from "@/lib/api"
+import { useAuth } from '@/lib/auth-context'
+import { useRouter } from 'next/navigation'
 
 export default function SettingsPage() {
   const { toast } = useToast()
+  const { role, isLoading: authLoading } = useAuth()
+  const router = useRouter()
   const [threshold, setThreshold] = useState(45)
   const [notifications, setNotifications] = useState(true)
   const [faceExtraction, setFaceExtraction] = useState(true)
   const [processingEngine, setProcessingEngine] = useState('cpu')
 
   useEffect(() => {
+    if (!authLoading && role && role.toLowerCase() !== 'admin') {
+      return
+    }
     getSettings()
       .then(data => {
         if (data) {
@@ -54,6 +62,21 @@ export default function SettingsPage() {
     setFaceExtraction(true)
     setProcessingEngine('cpu')
     toast('All settings reset to defaults', 'info')
+  }
+
+  if (!authLoading && role && role.toLowerCase() !== 'admin') {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-8 space-y-4">
+        <Shield className="w-12 h-12 text-amber-500 opacity-80" />
+        <h2 className="text-xl font-bold tracking-tight text-foreground">Restricted to System Administrators</h2>
+        <p className="text-sm text-muted-foreground max-w-md">
+          Your current active clearance level ({role.toUpperCase()}) does not have permission to alter surveillance parameters or core system settings.
+        </p>
+        <Button onClick={() => router.push('/')} variant="outline" className="mt-2">
+          Return to Command Overview
+        </Button>
+      </div>
+    )
   }
 
   return (
