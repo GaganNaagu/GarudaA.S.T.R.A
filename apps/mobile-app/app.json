@@ -42,7 +42,8 @@
       "./withShortCxxPath.js",
       "./withBackgroundService.js",
       "expo-audio",
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-status-bar"
     ],
     "extra": {
       "eas": {

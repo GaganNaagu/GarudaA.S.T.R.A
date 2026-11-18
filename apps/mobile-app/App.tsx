@@ -73,7 +73,7 @@ export default function App() {
   // DUTY LIFECYCLE HOOK — Controls entire background layer
   // =====================================================
   useEffect(() => {
-    let simulatedAlertTimer: NodeJS.Timeout | null = null;
+    let simulatedAlertTimer: any = null;
 
     if (isAuthorized) {
       // Register alert callbacks (for both WebSocket and simulated alerts)
@@ -200,7 +200,7 @@ export default function App() {
 
   // Periodic Permission Monitor Hook (Fault Tolerance)
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: any;
 
     const performCheck = async () => {
       if (isAuthorized) {

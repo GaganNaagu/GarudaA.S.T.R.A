@@ -54,7 +54,7 @@ export const ScreenWrapper: React.FC<ScreenWrapperProps> = ({
 
   return (
     <View style={[styles.container, containerPadding, style]}>
-      <StatusBar style="light" backgroundColor={COLORS.background} />
+      <StatusBar style="light" />
       {withKeyboardAvoid ? (
         <KeyboardAvoidingView
           style={styles.fill}

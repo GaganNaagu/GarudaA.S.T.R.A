@@ -29,13 +29,11 @@ export const SurfaceCard: React.FC<SurfaceCardProps> = ({
 }) => {
   const isInteractive = typeof onPress === 'function';
 
-  const accentStyles: ViewStyle = {};
+  let accentStyles: ViewStyle = {};
   if (accentColor && accentPosition === 'left') {
-    accentStyles.borderLeftWidth = 3;
-    accentStyles.borderLeftColor = accentColor;
+    accentStyles = { borderLeftWidth: 3, borderLeftColor: accentColor };
   } else if (accentColor && accentPosition === 'top') {
-    accentStyles.borderTopWidth = 3;
-    accentStyles.borderTopColor = accentColor;
+    accentStyles = { borderTopWidth: 3, borderTopColor: accentColor };
   }
 
   const containerStyles = [

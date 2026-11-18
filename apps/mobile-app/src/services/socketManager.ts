@@ -31,9 +31,9 @@ let wsUrl: string | null = null;
 let connected = false;
 let intentionalDisconnect = false;
 let reconnectAttempts = 0;
-let reconnectTimer: NodeJS.Timeout | null = null;
-let heartbeatTimer: NodeJS.Timeout | null = null;
-let connectionTimeoutTimer: NodeJS.Timeout | null = null;
+let reconnectTimer: any = null;
+let heartbeatTimer: any = null;
+let connectionTimeoutTimer: any = null;
 
 // Event handlers (multiple listeners supported)
 const messageHandlers: Set<MessageHandler> = new Set();
@@ -265,7 +265,7 @@ export async function waitForConnection(timeoutMs: number = 5000): Promise<boole
   if (isConnected()) return true;
   
   return new Promise((resolve) => {
-    let timeout: NodeJS.Timeout;
+    let timeout: any;
     
     const handler = (state: boolean) => {
       if (state) {

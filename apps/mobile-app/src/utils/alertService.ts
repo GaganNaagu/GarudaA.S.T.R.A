@@ -168,7 +168,7 @@ export function unregisterAlertCallbacks() {
  * Simulate an incoming backend alert after a delay.
  * Useful for demos and testing the full pipeline without a live backend.
  */
-export function simulateIncomingAlert(payload: BackendAlertPayload, delayMs: number = 0): NodeJS.Timeout {
+export function simulateIncomingAlert(payload: BackendAlertPayload, delayMs: number = 0): any {
   return setTimeout(() => {
     injectAlert(payload);
   }, delayMs);

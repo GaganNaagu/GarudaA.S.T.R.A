@@ -142,7 +142,7 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
         </View>
       );
     }
-    return <View style={styles.iconWrapper}>{icon}</View>;
+    return <View style={styles.iconWrapper}>{icon as React.ReactNode}</View>;
   };
 
   return (
