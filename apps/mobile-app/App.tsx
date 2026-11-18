@@ -49,6 +49,15 @@ type ScreenType = 'alerts' | 'details' | 'cases' | 'logs' | 'map' | 'profile';
 const WS_URL = process.env.EXPO_PUBLIC_WS_URL || 'ws://localhost:8000/api/v1/ws/connect';
 
 export default function App() {
+  return (
+    <SafeAreaProvider>
+      <MainApp />
+    </SafeAreaProvider>
+  );
+}
+
+function MainApp() {
+  const insets = useSafeAreaInsets();
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [currentScreen, setCurrentScreen] = useState<ScreenType>('alerts');
   const [selectedAlert, setSelectedAlert] = useState<AlertItem | null>(null);
@@ -216,16 +225,17 @@ export default function App() {
       if (isAuthorized) {
         const status = await checkAllPermissionsStatus();
         const degraded: ('foreground' | 'background' | 'notifications')[] = [];
-        if (!status.foreground) degraded.push('foreground');
-        if (!status.background) degraded.push('background');
-        if (!status.notifications) degraded.push('notifications');
+        // Only mark degraded if foreground location is denied (since foreground is required to stream GPS)
+        if (!status.foreground) {
+          degraded.push('foreground');
+        }
         setDegradedPermissions(degraded);
       }
     };
 
     if (isAuthorized) {
       performCheck(); // Run immediate initial check
-      interval = setInterval(performCheck, 5000); // Check every 5 seconds
+      interval = setInterval(performCheck, 10000); // Check every 10 seconds
     } else {
       setDegradedPermissions([]);
     }
@@ -235,10 +245,10 @@ export default function App() {
     };
   }, [isAuthorized]);
 
-  const handleRestorePermission = async (type: 'foreground' | 'background' | 'notifications') => {
-    const granted = await requestPermissionType(type);
+  const handleRestorePermission = async () => {
+    const granted = await requestPermissionType('foreground');
     if (granted) {
-      setDegradedPermissions((prev) => prev.filter((p) => p !== type));
+      setDegradedPermissions([]);
     }
   };
 
@@ -525,81 +535,73 @@ export default function App() {
 
   if (!permissionsAuthorized) {
     return (
-      <SafeAreaProvider>
-        <View style={styles.rootContainer}>
-          <StatusBar style="light" />
-          <PermissionGuardScreen onAllPermissionsGranted={() => setPermissionsAuthorized(true)} />
-        </View>
-      </SafeAreaProvider>
+      <View style={styles.rootContainer}>
+        <StatusBar style="light" />
+        <PermissionGuardScreen onAllPermissionsGranted={() => setPermissionsAuthorized(true)} />
+      </View>
     );
   }
 
   if (!isAuthorized) {
     return (
-      <SafeAreaProvider>
-        <View style={styles.rootContainer}>
-          <StatusBar style="light" />
-          <LoginScreen onLoginSuccess={handleLoginSuccess} />
-        </View>
-      </SafeAreaProvider>
+      <View style={styles.rootContainer}>
+        <StatusBar style="light" />
+        <LoginScreen onLoginSuccess={handleLoginSuccess} />
+      </View>
     );
   }
 
   if (!dutyAcknowledged) {
     return (
-      <SafeAreaProvider>
-        <View style={styles.rootContainer}>
-          <StatusBar style="light" />
-          <DutyToggleScreen
-            officerName={officer.name}
-            onAcknowledge={handleDutyAcknowledge}
-          />
-        </View>
-      </SafeAreaProvider>
+      <View style={styles.rootContainer}>
+        <StatusBar style="light" />
+        <DutyToggleScreen
+          officerName={officer.name}
+          onAcknowledge={handleDutyAcknowledge}
+        />
+      </View>
     );
   }
 
   // Render full application with top header and bottom tabs navigation
   return (
-    <SafeAreaProvider>
-      <View style={styles.rootContainer}>
-        <StatusBar style="light" />
+    <View style={styles.rootContainer}>
+      <StatusBar style="light" />
 
-        {/* Flashing Degraded Permissions Warning Banner (Fault Tolerance) */}
-        {degradedPermissions.length > 0 && (
-          <View style={styles.warningBanner}>
-            <MaterialIcons name="warning" size={16} color="#17130a" style={{ marginRight: 6 }} />
-            <Text style={styles.warningBannerText}>
-              TELEMETRY DEGRADED: {degradedPermissions.map((p) => p.toUpperCase()).join(' & ')} REQUIRED
-            </Text>
-            <TouchableOpacity
-              style={styles.warningBannerButton}
-              onPress={() => handleRestorePermission(degradedPermissions[0])}
-            >
-              <Text style={styles.warningBannerButtonText}>RESTORE</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+      {/* Flashing Degraded Permissions Warning Banner (Fault Tolerance with Inset Protection) */}
+      {degradedPermissions.length > 0 && (
+        <View style={[styles.warningBanner, { paddingTop: Math.max(insets.top, 12) }]}>
+          <MaterialIcons name="warning" size={16} color="#17130a" style={{ marginRight: 6 }} />
+          <Text style={styles.warningBannerText}>
+            GPS TELEMETRY OFFLINE: LOCATION PERMISSION REQUIRED
+          </Text>
+          <TouchableOpacity
+            style={styles.warningBannerButton}
+            onPress={handleRestorePermission}
+          >
+            <Text style={styles.warningBannerButtonText}>ENABLE</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
-        {/* Active Screen Rendering */}
-        <View style={styles.screenContainer}>{renderScreen()}</View>
+      {/* Active Screen Rendering */}
+      <View style={styles.screenContainer}>{renderScreen()}</View>
 
-        {/* Tactical Full-screen Attention-grabbing Popup */}
-        <TacticalAlertPopup
-          visible={tacticalAlertVisible}
-          alert={incomingTacticalAlert}
-          onAcknowledge={handleAcknowledgeTacticalAlert}
+      {/* Tactical Full-screen Attention-grabbing Popup */}
+      <TacticalAlertPopup
+        visible={tacticalAlertVisible}
+        alert={incomingTacticalAlert}
+        onAcknowledge={handleAcknowledgeTacticalAlert}
+      />
+
+      {/* Standardized Bottom Navigation Shell (hidden in details view) */}
+      {currentScreen !== 'details' && (
+        <BottomNavigationBar
+          currentScreen={currentScreen}
+          onSelectScreen={(screen) => setCurrentScreen(screen)}
         />
-
-        {/* Standardized Bottom Navigation Shell (hidden in details view) */}
-        {currentScreen !== 'details' && (
-          <BottomNavigationBar
-            currentScreen={currentScreen}
-            onSelectScreen={(screen) => setCurrentScreen(screen)}
-          />
-        )}
-      </View>
-    </SafeAreaProvider>
+      )}
+    </View>
   );
 }
 

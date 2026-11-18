@@ -5,10 +5,10 @@ import {
   View,
   ScrollView,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SPACING, ROUNDED } from '../constants/theme';
 import { AuditLogEntry } from '../utils/mockState';
+import { ScreenWrapper } from '../components/ScreenWrapper';
 import PulseIndicator from '../components/PulseIndicator';
 import TacticalCard from '../components/TacticalCard';
 
@@ -36,7 +36,7 @@ const getStatusStyle = (status: string) => {
 
 export const LogsScreen: React.FC<LogsScreenProps> = ({ auditLogs }) => {
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <ScreenWrapper>
       {/* Top App Bar */}
       <View style={styles.header}>
         <View style={styles.headerTitleContainer}>
@@ -136,7 +136,7 @@ export const LogsScreen: React.FC<LogsScreenProps> = ({ auditLogs }) => {
           </Text>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </ScreenWrapper>
   );
 };
 
