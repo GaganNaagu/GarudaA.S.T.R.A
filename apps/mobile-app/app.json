@@ -11,7 +11,10 @@
       "infoPlist": {
         "UIBackgroundModes": [
           "location"
-        ]
+        ],
+        "NSLocationWhenInUseUsageDescription": "Garuda A.S.T.R.A requires location access to stream field telemetry and match proximity alerts.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Garuda A.S.T.R.A requires background location access to track tactical units during active duty.",
+        "NSLocationAlwaysUsageDescription": "Garuda A.S.T.R.A requires location access to stream telemetry to the tactical dashboard."
       }
     },
     "android": {
@@ -41,6 +44,15 @@
     "plugins": [
       "./withShortCxxPath.js",
       "./withBackgroundService.js",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Garuda A.S.T.R.A to use your location for tactical field telemetry.",
+          "locationAlwaysPermission": "Allow Garuda A.S.T.R.A to track your position in the background during active duty.",
+          "locationWhenInUsePermission": "Allow Garuda A.S.T.R.A to access your location when using the tactical terminal.",
+          "isAndroidBackgroundLocationEnabled": true
+        }
+      ],
       "expo-audio",
       "expo-secure-store",
       "expo-status-bar"

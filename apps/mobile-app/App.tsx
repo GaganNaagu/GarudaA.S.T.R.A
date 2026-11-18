@@ -33,6 +33,7 @@ import {
 
 // Screens
 import { LoginScreen } from './src/screens/LoginScreen';
+import { getResolvedBackendUrls } from './src/utils/networkConfig';
 import { AlertsScreen } from './src/screens/AlertsScreen';
 import { AlertDetailsScreen } from './src/screens/AlertDetailsScreen';
 import { CasesScreen } from './src/screens/CasesScreen';
@@ -95,7 +96,7 @@ export default function App() {
           officerId: officer.unitId,
           officerName: officer.name,
           officerRank: officer.rank,
-          wsUrl: WS_URL,
+          wsUrl: getResolvedBackendUrls().wsUrl,
           telemetryIntervalMs: 5000,
         });
       } else {
@@ -128,8 +129,7 @@ export default function App() {
 
           const getSafePhotoUrl = (rawPath: string | undefined, fallbackName = 'Unknown') => {
             if (!rawPath) return `https://ui-avatars.com/api/?name=${fallbackName}`;
-            const rawBase = process.env.EXPO_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:8000';
-            const baseUrl = (rawBase.includes('dpdns.org') || !rawBase) ? 'http://localhost:8000' : rawBase;
+            const baseUrl = `http://${getResolvedBackendUrls().host}:8000`;
             let photoPath = rawPath.replace(/\\/g, '/');
             const uploadsIdx = photoPath.indexOf('uploads/');
             if (uploadsIdx > -1) photoPath = photoPath.substring(uploadsIdx);

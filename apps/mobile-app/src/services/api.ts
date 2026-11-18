@@ -1,10 +1,9 @@
 import * as SecureStore from 'expo-secure-store';
+import { getResolvedBackendUrls } from '../utils/networkConfig';
 
-const ENV_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-// Prioritize active local backend if remote dpdns domain is configured
-const API_URL = (ENV_URL.includes('dpdns.org') || !ENV_URL)
-  ? 'http://localhost:8000/api/v1'
-  : ENV_URL;
+function getApiUrl(): string {
+  return getResolvedBackendUrls().apiUrl;
+}
 
 async function getHeaders() {
   const token = await SecureStore.getItemAsync('astra_token');
@@ -19,7 +18,7 @@ export async function loginApi(username: string, password: string) {
   formData.append('username', username.trim().toLowerCase());
   formData.append('password', password);
 
-  const response = await fetch(`${API_URL}/auth/login`, {
+  const response = await fetch(`${getApiUrl()}/auth/login`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
@@ -45,7 +44,7 @@ export async function loginApi(username: string, password: string) {
 
 export async function updateAlertStatusApi(id: string, status: string) {
   const headers = await getHeaders();
-  const response = await fetch(`${API_URL}/alerts/${id}/status`, {
+  const response = await fetch(`${getApiUrl()}/alerts/${id}/status`, {
     method: 'PATCH',
     headers,
     body: JSON.stringify({ status })
@@ -67,7 +66,7 @@ export async function updateAlertStatusApi(id: string, status: string) {
 
 export async function getMissingPersonsApi() {
   const headers = await getHeaders();
-  const response = await fetch(`${API_URL}/missing-persons/`, {
+  const response = await fetch(`${getApiUrl()}/missing-persons/`, {
     method: 'GET',
     headers,
   });
@@ -83,7 +82,7 @@ export async function getMissingPersonsApi() {
 
 export async function getAlertsApi() {
   const headers = await getHeaders();
-  const response = await fetch(`${API_URL}/alerts/`, {
+  const response = await fetch(`${getApiUrl()}/alerts/`, {
     method: 'GET',
     headers,
   });

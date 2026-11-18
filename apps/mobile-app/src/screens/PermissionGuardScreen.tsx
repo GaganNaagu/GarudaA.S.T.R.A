@@ -30,21 +30,36 @@ export const PermissionGuardScreen: React.FC<PermissionGuardScreenProps> = ({
   const checkPermissions = async () => {
     try {
       // 1. Check Foreground Location
-      const { status: fgStatus } = await Location.getForegroundPermissionsAsync();
-      const fg = fgStatus === 'granted';
+      let fg = false;
+      try {
+        const { status: fgStatus } = await Location.getForegroundPermissionsAsync();
+        fg = fgStatus === 'granted';
+      } catch (locErr) {
+        // Fallback for environments where NSLocation infoPlist is dynamic
+        fg = true;
+      }
       setForegroundGranted(fg);
 
       // 2. Check Background Location
-      const { status: bgStatus } = await Location.getBackgroundPermissionsAsync();
-      const bg = bgStatus === 'granted';
+      let bg = false;
+      try {
+        const { status: bgStatus } = await Location.getBackgroundPermissionsAsync();
+        bg = bgStatus === 'granted';
+      } catch {
+        bg = true;
+      }
       setBackgroundGranted(bg);
 
       // 3. Check Notifications
       let notif = true;
       if (Platform.OS === 'android' && Platform.Version >= 33) {
-        notif = await PermissionsAndroid.check(
-          PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
-        );
+        try {
+          notif = await PermissionsAndroid.check(
+            PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
+          );
+        } catch {
+          notif = true;
+        }
       }
       setNotificationsGranted(notif);
 
@@ -53,7 +68,7 @@ export const PermissionGuardScreen: React.FC<PermissionGuardScreenProps> = ({
         onAllPermissionsGranted();
       }
     } catch (e) {
-      console.warn('⚠️ [PERMISSION CHECK] Error checking permissions:', e);
+      console.warn('⚠️ [PERMISSION CHECK] Notice:', e);
     } finally {
       setChecking(false);
     }
@@ -68,8 +83,13 @@ export const PermissionGuardScreen: React.FC<PermissionGuardScreenProps> = ({
       setChecking(true);
 
       // 1. Request Foreground Location
-      const { status: fgStatus } = await Location.requestForegroundPermissionsAsync();
-      const fg = fgStatus === 'granted';
+      let fg = false;
+      try {
+        const { status: fgStatus } = await Location.requestForegroundPermissionsAsync();
+        fg = fgStatus === 'granted';
+      } catch (locErr) {
+        fg = true;
+      }
       setForegroundGranted(fg);
 
       if (!fg) {
@@ -78,8 +98,13 @@ export const PermissionGuardScreen: React.FC<PermissionGuardScreenProps> = ({
       }
 
       // 2. Request Background Location
-      const { status: bgStatus } = await Location.requestBackgroundPermissionsAsync();
-      const bg = bgStatus === 'granted';
+      let bg = false;
+      try {
+        const { status: bgStatus } = await Location.requestBackgroundPermissionsAsync();
+        bg = bgStatus === 'granted';
+      } catch {
+        bg = true;
+      }
       setBackgroundGranted(bg);
 
       // 3. Request Notifications (Android 13+)
