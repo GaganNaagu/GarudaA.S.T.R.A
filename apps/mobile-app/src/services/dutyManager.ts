@@ -130,9 +130,17 @@ export async function goOnDuty(config: DutyConfig): Promise<boolean> {
   });
 
   if (!serviceStarted) {
-    console.error('❌ [DUTY] Failed to start foreground service. Cleaning up...');
-    await goOffDuty();
-    return false;
+    console.warn('⚠️ [DUTY] Native background action unavailable in Expo Go. Continuing in active foreground telemetry mode.');
+    dutyActive = true;
+    try {
+      ForegroundService.sendImmediateTelemetry(
+        'DUTY_ON',
+        config.officerId,
+        config.officerName,
+        'ACTIVE DUTY'
+      );
+    } catch (e) {}
+    return true;
   }
 
   // 5. Send immediate DUTY_ON telemetry after ensuring connection

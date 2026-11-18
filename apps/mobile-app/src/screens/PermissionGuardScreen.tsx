@@ -48,8 +48,8 @@ export const PermissionGuardScreen: React.FC<PermissionGuardScreenProps> = ({
       }
       setNotificationsGranted(notif);
 
-      // Trigger callback if all are already granted
-      if (fg && bg && notif) {
+      // Trigger callback if foreground is granted (or all granted)
+      if (fg) {
         onAllPermissionsGranted();
       }
     } catch (e) {
@@ -100,7 +100,7 @@ export const PermissionGuardScreen: React.FC<PermissionGuardScreenProps> = ({
       setNotificationsGranted(notif);
 
       // Final check
-      if (fg && bg && notif) {
+      if (fg) {
         onAllPermissionsGranted();
       }
     } catch (err) {
@@ -196,6 +196,16 @@ export const PermissionGuardScreen: React.FC<PermissionGuardScreenProps> = ({
           <MaterialIcons name="lock-open" size={20} color={COLORS.background} style={{ marginRight: 8 }} />
           <Text style={styles.actionButtonText}>
             {checking ? 'SYNCHRONIZING...' : 'AUTHORIZE TACTICAL BOOT'}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={{ paddingVertical: 10, marginTop: 8 }}
+          onPress={onAllPermissionsGranted}
+          hitSlop={8}
+        >
+          <Text style={{ ...TYPOGRAPHY.labelCaps, color: COLORS.onSurfaceVariant, fontSize: 10 }}>
+            Proceed to Field Terminal (Standby)
           </Text>
         </TouchableOpacity>
 
