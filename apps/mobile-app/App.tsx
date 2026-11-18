@@ -141,12 +141,14 @@ export default function App() {
           const backendCases = await getMissingPersonsApi();
           const mappedCases: CaseItem[] = backendCases.map((c: any) => {
             const finalPhotoUrl = getSafePhotoUrl(c.photo_path, 'Unknown');
+            const d = c.date_missing ? new Date(c.date_missing) : null;
+            const missingSinceStr = d && !isNaN(d.getTime()) ? d.toLocaleDateString() : 'Recent';
             return {
               id: c.id,
               name: c.full_name,
               age: c.age || 0,
               gender: c.gender || 'UNKNOWN',
-              missingSince: new Date(c.date_missing).toLocaleDateString(),
+              missingSince: missingSinceStr,
               lastSeen: c.last_seen_location || 'Unknown',
               photoUrl: finalPhotoUrl,
               status: c.status?.toUpperCase() || 'ACTIVE',
@@ -173,7 +175,10 @@ export default function App() {
               threatLevel: 'CRITICAL',
               fileNo: a.missing_person?.case_number || 'N/A',
               lastSeenLocation: a.missing_person?.last_seen_location || 'Unknown',
-              lastSeenTime: a.missing_person?.date_missing ? new Date(a.missing_person.date_missing).toLocaleString() : 'Unknown',
+              lastSeenTime: (() => {
+                const dt = a.missing_person?.date_missing ? new Date(a.missing_person.date_missing) : null;
+                return dt && !isNaN(dt.getTime()) ? dt.toLocaleTimeString() : 'Recent';
+              })(),
               mugshotUrl: finalPhotoUrl,
               latitude: a.detection_event?.location_lat || 18.9431,
               longitude: a.detection_event?.location_lng || 72.8246,
