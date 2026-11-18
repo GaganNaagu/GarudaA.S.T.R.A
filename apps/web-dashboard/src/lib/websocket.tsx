@@ -2,7 +2,16 @@
 
 import { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react'
 
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000/api/v1/ws/connect'
+const getWsUrl = () => {
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    if (host && host !== 'localhost' && host !== '127.0.0.1') {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      return `${protocol}//${host}:8000/api/v1/ws/connect`;
+    }
+  }
+  return process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000/api/v1/ws/connect';
+};
 
 interface WebSocketContextValue {
   isConnected: boolean
@@ -72,7 +81,7 @@ export function WebSocketProvider({ children, token, onAuthExpired }: WebSocketP
 
       cleanup()
 
-      const ws = new WebSocket(`${WS_URL}?token=${token}`)
+      const ws = new WebSocket(`${getWsUrl()}?token=${token}`)
 
       ws.onopen = () => {
         console.log('WebSocket connected')

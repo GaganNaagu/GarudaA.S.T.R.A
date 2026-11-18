@@ -1,4 +1,15 @@
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
+export function getApiUrl(): string {
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    if (host && host !== 'localhost' && host !== '127.0.0.1') {
+      const protocol = window.location.protocol;
+      return `${protocol}//${host}:8000/api/v1`;
+    }
+  }
+  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+}
+
+export const API_URL = getApiUrl();
 
 function getHeaders() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('astra_token') : null
