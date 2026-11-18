@@ -8,7 +8,7 @@
  * strictly non-clearable and permanently sticky on Android 13+.
  */
 
-import BackgroundService from 'react-native-background-actions';
+import { NativeModules, Platform } from 'react-native';
 import * as SocketManager from './socketManager';
 import { getBestEffortPosition, startGpsTracking, stopGpsTracking } from './gpsService';
 import { getBatteryInfo } from './batteryService';
@@ -39,6 +39,18 @@ export interface TelemetryPayload {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 let activeRunId = 0;
+
+const getBackgroundService = (): any => {
+  try {
+    if (!NativeModules || !NativeModules.RNBackgroundActions) {
+      return null;
+    }
+    const mod = require('react-native-background-actions');
+    return mod.default || mod;
+  } catch (e) {
+    return null;
+  }
+};
 
 // ---------- Background Loop ----------
 
@@ -148,8 +160,19 @@ export async function startService(config: ServiceConfig): Promise<boolean> {
 
   try {
     await startGpsTracking();
-    await BackgroundService.start(operationalLoop, options);
-    console.log('✅ [FOREGROUND SERVICE] Started successfully.');
+    const bgService = getBackgroundService();
+    if (bgService) {
+      await bgService.start(operationalLoop, options);
+      console.log('✅ [FOREGROUND SERVICE] Started successfully with native background action.');
+    } else {
+      console.log('ℹ️ [FOREGROUND SERVICE] Running in active JS operational loop (Expo Go mode).');
+      operationalLoop({
+        delay: delayMs,
+        officerId: config.officerId,
+        officerName: config.officerName,
+        wsUrl: config.wsUrl,
+      });
+    }
     return true;
   } catch (error) {
     console.error('❌ [FOREGROUND SERVICE] Failed to start:', error);
@@ -161,15 +184,28 @@ export async function stopService(): Promise<void> {
   activeRunId++; // Immediately terminate the JS loop
   try {
     stopGpsTracking();
-    await BackgroundService.stop();
-    console.log('🛑 [FOREGROUND SERVICE] Stopped natively.');
+    const bgService = getBackgroundService();
+    if (bgService) {
+      await bgService.stop();
+      console.log('🛑 [FOREGROUND SERVICE] Stopped natively.');
+    } else {
+      console.log('🛑 [FOREGROUND SERVICE] Stopped JS operational loop.');
+    }
   } catch (error) {
     console.error('❌ [FOREGROUND SERVICE] Failed to stop:', error);
   }
 }
 
 export function isServiceRunning(): boolean {
-  return BackgroundService.isRunning();
+  const bgService = getBackgroundService();
+  if (bgService) {
+    try {
+      return bgService.isRunning();
+    } catch {
+      return activeRunId > 0;
+    }
+  }
+  return activeRunId > 0;
 }
 
 export async function sendImmediateTelemetry(

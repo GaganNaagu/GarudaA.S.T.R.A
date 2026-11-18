@@ -64,7 +64,7 @@ export const LogsScreen: React.FC<LogsScreenProps> = ({ auditLogs }) => {
             const isLast = index === auditLogs.length - 1;
 
             return (
-              <View key={log.id} style={styles.timelineEntry}>
+              <View key={log.id ? `${log.id}-${index}` : `log-${index}`} style={styles.timelineEntry}>
                 {/* Timeline dot + line */}
                 <View style={styles.timelineTrack}>
                   <View style={[styles.timelineDot, { backgroundColor: toStyle.color }]} />

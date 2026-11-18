@@ -24,16 +24,16 @@ export interface AlertItem {
   latitude: number;
   longitude: number;
   status:
-    | 'ALERT'
-    | 'EN-ROUTE'
-    | 'INVESTIGATING'
-    | 'FALSE ALARM'
-    | 'TARGET LOST'
-    | 'FOUND'
-    | 'COMPLETED'
-    | 'LOCATED'
-    | 'FALSE ALERT'
-    | 'Rejected False Positive';
+  | 'ALERT'
+  | 'EN-ROUTE'
+  | 'INVESTIGATING'
+  | 'FALSE ALARM'
+  | 'TARGET LOST'
+  | 'FOUND'
+  | 'COMPLETED'
+  | 'LOCATED'
+  | 'FALSE ALERT'
+  | 'Rejected False Positive';
   assignedOfficer?: {
     name: string;
     unitId: string;

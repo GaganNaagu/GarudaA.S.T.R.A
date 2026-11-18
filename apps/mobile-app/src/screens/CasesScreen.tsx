@@ -141,7 +141,7 @@ export const CasesScreen: React.FC<CasesScreenProps> = ({ cases }) => {
 
       <FlatList
         data={filteredCases}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item, index) => item.id ? `${item.id}-${index}` : `case-${index}`}
         renderItem={renderCaseItem}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={

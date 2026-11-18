@@ -3,7 +3,6 @@ import { StyleSheet, View, Text, TouchableOpacity, Pressable, Alert, BackHandler
 import { StatusBar } from 'expo-status-bar';
 import { MaterialIcons } from '@expo/vector-icons';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as IntentLauncher from 'expo-intent-launcher';
 
 // Theme & Mock Data
 import { COLORS, TYPOGRAPHY, SPACING, ROUNDED } from './src/constants/theme';
@@ -126,7 +125,7 @@ export default function App() {
       const fetchBackendData = async () => {
         try {
           const { getAlertsApi, getMissingPersonsApi } = require('./src/services/api');
-          
+
           const getSafePhotoUrl = (rawPath: string | undefined, fallbackName = 'Unknown') => {
             if (!rawPath) return `https://ui-avatars.com/api/?name=${fallbackName}`;
             const rawBase = process.env.EXPO_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:8000';
@@ -163,11 +162,11 @@ export default function App() {
           const forwardedAlerts = backendAlerts.filter(
             (a: any) => ['Verified', 'Assigned', 'Dispatched'].includes(a.status)
           );
-          
+
           const mappedAlerts = forwardedAlerts.map((a: any) => {
             const finalPhotoUrl = getSafePhotoUrl(a.missing_person?.photo_path, 'Unknown');
             console.log('App.tsx Old Alert URL:', finalPhotoUrl);
-            
+
             return {
               id: a.id,
               title: 'URGENT ASSIGNMENT',
@@ -189,16 +188,22 @@ export default function App() {
           });
 
           setAlerts((prev) => {
-            const existingIds = new Set(prev.map(p => p.id));
-            const newOnes = mappedAlerts.filter((m: any) => !existingIds.has(m.id));
-            return [...newOnes, ...prev];
+            const existingIds = new Set(prev.map((p) => p.id));
+            const uniqueIncoming: AlertItem[] = [];
+            for (const item of mappedAlerts) {
+              if (!existingIds.has(item.id)) {
+                existingIds.add(item.id);
+                uniqueIncoming.push(item);
+              }
+            }
+            return [...uniqueIncoming, ...prev];
           });
 
         } catch (e) {
           console.warn('⚠️ Failed to fetch backend data on load:', e);
         }
       };
-      
+
       fetchBackendData();
     }
   }, [isAuthorized]);
@@ -243,13 +248,18 @@ export default function App() {
       if (isAuthorized && officer.status === 'ACTIVE DUTY') {
         if (Platform.OS === 'android') {
           // Send app to background simulating the Home button press
-          IntentLauncher.startActivityAsync('android.intent.action.MAIN', {
-            category: 'android.intent.category.HOME',
-            flags: 268435456, // FLAG_ACTIVITY_NEW_TASK
-          }).catch(() => {
-             // Fallback if intent fails
-             ToastAndroid.show('Tactical Terminal running. Press Home to minimize, or go OFF DUTY to exit.', ToastAndroid.SHORT);
-          });
+          try {
+            const IntentLauncher = require('expo-intent-launcher');
+            IntentLauncher.startActivityAsync('android.intent.action.MAIN', {
+              category: 'android.intent.category.HOME',
+              flags: 268435456, // FLAG_ACTIVITY_NEW_TASK
+            }).catch(() => {
+              // Fallback if intent fails
+              ToastAndroid.show('Tactical Terminal running. Press Home to minimize, or go OFF DUTY to exit.', ToastAndroid.SHORT);
+            });
+          } catch (e) {
+            ToastAndroid.show('Tactical Terminal running. Press Home to minimize, or go OFF DUTY to exit.', ToastAndroid.SHORT);
+          }
         }
         return true; // Prevent default exit
       }
@@ -401,7 +411,7 @@ export default function App() {
         return a;
       })
     );
-    
+
     // Also update selected alert state
     setSelectedAlert((prev) => {
       if (prev && prev.id === alertId) {
@@ -540,9 +550,9 @@ export default function App() {
       <SafeAreaProvider>
         <View style={styles.rootContainer}>
           <StatusBar style="light" />
-          <DutyToggleScreen 
-            officerName={officer.name} 
-            onAcknowledge={handleDutyAcknowledge} 
+          <DutyToggleScreen
+            officerName={officer.name}
+            onAcknowledge={handleDutyAcknowledge}
           />
         </View>
       </SafeAreaProvider>

@@ -67,7 +67,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ alerts }) => {
 
           return (
             <Pressable
-              key={alert.id}
+              key={alert.id ? `${alert.id}-pin-${index}` : `pin-${index}`}
               style={[styles.targetPin, pos]}
               onPress={() => setSelectedAlertId(alert.id)}
               hitSlop={12}
@@ -140,11 +140,11 @@ export const MapScreen: React.FC<MapScreenProps> = ({ alerts }) => {
       {/* Target Quick Switcher Strip */}
       <Text style={styles.sectionHeader}>PROXIMITY TARGETS ({alerts.length})</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.targetsScroll}>
-        {alerts.map((alert) => {
+        {alerts.map((alert, index) => {
           const isSelected = alert.id === selectedAlertId;
           return (
             <Pressable
-              key={alert.id}
+              key={alert.id ? `${alert.id}-pill-${index}` : `pill-${index}`}
               onPress={() => setSelectedAlertId(alert.id)}
               style={[
                 styles.targetPill,

@@ -139,7 +139,7 @@ export async function goOnDuty(config: DutyConfig): Promise<boolean> {
         config.officerName,
         'ACTIVE DUTY'
       );
-    } catch (e) {}
+    } catch (e) { }
     return true;
   }
 

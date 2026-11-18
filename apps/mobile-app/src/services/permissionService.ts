@@ -84,11 +84,14 @@ export async function ensureCriticalPermissions(): Promise<boolean> {
     return false;
   }
 
-  // 2. Background location
-  const { status: bgStatus } = await Location.requestBackgroundPermissionsAsync();
-  if (bgStatus !== 'granted') {
-    console.warn('⚠️ [PERMISSIONS] Background location denied.');
-    return false;
+  // 2. Background location (best-effort; non-blocking in development / Expo Go)
+  try {
+    const { status: bgStatus } = await Location.requestBackgroundPermissionsAsync();
+    if (bgStatus !== 'granted') {
+      console.warn('ℹ️ [PERMISSIONS] Background location not granted. Continuing in active foreground telemetry mode.');
+    }
+  } catch (err) {
+    console.warn('ℹ️ [PERMISSIONS] Background location request skipped in current environment.');
   }
 
   // 3. Notification permission (Android 13+)
