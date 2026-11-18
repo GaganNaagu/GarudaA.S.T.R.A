@@ -1,42 +1,25 @@
-# DESIGN SYSTEM & AESTHETIC RULES
+# GARUDA A.S.T.R.A — DESIGN SYSTEM & VISUAL CONTRACT
 
-## 1. Visual Identity & Tone
-- **Aesthetic Direction:** Palantir / Defense Dark Slate (Linear & Gotham Grade) — Precision-engineered, mission-critical law enforcement and defense surveillance intelligence. Dark-mode primary for 24/7 command center operations, tactile feedback, razor-sharp hairline borders, dense telemetry data hierarchy, and zero visual fluff or "AI slop".
-- **Color Restraint (Strict 60-30-10 Rule):**
-  - **Primary Canvas (60%):** `#0B0D13` (Dark / Command Center) / `#F8FAFC` (Light / Field Daylight) — Deep Neutral Obsidian, high contrast, zero muddy blue tint.
-  - **Elevated Surface (30%):** `#131720` (Dark Cards/Panels) & `#1A202C` (Elevated/Hover Tiers) / `#FFFFFF` (Light Cards) & `#F1F5F9` (Light Elevated).
-  - **Single Brand Accent (10%):** `#38BDF8` (Precision Defense Cyan / Sky) — High-clarity tactical focus, reserved strictly for primary interactive CTAs, active selection states, and live link beacons.
-  - **Status Signals (Functional, Never Decorative):**
-    - Critical Threat / Wanted / Rejected: `#F43F5E` (Tactical Rose/Crimson)
-    - High-Confidence Match / Sighting Lead: `#F59E0B` (Amber Gold)
-    - Confirmed / Secure / Nominal: `#10B981` (Tactical Emerald)
-    - Operational Info / Telemetry: `#38BDF8` (Defense Cyan)
-  - **Ink / Text Hierarchy:**
-    - Dark Mode: Primary `#F1F5F9` (Slate 100), Secondary `#94A3B8` (Slate 400), Muted `#64748B` (Slate 500).
-    - Light Mode: Primary `#0F172A` (Slate 900), Secondary `#475569` (Slate 600), Muted `#94A3B8` (Slate 400).
-- **Borders & Depth:** Use crisp `1px` hairline borders (`rgba(255,255,255,0.07)` dark / `rgba(0,0,0,0.08)` light, or `#1E2533`) instead of muddy drop shadows.
+## 1. Visual Identity & Brand Essence
+- **Aesthetic Direction:** Grand Imperial Gold (Garuda Sovereign Intelligence) — A majestic, authoritative, precision-engineered defense and sovereign intelligence aesthetic. Grounded in the divine vigilance, celestial golden wings, and sovereign authority of the celestial Garuda.
+- **Tone & Mood:** Grand, commanding, high-contrast, deep velvet bronze-obsidian canvas paired with rich, burnished metallic gold. Zero "AI-slop" tells, zero fake sci-fi cyberpunk glows, zero tacky yellow cards.
+- **Color Discipline (Strict 60-30-10 Rule):**
+  - **Primary Canvas (60%):** `#0A0908` (Deep Imperial Bronze-Obsidian) / `#FAFAF9` (Daylight Stone) — Warm velvet void, high clarity, completely free of muddy blue-black or gray wash.
+  - **Elevated Surfaces (30%):** `#131210` (Surface Panels/Cards) & `#1B1916` (Elevated/Hover Tiers) / `#FFFFFF` (Light Surface) & `#F5F5F4` (Light Elevated).
+  - **Sovereign Brand Accent (10%):** `#D4AF37` (Imperial Burnished Gold) / Highlight `#E8C86A` (Celestial Sunlight Gold) — The majestic focal accent, reserved strictly for primary interactive CTAs, verified match indicators, and active selection states.
+  - **Status Signals (Functional, Restrained):**
+    - Critical Threat / Wanted / Rejected: `#E11D48` (Imperial Crimson)
+    - Match Alert / Priority Lead: `#D4AF37` (Imperial Gold)
+    - Confirmed / Secure / Nominal: `#10B981` (Sovereign Emerald)
+    - Telemetry / Sensor Stream: `#38BDF8` (Precision Sky)
+  - **Ink / Typography Hierarchy:**
+    - Dark Mode: Primary `#FBF7EE` (Warm Champagne White — crisp, elegant, zero glare), Secondary `#A8A29E` (Stone 400), Muted `#78716C` (Stone 500).
+    - Light Mode: Primary `#0C0A09` (Stone 950), Secondary `#44403C` (Stone 700), Muted `#78716C` (Stone 500).
+- **Borders & Rules:** Razor-sharp hairline borders (`rgba(212, 175, 55, 0.15)` dark / `rgba(212, 175, 55, 0.25)` subtle or `rgba(255, 255, 255, 0.08)`) delivering high-craft tactile structure without muddy drop shadows.
 
-## 2. Anti-Slop Layout Architecture (Zero Tolerance)
-- **NO "Everything's a Card":** Never wrap every single list item in a thick-bordered, drop-shadowed box with multiple nested action buttons. Use Inset-Grouped Lists with hairline dividers (`StyleSheet.hairlineWidth`).
-- **NO Dual Buttons per Row:** List rows are tap-to-inspect targets (`Pressable` with subtle highlight). Specific actions belong in the detail sheet or swipe/context actions.
-- **NO Fake Sci-Fi / Cyberpunk Gimmicks:** No neon perimeter glows, scanline grids, or decorative fake coordinate widgets taking up 30% of the screen.
-- **NO Gaudy Yellow Tab Bars:** System navigation uses subtle slate inactive states and crisp brand highlights without thick yellow border boxes.
-
-## 2. Typography & Spacing
-- **Font Pairing:**
-  - Display/Headings: `Geist Sans`, `Inter`, or `system-ui` (600 SemiBold / 700 Bold, tracking `-0.02em`).
-  - Body/UI: `Geist Sans`, `Inter`, or `system-ui` (400 Regular / 500 Medium).
-  - Telemetry / Numbers / Coordinates: `Geist Mono`, `monospace` with `tabular-nums`.
-- **Spacing Scale:** Strict 4pt grid (`4, 8, 12, 16, 20, 24, 32, 48, 64px`). Minimum `24px` whitespace between distinct content groups. Minimum touch target `44x44pt` (`48px` tactical standard).
-- **Border Radius:** Consistent geometry:
-  - Cards/Containers/Sheets: `12px` (`rounded-xl`).
-  - Buttons/Inputs/Selectors: `8px` (`rounded-lg`).
-  - Small Indicators/Chips: `6px` (`rounded-md`).
-  - Badges/Pills/Avatars: `9999px` (`rounded-full`).
-
-## 3. Anti-Slop Bans (Zero Tolerance)
-- **NO** generic "Bento grids" with 6+ uniform boxes of equal visual weight.
-- **NO** AI-cliché gradients (purple/indigo/cyan glows) or glassmorphism blurs over busy backgrounds.
-- **NO** nested cards (never put a bordered card inside another bordered card).
-- **NO** gratuitous icons next to every single heading or list item.
-- **NO** bouncing/overshooting spring animations. Keep UI transitions snappy (`150ms–250ms`, ease-out).
+## 2. Anti-Slop Craft Floor (Zero Tolerance)
+- **NO All-Caps Eyebrow Kickers:** Ban all arbitrary uppercase labels above headings (e.g. no `MISSING PERSON — CAMERA MATCH` or `TACTICAL EXCEPTION`). Let the target's identity and status chips speak for themselves.
+- **NO "Everything's a Card":** Ban wrapping every single list row into identical thick-bordered boxes with nested action buttons. Use Inset-Grouped Lists with refined hairline separators (`StyleSheet.hairlineWidth`).
+- **NO Dual Buttons per Row:** List rows are tap-to-inspect targets (`Pressable` with subtle highlight). Actions belong in context drawers or the detail view.
+- **NO Cliché Neon Cyan/Cyber Gimmicks:** No neon perimeter glows, scanline grids, or decorative fake coordinate widgets.
+- **NO Tacky Yellow Tab Bars:** Navigation uses deep imperial obsidian with warm champagne labels and burnished gold active pips.

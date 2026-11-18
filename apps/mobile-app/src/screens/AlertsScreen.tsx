@@ -408,12 +408,12 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   matchChip: {
-    backgroundColor: 'rgba(56, 189, 248, 0.12)',
+    backgroundColor: 'rgba(212, 175, 55, 0.12)',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: ROUNDED.SM,
     borderWidth: 1,
-    borderColor: 'rgba(56, 189, 248, 0.3)',
+    borderColor: 'rgba(212, 175, 55, 0.35)',
   },
   matchChipText: {
     ...TYPOGRAPHY.labelCaps,
@@ -471,7 +471,7 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.labelCaps,
     fontSize: 9,
     fontWeight: '900',
-    color: '#0B0D13',
+    color: COLORS.onPrimary,
     letterSpacing: 0.5,
   },
   emptyContainer: {

@@ -1,52 +1,52 @@
 @import "tailwindcss";
 
 :root {
-  /* Primary Tactical Canvas (60% Rule - Deep Neutral Obsidian Void) */
-  --background: #0b0d13;
-  --foreground: #f1f5f9;
+  /* Primary Tactical Canvas (60% Rule - Deep Imperial Bronze-Obsidian) */
+  --background: #0a0908;
+  --foreground: #fbf7ee;
 
-  /* Elevated Surfaces & Cards (30% Rule - Neutral Slate) */
-  --card: #131720;
-  --card-foreground: #f1f5f9;
-  --popover: #131720;
-  --popover-foreground: #f1f5f9;
+  /* Elevated Surfaces & Cards (30% Rule - Rich Obsidian Bronze Tiers) */
+  --card: #131210;
+  --card-foreground: #fbf7ee;
+  --popover: #131210;
+  --popover-foreground: #fbf7ee;
 
-  /* Single Brand Accent (10% Rule - Precision Defense Cyan) */
-  --primary: #38bdf8;
-  --primary-foreground: #0b0d13;
+  /* Sovereign Brand Accent (10% Rule - Imperial Burnished Gold) */
+  --primary: #d4af37;
+  --primary-foreground: #0a0908;
 
   /* Elevated Secondary / Hover Tiers */
-  --secondary: #1a202c;
-  --secondary-foreground: #f1f5f9;
+  --secondary: #1b1916;
+  --secondary-foreground: #fbf7ee;
 
   /* Muted Hierarchy & Secondary Text */
-  --muted: #1a202c;
-  --muted-foreground: #94a3b8;
+  --muted: #1b1916;
+  --muted-foreground: #a8a29e;
 
   /* Active Interactive Accent */
-  --accent: #38bdf8;
-  --accent-foreground: #0b0d13;
+  --accent: #d4af37;
+  --accent-foreground: #0a0908;
 
   /* Status Accents (Functional Signals) */
-  --destructive: #f43f5e;
+  --destructive: #e11d48;
   --destructive-foreground: #ffffff;
   --success: #10b981;
   --success-foreground: #ffffff;
-  --warning: #f59e0b;
-  --warning-foreground: #0b0d13;
+  --warning: #d4af37;
+  --warning-foreground: #0a0908;
   --info: #38bdf8;
-  --info-foreground: #0b0d13;
+  --info-foreground: #0a0908;
 
   /* Telemetry & AI Signals */
   --telemetry: #38bdf8;
-  --telemetry-foreground: #0b0d13;
+  --telemetry-foreground: #0a0908;
 
-  /* Hairline Borders & Inputs (Subtle 1px hairlines - zero muddy shadows) */
-  --border: rgba(255, 255, 255, 0.07);
-  --border-subtle: rgba(255, 255, 255, 0.04);
-  --border-strong: rgba(255, 255, 255, 0.14);
-  --input: #1a202c;
-  --ring: #38bdf8;
+  /* Hairline Borders & Inputs (Crisp 1px hairlines - zero muddy shadows) */
+  --border: rgba(212, 175, 55, 0.15);
+  --border-subtle: rgba(212, 175, 55, 0.08);
+  --border-strong: rgba(212, 175, 55, 0.28);
+  --input: #1b1916;
+  --ring: #d4af37;
 
   /* Consistent Geometry (Cards 12px, Buttons/Inputs 8px, Chips 6px, Badges 9999px) */
   --radius: 0.75rem;
@@ -128,14 +128,15 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  /* Tactical Utility Colors */
+  /* Tactical Utility Colors - Grand Imperial Gold */
   --color-tactical-canvas: var(--background);
   --color-tactical-surface: var(--card);
   --color-tactical-elevated: var(--secondary);
-  --color-tactical-gold: #f59e0b;
-  --color-tactical-cyan: #06b6d4;
+  --color-tactical-gold: #d4af37;
+  --color-tactical-gold-highlight: #e8c86a;
+  --color-tactical-cyan: #38bdf8;
   --color-tactical-emerald: #10b981;
-  --color-tactical-crimson: #ef4444;
+  --color-tactical-crimson: #e11d48;
 
   /* Standard Radii */
   --radius-sm: var(--radius-sm);
@@ -176,17 +177,17 @@ html {
 }
 
 ::-webkit-scrollbar-track {
-  background: #090d16;
+  background: #0a0908;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #172033;
+  background: #1b1916;
   border-radius: 9999px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(212, 175, 55, 0.15);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #1e293b;
+  background: #28241e;
 }
 
 /* Reduced motion preference honoring (WCAG 2.2) */
@@ -203,27 +204,27 @@ html {
 
 @layer utilities {
   .glass {
-    background-color: rgba(17, 23, 38, 0.7);
+    background-color: rgba(19, 18, 16, 0.75);
     backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(212, 175, 55, 0.15);
   }
   
   .gold-gradient {
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.15);
+    background: linear-gradient(135deg, #d4af37 0%, #b89628 100%);
+    box-shadow: 0 2px 8px rgba(212, 175, 55, 0.15);
     transition: all 0.15s ease-out;
   }
   
   .gold-gradient:hover {
     filter: brightness(1.1) saturate(1.05);
-    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.25);
+    box-shadow: 0 4px 14px rgba(212, 175, 55, 0.25);
     transform: translateY(-1px);
   }
   
   .gold-gradient:active {
     filter: brightness(0.95);
     transform: translateY(0px) scale(0.98) !important;
-    box-shadow: 0 1px 4px rgba(245, 158, 11, 0.1);
+    box-shadow: 0 1px 4px rgba(212, 175, 55, 0.1);
   }
 }
 

@@ -16,21 +16,21 @@ interface LogsScreenProps {
   auditLogs: AuditLogEntry[];
 }
 
-// Helper to get visual config per status
+// Helper to get visual config per status - Grand Imperial Gold
 const getStatusStyle = (status: string) => {
   switch (status) {
     case 'ALERT':
-      return { color: COLORS.primary, icon: 'notifications-active' as const, bg: 'rgba(246, 190, 57, 0.12)' };
+      return { color: COLORS.primary, icon: 'notifications-active' as const, bg: 'rgba(212, 175, 55, 0.12)' };
     case 'INVESTIGATING':
-      return { color: COLORS.primary, icon: 'search' as const, bg: 'rgba(246, 190, 57, 0.12)' };
+      return { color: COLORS.secondary, icon: 'search' as const, bg: 'rgba(232, 200, 106, 0.12)' };
     case 'LOCATED':
-      return { color: COLORS.secondary, icon: 'gps-fixed' as const, bg: 'rgba(76, 215, 246, 0.12)' };
+      return { color: COLORS.success, icon: 'gps-fixed' as const, bg: 'rgba(16, 185, 129, 0.12)' };
     case 'COMPLETED':
-      return { color: COLORS.secondary, icon: 'check-circle' as const, bg: 'rgba(76, 215, 246, 0.12)' };
+      return { color: COLORS.success, icon: 'check-circle' as const, bg: 'rgba(16, 185, 129, 0.12)' };
     case 'FALSE ALERT':
-      return { color: COLORS.outline, icon: 'cancel' as const, bg: 'rgba(155, 143, 122, 0.12)' };
+      return { color: COLORS.error, icon: 'cancel' as const, bg: 'rgba(225, 29, 72, 0.12)' };
     default:
-      return { color: COLORS.onSurfaceVariant, icon: 'fiber-new' as const, bg: 'rgba(155, 143, 122, 0.12)' };
+      return { color: COLORS.onSurfaceVariant, icon: 'fiber-new' as const, bg: 'rgba(120, 113, 108, 0.12)' };
   }
 };
 

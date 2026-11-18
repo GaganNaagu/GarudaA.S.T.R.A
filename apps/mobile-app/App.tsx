@@ -703,7 +703,7 @@ const styles = StyleSheet.create({
     borderRadius: ROUNDED.SM,
   },
   navItemActive: {
-    backgroundColor: 'rgba(56, 189, 248, 0.10)',
+    backgroundColor: 'rgba(212, 175, 55, 0.12)',
   },
   navIcon: {
     fontSize: 20,
@@ -727,22 +727,22 @@ const styles = StyleSheet.create({
   warningBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F6BE39',
+    backgroundColor: '#D4AF37',
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(23, 19, 10, 0.2)',
+    borderBottomColor: 'rgba(10, 9, 8, 0.25)',
   },
   warningBannerText: {
     ...TYPOGRAPHY.labelCaps,
     fontSize: 9,
     fontWeight: '900',
-    color: '#17130a',
+    color: '#0A0908',
     flex: 1,
     letterSpacing: 0.5,
   },
   warningBannerButton: {
-    backgroundColor: '#17130a',
+    backgroundColor: '#0A0908',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 4,
@@ -751,6 +751,6 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.labelCaps,
     fontSize: 8,
     fontWeight: '800',
-    color: '#F6BE39',
+    color: '#D4AF37',
   },
 });

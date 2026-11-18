@@ -249,9 +249,9 @@ const styles = StyleSheet.create({
   feedbackBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(6, 182, 212, 0.12)',
+    backgroundColor: 'rgba(16, 185, 129, 0.12)',
     borderWidth: 1,
-    borderColor: COLORS.secondary,
+    borderColor: 'rgba(16, 185, 129, 0.3)',
     borderRadius: ROUNDED.MD,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
   },
   feedbackText: {
     ...TYPOGRAPHY.bodySmall,
-    color: COLORS.secondary,
+    color: COLORS.success,
     fontSize: 12,
     flex: 1,
   },

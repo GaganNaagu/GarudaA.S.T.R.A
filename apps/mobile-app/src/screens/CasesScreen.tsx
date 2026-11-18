@@ -49,10 +49,10 @@ export const CasesScreen: React.FC<CasesScreenProps> = ({ cases }) => {
             <View
               style={[
                 styles.typeTag,
-                { backgroundColor: isWanted ? 'rgba(244, 63, 94, 0.85)' : 'rgba(56, 189, 248, 0.85)' },
+                { backgroundColor: isWanted ? 'rgba(225, 29, 72, 0.9)' : 'rgba(212, 175, 55, 0.9)' },
               ]}
             >
-              <Text style={styles.typeText}>{item.caseType}</Text>
+              <Text style={[styles.typeText, !isWanted && { color: '#0A0908' }]}>{item.caseType}</Text>
             </View>
           </View>
 
@@ -66,7 +66,7 @@ export const CasesScreen: React.FC<CasesScreenProps> = ({ cases }) => {
                 style={[
                   styles.statusBadge,
                   {
-                    backgroundColor: isActive ? 'rgba(16, 185, 129, 0.12)' : 'rgba(100, 116, 139, 0.12)',
+                    backgroundColor: isActive ? 'rgba(16, 185, 129, 0.12)' : 'rgba(120, 113, 108, 0.12)',
                     borderColor: isActive ? 'rgba(16, 185, 129, 0.3)' : COLORS.border,
                   },
                 ]}
@@ -82,24 +82,26 @@ export const CasesScreen: React.FC<CasesScreenProps> = ({ cases }) => {
               </View>
             </View>
 
-            <View style={styles.grid}>
-              <View style={styles.gridItem}>
-                <Text style={styles.gridLabel}>PROFILE</Text>
-                <Text style={styles.gridVal}>
-                  {item.age} YRS · {item.gender}
-                </Text>
-              </View>
-
-              <View style={styles.gridItem}>
-                <Text style={styles.gridLabel}>LAST KNOWN LOCATION</Text>
-                <Text style={styles.gridVal} numberOfLines={1}>
+            <View style={styles.infoStack}>
+              <View style={styles.metaRow}>
+                <MaterialIcons name="place" size={13} color={COLORS.primary} style={{ marginRight: 4 }} />
+                <Text style={styles.locationVal} numberOfLines={1}>
                   {item.lastSeen}
                 </Text>
               </View>
 
-              <View style={styles.gridItem}>
-                <Text style={styles.gridLabel}>MISSING SINCE</Text>
-                <Text style={styles.gridValMono}>{item.missingSince}</Text>
+              <View style={styles.metaRow}>
+                <MaterialIcons name="person-outline" size={13} color={COLORS.onSurfaceVariant} style={{ marginRight: 4 }} />
+                <Text style={styles.metaVal}>
+                  {item.age} yrs · {item.gender}
+                </Text>
+              </View>
+
+              <View style={styles.metaRow}>
+                <MaterialIcons name="schedule" size={13} color={COLORS.onSurfaceVariant} style={{ marginRight: 4 }} />
+                <Text style={styles.metaValMono}>
+                  Missing {item.missingSince}
+                </Text>
               </View>
             </View>
           </View>
@@ -284,22 +286,26 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontFamily: 'monospace',
   },
-  grid: {
-    gap: 3,
+  infoStack: {
+    gap: 4,
   },
-  gridItem: {},
-  gridLabel: {
-    ...TYPOGRAPHY.labelCaps,
-    fontSize: 8,
-    color: COLORS.onSurfaceVariant,
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  gridVal: {
+  locationVal: {
     ...TYPOGRAPHY.bodySmall,
     color: COLORS.onSurface,
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '500',
+    flex: 1,
   },
-  gridValMono: {
+  metaVal: {
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.onSurfaceVariant,
+    fontSize: 11,
+  },
+  metaValMono: {
     ...TYPOGRAPHY.bodySmall,
     color: COLORS.onSurfaceVariant,
     fontSize: 11,

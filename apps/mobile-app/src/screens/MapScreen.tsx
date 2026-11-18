@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
   radarRing: {
     position: 'absolute',
     borderWidth: 1,
-    borderColor: 'rgba(56, 189, 248, 0.12)',
+    borderColor: 'rgba(212, 175, 55, 0.15)',
   },
   crosshairH: {
     position: 'absolute',
@@ -328,7 +328,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: ROUNDED.FULL,
-    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+    backgroundColor: 'rgba(212, 175, 55, 0.15)',
     borderWidth: 1,
     borderColor: COLORS.primary,
   },

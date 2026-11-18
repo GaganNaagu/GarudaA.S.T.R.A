@@ -1,50 +1,50 @@
 /**
  * Garuda A.S.T.R.A Mobile Design Tokens
  * Synchronized with DESIGN.md and Next.js globals.css
- * Aesthetic: Palantir / Defense Dark Slate (Linear & Gotham Grade)
+ * Aesthetic: Grand Imperial Gold (Garuda Sovereign Intelligence)
  */
 
 export const COLORS = {
-  // Brand Colors (10% Accent Rule - Precision Defense Cyan)
-  primary: '#38bdf8',
-  primaryContainer: '#0284c7',
+  // Brand Colors (10% Accent Rule - Imperial Burnished Gold)
+  primary: '#d4af37',
+  primaryContainer: '#9a7822',
   
-  // Tactical Signal & Secondary Status
-  secondary: '#f59e0b',
-  secondaryContainer: '#d97706',
+  // Celestial Sunlight Gold & Secondary Accents
+  secondary: '#e8c86a',
+  secondaryContainer: '#b38e2d',
   
-  // Primary Tactical Canvas (60% Rule - Deep Neutral Obsidian Void)
-  background: '#0b0d13',
-  surfaceDim: '#080a0f',
-  surface: '#131720',
+  // Primary Tactical Canvas (60% Rule - Deep Imperial Bronze-Obsidian)
+  background: '#0a0908',
+  surfaceDim: '#070605',
+  surface: '#131210',
   
   // Elevated Surfaces & Container Tiers (30% Rule)
-  surfaceLowest: '#080a0f',
-  surfaceLow: '#0e1118',
-  surfaceContainer: '#131720',
-  surfaceVariant: '#1a202c',
-  surfaceHigh: '#1e2533',
-  surfaceHighest: '#263042',
+  surfaceLowest: '#070605',
+  surfaceLow: '#0e0d0b',
+  surfaceContainer: '#131210',
+  surfaceVariant: '#1b1916',
+  surfaceHigh: '#24211d',
+  surfaceHighest: '#2f2b26',
   
-  // Hairline Outlines & Borders (Crisp, subtle dividers - zero muddy drop shadows)
-  outline: 'rgba(255, 255, 255, 0.10)',
-  outlineVariant: 'rgba(255, 255, 255, 0.06)',
-  border: 'rgba(255, 255, 255, 0.07)',
-  borderSubtle: 'rgba(255, 255, 255, 0.04)',
-  borderStrong: 'rgba(255, 255, 255, 0.14)',
+  // Hairline Outlines & Borders (Razor-sharp Burnished Gold Hairlines)
+  outline: 'rgba(212, 175, 55, 0.20)',
+  outlineVariant: 'rgba(212, 175, 55, 0.10)',
+  border: 'rgba(212, 175, 55, 0.15)',
+  borderSubtle: 'rgba(255, 255, 255, 0.05)',
+  borderStrong: 'rgba(212, 175, 55, 0.35)',
   
-  // Text & Content Hierarchy (Ink)
-  onBackground: '#f1f5f9',
-  onSurface: '#f1f5f9',
-  onSurfaceVariant: '#94a3b8',
-  textMuted: '#64748b',
-  onPrimary: '#0b0d13',
-  onPrimaryContainer: '#f1f5f9',
-  onSecondary: '#0b0d13',
-  onSecondaryContainer: '#f1f5f9',
+  // Text & Content Hierarchy (Warm Champagne Ink)
+  onBackground: '#fbf7ee',
+  onSurface: '#fbf7ee',
+  onSurfaceVariant: '#a8a29e',
+  textMuted: '#78716c',
+  onPrimary: '#0a0908',
+  onPrimaryContainer: '#fbf7ee',
+  onSecondary: '#0a0908',
+  onSecondaryContainer: '#fbf7ee',
   
-  // Status Accents
-  error: '#f43f5e',
+  // Status Accents (Functional Signals)
+  error: '#e11d48',
   errorContainer: '#881337',
   onError: '#ffffff',
   onErrorContainer: '#ffe4e6',
@@ -53,27 +53,27 @@ export const COLORS = {
   successContainer: '#064e3b',
   onSuccess: '#ffffff',
   
-  warning: '#f59e0b',
-  onWarning: '#0b0d13',
+  warning: '#d4af37',
+  onWarning: '#0a0908',
   
   info: '#38bdf8',
-  onInfo: '#0b0d13',
+  onInfo: '#0a0908',
   
   // Inverted & High-Contrast
-  onInverseSurface: '#0b0d13',
-  inverseSurface: '#f1f5f9',
-  inversePrimary: '#0284c7',
+  onInverseSurface: '#0a0908',
+  inverseSurface: '#fbf7ee',
+  inversePrimary: '#9a7822',
   
   // Fixed Variants
-  primaryFixed: '#bae6fd',
-  primaryFixedDim: '#38bdf8',
+  primaryFixed: '#faecc8',
+  primaryFixedDim: '#d4af37',
   secondaryFixed: '#fde68a',
-  secondaryFixedDim: '#f59e0b',
-  tertiary: '#6366f1',
-  tertiaryContainer: '#4338ca',
-  tertiaryFixed: '#e0e7ff',
-  tertiaryFixedDim: '#818cf8',
-  onTertiary: '#ffffff',
+  secondaryFixedDim: '#e8c86a',
+  tertiary: '#f59e0b',
+  tertiaryContainer: '#b45309',
+  tertiaryFixed: '#fef3c7',
+  tertiaryFixedDim: '#f59e0b',
+  onTertiary: '#0a0908',
   onTertiaryContainer: '#ffffff',
 };
 
@@ -99,113 +99,179 @@ export const SPACING = {
   touchTargetMin: 48, // Apple HIG / Material 3 recommended minimum: 44-48pt
 };
 
-// Consistent Geometry matching DESIGN.md (Cards 12px, Buttons 8px, Chips 6px, Badges 9999px)
+// Consistent Geometry matching DESIGN.md
 export const ROUNDED = {
-  none: 0,
-  sm: 6,
+  NONE: 0,
+  XS: 4,
   SM: 6,
   DEFAULT: 8,
-  md: 12,
-  MD: 12,
-  lg: 16,
-  LG: 16,
-  xl: 24,
-  XL: 24,
-  full: 9999,
+  MD: 10,
+  LG: 12,
+  XL: 16,
+  XXL: 20,
   FULL: 9999,
+
+  // Aliases for compatibility
+  none: 0,
+  xs: 4,
+  sm: 6,
+  default: 8,
+  md: 10,
+  lg: 12,
+  xl: 16,
+  full: 9999,
 };
 
-// Typography Scale matching DESIGN.md
+// Clean, Authoritative Typography Ramp (Free of AI-slop all-caps overuse)
 export const TYPOGRAPHY = {
-  displayLg: {
-    fontSize: 32,
-    lineHeight: 40,
+  // Display / Hero Headings
+  displayLarge: {
+    fontSize: 28,
+    lineHeight: 34,
+    fontWeight: '800' as const,
+    letterSpacing: -0.5,
+    color: COLORS.onSurface,
+  },
+  displayMedium: {
+    fontSize: 22,
+    lineHeight: 28,
     fontWeight: '700' as const,
-    letterSpacing: -0.64,
+    letterSpacing: -0.3,
+    color: COLORS.onSurface,
   },
   headlineMd: {
-    fontSize: 24,
-    lineHeight: 32,
-    fontWeight: '600' as const,
-    letterSpacing: -0.32,
+    fontSize: 20,
+    lineHeight: 26,
+    fontWeight: '700' as const,
+    letterSpacing: -0.2,
+    color: COLORS.onSurface,
   },
   headlineSm: {
-    fontSize: 20,
-    lineHeight: 28,
-    fontWeight: '600' as const,
-  },
-  headlineSmMobile: {
-    fontSize: 18,
-    lineHeight: 24,
-    fontWeight: '600' as const,
-  },
-  titleMedium: {
-    fontSize: 16,
+    fontSize: 17,
     lineHeight: 22,
     fontWeight: '600' as const,
+    letterSpacing: -0.1,
+    color: COLORS.onSurface,
   },
-  bodyLg: {
-    fontSize: 18,
-    lineHeight: 26,
-    fontWeight: '400' as const,
-  },
-  bodyMd: {
+  headlineSmMobile: {
     fontSize: 16,
+    lineHeight: 20,
+    fontWeight: '600' as const,
+    color: COLORS.onSurface,
+  },
+
+  // Titles & Section Headers
+  titleLarge: {
+    fontSize: 18,
     lineHeight: 24,
+    fontWeight: '600' as const,
+    color: COLORS.onSurface,
+  },
+  titleMedium: {
+    fontSize: 15,
+    lineHeight: 20,
+    fontWeight: '600' as const,
+    color: COLORS.onSurface,
+  },
+  titleSmall: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '600' as const,
+    color: COLORS.onSurface,
+  },
+
+  // Body Content
+  bodyLarge: {
+    fontSize: 15,
+    lineHeight: 22,
     fontWeight: '400' as const,
+    color: COLORS.onSurface,
   },
   bodyMedium: {
     fontSize: 14,
     lineHeight: 20,
     fontWeight: '400' as const,
-  },
-  bodySm: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: '400' as const,
+    color: COLORS.onSurface,
   },
   bodySmall: {
     fontSize: 12,
     lineHeight: 16,
     fontWeight: '400' as const,
+    color: COLORS.onSurfaceVariant,
+  },
+
+  // Labels & Tags
+  labelLarge: {
+    fontSize: 13,
+    lineHeight: 16,
+    fontWeight: '600' as const,
+    color: COLORS.onSurface,
+  },
+  labelMedium: {
+    fontSize: 11,
+    lineHeight: 14,
+    fontWeight: '600' as const,
+    color: COLORS.onSurfaceVariant,
+  },
+  labelSmall: {
+    fontSize: 10,
+    lineHeight: 12,
+    fontWeight: '600' as const,
+    color: COLORS.textMuted,
   },
   labelCaps: {
+    fontSize: 10,
+    lineHeight: 13,
+    fontWeight: '700' as const,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase' as const,
+    color: COLORS.primary,
+  },
+
+  // Data / Precision Numeric
+  dataMono: {
     fontSize: 12,
     lineHeight: 16,
-    fontWeight: '700' as const,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase' as const,
-  },
-  dataMono: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: '500' as const,
-    fontVariant: ['tabular-nums'] as any,
+    fontFamily: 'monospace',
+    fontWeight: '600' as const,
+    color: COLORS.onSurface,
   },
   dataMonoSm: {
+    fontSize: 11,
+    lineHeight: 15,
+    fontFamily: 'monospace',
+    fontWeight: '600' as const,
+    color: COLORS.onSurfaceVariant,
+  },
+
+  // Aliases for backward compatibility
+  displayLg: {
+    fontSize: 28,
+    lineHeight: 34,
+    fontWeight: '800' as const,
+    letterSpacing: -0.5,
+    color: COLORS.onSurface,
+  },
+  bodyLg: {
+    fontSize: 15,
+    lineHeight: 22,
+    fontWeight: '400' as const,
+    color: COLORS.onSurface,
+  },
+  bodyMd: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '400' as const,
+    color: COLORS.onSurface,
+  },
+  bodySm: {
     fontSize: 12,
     lineHeight: 16,
-    fontWeight: '500' as const,
-    fontVariant: ['tabular-nums'] as any,
+    fontWeight: '400' as const,
+    color: COLORS.onSurfaceVariant,
   },
-  // Font helper string fallbacks for legacy references
   regular: 'System' as any,
   medium: 'System' as any,
   semiBold: 'System' as any,
   bold: 'System' as any,
 };
-
-// Lowercase exports for modern expo-design-system conventions
-export const colors = COLORS;
-export const spacing = SPACING;
-export const radius = ROUNDED;
-export const typography = TYPOGRAPHY;
-
-export const theme = {
-  colors: COLORS,
-  spacing: SPACING,
-  radius: ROUNDED,
-  typography: TYPOGRAPHY,
-} as const;
-
-export default theme;
