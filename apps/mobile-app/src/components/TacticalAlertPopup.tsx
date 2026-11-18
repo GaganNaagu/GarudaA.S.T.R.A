@@ -179,8 +179,8 @@ export const TacticalAlertPopup: React.FC<TacticalAlertPopupProps> = ({
                 <MaterialIcons name="warning" size={20} color={COLORS.error} />
               </View>
               <View>
-                <Text style={styles.headerTitle}>TACTICAL EXCEPTION DETECTED</Text>
-                <Text style={styles.headerSubtitle}>Surveillance Beacon Stream Intercept</Text>
+                <Text style={styles.headerTitle}>CRITICAL SIGHTING LEAD</Text>
+                <Text style={styles.headerSubtitle}>Biometric Stream Intercept</Text>
               </View>
             </View>
 

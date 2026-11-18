@@ -49,7 +49,7 @@ export const CasesScreen: React.FC<CasesScreenProps> = ({ cases }) => {
             <View
               style={[
                 styles.typeTag,
-                { backgroundColor: isWanted ? 'rgba(239, 68, 68, 0.9)' : 'rgba(6, 182, 212, 0.9)' },
+                { backgroundColor: isWanted ? 'rgba(244, 63, 94, 0.85)' : 'rgba(56, 189, 248, 0.85)' },
               ]}
             >
               <Text style={styles.typeText}>{item.caseType}</Text>
@@ -66,15 +66,15 @@ export const CasesScreen: React.FC<CasesScreenProps> = ({ cases }) => {
                 style={[
                   styles.statusBadge,
                   {
-                    backgroundColor: isActive ? 'rgba(34, 197, 94, 0.15)' : 'rgba(148, 163, 184, 0.15)',
-                    borderColor: isActive ? COLORS.secondary : COLORS.outlineVariant,
+                    backgroundColor: isActive ? 'rgba(16, 185, 129, 0.12)' : 'rgba(100, 116, 139, 0.12)',
+                    borderColor: isActive ? 'rgba(16, 185, 129, 0.3)' : COLORS.border,
                   },
                 ]}
               >
                 <Text
                   style={[
                     styles.statusBadgeText,
-                    { color: isActive ? '#4ade80' : COLORS.onSurfaceVariant },
+                    { color: isActive ? '#10b981' : COLORS.textMuted },
                   ]}
                 >
                   {item.status}

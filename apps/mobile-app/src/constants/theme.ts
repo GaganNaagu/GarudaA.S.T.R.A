@@ -1,78 +1,78 @@
 /**
  * Garuda A.S.T.R.A Mobile Design Tokens
  * Synchronized with DESIGN.md and Next.js globals.css
- * Aesthetic: Tactical Command Intelligence (Obsidian & Amber Gold)
+ * Aesthetic: Palantir / Defense Dark Slate (Linear & Gotham Grade)
  */
 
 export const COLORS = {
-  // Brand Colors (10% Accent Rule - Garuda Tactical Amber Gold)
-  primary: '#f59e0b',
-  primaryContainer: '#d97706',
+  // Brand Colors (10% Accent Rule - Precision Defense Cyan)
+  primary: '#38bdf8',
+  primaryContainer: '#0284c7',
   
-  // Tactical Telemetry & Radar (AI Facial Recognition & Radar Signals)
-  secondary: '#06b6d4',
-  secondaryContainer: '#0891b2',
+  // Tactical Signal & Secondary Status
+  secondary: '#f59e0b',
+  secondaryContainer: '#d97706',
   
-  // Primary Tactical Canvas (60% Rule - Deep Obsidian Void)
-  background: '#090d16',
-  surfaceDim: '#090d16',
-  surface: '#111726',
+  // Primary Tactical Canvas (60% Rule - Deep Neutral Obsidian Void)
+  background: '#0b0d13',
+  surfaceDim: '#080a0f',
+  surface: '#131720',
   
   // Elevated Surfaces & Container Tiers (30% Rule)
-  surfaceLowest: '#060910',
-  surfaceLow: '#0d121e',
-  surfaceContainer: '#111726',
-  surfaceVariant: '#172033',
-  surfaceHigh: '#172033',
-  surfaceHighest: '#1e293b',
+  surfaceLowest: '#080a0f',
+  surfaceLow: '#0e1118',
+  surfaceContainer: '#131720',
+  surfaceVariant: '#1a202c',
+  surfaceHigh: '#1e2533',
+  surfaceHighest: '#263042',
   
-  // Hairline Outlines & Borders (Zero muddy drop shadows)
-  outline: 'rgba(255, 255, 255, 0.12)',
-  outlineVariant: 'rgba(255, 255, 255, 0.08)',
-  border: 'rgba(255, 255, 255, 0.08)',
-  borderSubtle: 'rgba(255, 255, 255, 0.05)',
-  borderStrong: 'rgba(255, 255, 255, 0.15)',
+  // Hairline Outlines & Borders (Crisp, subtle dividers - zero muddy drop shadows)
+  outline: 'rgba(255, 255, 255, 0.10)',
+  outlineVariant: 'rgba(255, 255, 255, 0.06)',
+  border: 'rgba(255, 255, 255, 0.07)',
+  borderSubtle: 'rgba(255, 255, 255, 0.04)',
+  borderStrong: 'rgba(255, 255, 255, 0.14)',
   
   // Text & Content Hierarchy (Ink)
-  onBackground: '#f8fafc',
-  onSurface: '#f8fafc',
+  onBackground: '#f1f5f9',
+  onSurface: '#f1f5f9',
   onSurfaceVariant: '#94a3b8',
   textMuted: '#64748b',
-  onPrimary: '#090d16',
-  onPrimaryContainer: '#090d16',
-  onSecondary: '#090d16',
-  onSecondaryContainer: '#f8fafc',
+  onPrimary: '#0b0d13',
+  onPrimaryContainer: '#f1f5f9',
+  onSecondary: '#0b0d13',
+  onSecondaryContainer: '#f1f5f9',
   
   // Status Accents
-  error: '#ef4444',
-  errorContainer: '#7f1d1d',
+  error: '#f43f5e',
+  errorContainer: '#881337',
   onError: '#ffffff',
-  onErrorContainer: '#fecaca',
+  onErrorContainer: '#ffe4e6',
   
   success: '#10b981',
   successContainer: '#064e3b',
   onSuccess: '#ffffff',
   
   warning: '#f59e0b',
-  onWarning: '#090d16',
+  onWarning: '#0b0d13',
   
-  info: '#3b82f6',
-  onInfo: '#ffffff',
+  info: '#38bdf8',
+  onInfo: '#0b0d13',
   
   // Inverted & High-Contrast
-  onInverseSurface: '#090d16',
-  inverseSurface: '#f8fafc',
-  inversePrimary: '#d97706',
+  onInverseSurface: '#0b0d13',
+  inverseSurface: '#f1f5f9',
+  inversePrimary: '#0284c7',
   
   // Fixed Variants
-  primaryFixed: '#ffdfa0',
-  primaryFixedDim: '#f59e0b',
-  secondaryFixed: '#acedff',
-  secondaryFixedDim: '#06b6d4',
-  tertiary: '#3b82f6',
-  tertiaryContainer: '#1d4ed8',
-  tertiaryFixed: '#dbeafe',
-  tertiaryFixedDim: '#93c5fd',
+  primaryFixed: '#bae6fd',
+  primaryFixedDim: '#38bdf8',
+  secondaryFixed: '#fde68a',
+  secondaryFixedDim: '#f59e0b',
+  tertiary: '#6366f1',
+  tertiaryContainer: '#4338ca',
+  tertiaryFixed: '#e0e7ff',
+  tertiaryFixedDim: '#818cf8',
   onTertiary: '#ffffff',
   onTertiaryContainer: '#ffffff',
 };

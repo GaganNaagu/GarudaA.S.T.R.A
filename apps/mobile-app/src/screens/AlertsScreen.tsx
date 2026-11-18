@@ -11,8 +11,6 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SPACING, ROUNDED } from '../constants/theme';
 import { AlertItem } from '../utils/mockState';
 import { ScreenWrapper } from '../components/ScreenWrapper';
-import { SurfaceCard } from '../components/SurfaceCard';
-import { PrimaryButton } from '../components/PrimaryButton';
 import { getBestEffortPosition } from '../services/gpsService';
 
 interface AlertsScreenProps {
@@ -55,156 +53,158 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
     };
   }, []);
 
+  const criticalCount = alerts.filter(
+    (a) => a.threatLevel === 'HIGH' || a.threatLevel === 'CRITICAL'
+  ).length;
+
   const renderAlertItem = ({ item: alert }: { item: AlertItem }) => {
-    const isUrgent = alert.status === 'ALERT';
+    const isCritical = alert.threatLevel === 'HIGH' || alert.threatLevel === 'CRITICAL';
     const hasImage = !!alert.mugshotUrl;
+    const targetName =
+      alert.subtitle && alert.subtitle.startsWith('Match for ')
+        ? alert.subtitle.replace(/^Match for /i, '')
+        : alert.title;
 
     return (
-      <SurfaceCard style={styles.alertCard}>
-        <View style={styles.cardHeader}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.cardSubtitle}>
-              {alert.subtitle}
-              {alert.status !== 'ALERT' ? ` · ${alert.status}` : ''}
-            </Text>
-            <Text style={styles.cardTitle}>{alert.title}</Text>
-          </View>
-
-          {alert.matchPercentage != null && alert.matchPercentage > 0 ? (
-            <View style={styles.matchBadge}>
-              <Text style={styles.matchText}>{alert.matchPercentage}% MATCH</Text>
-            </View>
-          ) : null}
-        </View>
-
-        {/* Forensic Visual + Details */}
-        <View style={styles.cardBody}>
-          <View style={styles.imageWrapper}>
-            {hasImage ? (
-              <Image source={{ uri: alert.mugshotUrl }} style={styles.mugshot} />
-            ) : (
-              <View style={styles.avatarPlaceholder}>
-                <MaterialIcons name="person" size={36} color={COLORS.outline} />
-              </View>
-            )}
-            <View style={styles.verifiedTag}>
-              <Text style={styles.verifiedText}>FACE ID</Text>
-            </View>
-          </View>
-
-          <View style={styles.metaCol}>
-            <View style={styles.metaRow}>
-              <Text style={styles.metaLabel}>LOCATION</Text>
-              <Text style={styles.metaValue} numberOfLines={1}>
-                {alert.lastSeenLocation}
+      <Pressable
+        onPress={() => onSelectAlert(alert)}
+        style={({ pressed }) => [
+          styles.rowItem,
+          pressed && styles.rowItemPressed,
+        ]}
+      >
+        {/* Left: Tactical Mugshot / Avatar with Status Dot */}
+        <View style={styles.thumbnailContainer}>
+          {hasImage ? (
+            <Image source={{ uri: alert.mugshotUrl }} style={styles.thumbnail} />
+          ) : (
+            <View style={styles.avatarPlaceholder}>
+              <Text style={styles.avatarText}>
+                {targetName.slice(0, 2).toUpperCase()}
               </Text>
             </View>
+          )}
+          <View
+            style={[
+              styles.statusBeacon,
+              { backgroundColor: isCritical ? COLORS.error : COLORS.primary },
+            ]}
+          />
+        </View>
 
-            <View style={styles.metaRow}>
-              <Text style={styles.metaLabel}>THREAT LEVEL</Text>
-              <View style={styles.threatRow}>
-                <View
-                  style={[
-                    styles.threatDot,
-                    {
-                      backgroundColor:
-                        alert.threatLevel === 'HIGH' || alert.threatLevel === 'CRITICAL'
-                          ? COLORS.error
-                          : COLORS.primary,
-                    },
-                  ]}
-                />
-                <Text
-                  style={[
-                    styles.threatText,
-                    {
-                      color:
-                        alert.threatLevel === 'HIGH' || alert.threatLevel === 'CRITICAL'
-                          ? COLORS.error
-                          : COLORS.primary,
-                    },
-                  ]}
-                >
-                  {alert.threatLevel}
+        {/* Center: Intelligence Metadata */}
+        <View style={styles.metaCol}>
+          <View style={styles.nameRow}>
+            <Text style={styles.targetName} numberOfLines={1}>
+              {targetName}
+            </Text>
+            {alert.matchPercentage != null && alert.matchPercentage > 0 ? (
+              <View style={styles.matchChip}>
+                <Text style={styles.matchChipText}>
+                  {alert.matchPercentage}% MATCH
                 </Text>
               </View>
-            </View>
-
-            <View style={styles.metaRow}>
-              <Text style={styles.metaLabel}>FILE NUMBER</Text>
-              <Text style={styles.fileNo}>{alert.fileNo}</Text>
-            </View>
+            ) : null}
           </View>
-        </View>
 
-        {/* Assigned Officer Strip */}
-        {alert.assignments && alert.assignments.length > 0 ? (
-          <View style={styles.assignmentStrip}>
-            <MaterialIcons name="local-police" size={14} color={COLORS.primary} style={{ marginRight: 6 }} />
-            <Text style={styles.assignmentText} numberOfLines={1}>
-              {alert.assignments[0]?.officer?.user?.full_name || 'Assigned Officer'} · {alert.assignments[0]?.status?.toUpperCase() || 'DISPATCHED'}
+          <View style={styles.detailRow}>
+            <MaterialIcons name="place" size={13} color={COLORS.onSurfaceVariant} style={{ marginRight: 3 }} />
+            <Text style={styles.locationText} numberOfLines={1}>
+              {alert.lastSeenLocation}
             </Text>
           </View>
-        ) : null}
 
-        {/* Card Actions */}
-        <View style={styles.actionRow}>
-          <PrimaryButton
-            title="RESPOND"
-            onPress={() => onRespondAlert(alert.id)}
-            disabled={!isUrgent}
-            variant="primary"
-            size="sm"
-            icon="notifications-active"
-            style={styles.actionBtn}
-          />
-          <PrimaryButton
-            title="DETAILS"
-            onPress={() => onSelectAlert(alert)}
-            variant="secondary"
-            size="sm"
-            icon="visibility"
-            style={styles.actionBtn}
-          />
+          <View style={styles.tagRow}>
+            <Text style={styles.fileNoText}>{alert.fileNo || '#MP-23854'}</Text>
+            <Text style={styles.dotSeparator}>•</Text>
+            <Text
+              style={[
+                styles.threatLabel,
+                { color: isCritical ? COLORS.error : COLORS.primary },
+              ]}
+            >
+              {alert.threatLevel} PRIORITY
+            </Text>
+            {alert.status && alert.status !== 'ALERT' && (
+              <>
+                <Text style={styles.dotSeparator}>•</Text>
+                <Text style={styles.statusLabel}>{alert.status}</Text>
+              </>
+            )}
+          </View>
         </View>
-      </SurfaceCard>
+
+        {/* Right: Quick Action / Chevron */}
+        <View style={styles.actionCol}>
+          {alert.status === 'ALERT' ? (
+            <Pressable
+              onPress={() => onRespondAlert(alert.id)}
+              style={({ pressed }) => [
+                styles.dispatchBtn,
+                pressed && { opacity: 0.75 },
+              ]}
+              hitSlop={8}
+            >
+              <Text style={styles.dispatchBtnText}>DISPATCH</Text>
+            </Pressable>
+          ) : (
+            <MaterialIcons name="chevron-right" size={20} color={COLORS.textMuted} />
+          )}
+        </View>
+      </Pressable>
     );
   };
 
   return (
     <ScreenWrapper>
-      {/* Top Header */}
+      {/* Top Header: Precision Defense Bar */}
       <View style={styles.header}>
-        <View style={styles.headerTitleContainer}>
-          <MaterialIcons name="shield" size={22} color={COLORS.primary} style={{ marginRight: 8 }} />
-          <Text style={styles.headerTitle}>PATROL UNIT-042</Text>
+        <View style={styles.headerLeft}>
+          <View style={styles.unitBadge}>
+            <MaterialIcons name="shield" size={16} color={COLORS.primary} />
+            <Text style={styles.unitTitle}>UNIT-042</Text>
+          </View>
+          <Text style={styles.dutySubtitle}>ACTIVE PATROL</Text>
         </View>
-        <View style={styles.telemetryTag}>
-          <View style={styles.onlineDot} />
-          <Text style={styles.telemetryText}>LINK NOMINAL</Text>
+
+        <View style={styles.headerRight}>
+          <View style={styles.telemetryTag}>
+            <View style={styles.onlineDot} />
+            <Text style={styles.telemetryText}>LINK NOMINAL</Text>
+          </View>
         </View>
       </View>
 
+      {/* Mission Status Metric Strip */}
+      <View style={styles.metricStrip}>
+        <View style={styles.metricItem}>
+          <Text style={styles.metricLabel}>ACTIVE SIGHTINGS</Text>
+          <Text style={styles.metricValue}>{alerts.length}</Text>
+        </View>
+        <View style={styles.metricDivider} />
+        <View style={styles.metricItem}>
+          <Text style={styles.metricLabel}>HIGH PRIORITY</Text>
+          <Text style={[styles.metricValue, { color: COLORS.error }]}>
+            {criticalCount}
+          </Text>
+        </View>
+        <View style={styles.metricDivider} />
+        <View style={[styles.metricItem, { flex: 1.4 }]}>
+          <Text style={styles.metricLabel}>GPS BEACON</Text>
+          <Text style={styles.metricValueMono}>{geoLoc}</Text>
+        </View>
+      </View>
+
+      {/* Inset Grouped Sighting List */}
       <FlatList
         data={alerts}
         keyExtractor={(item, index) => item.id ? `${item.id}-${index}` : `alert-${index}`}
         renderItem={renderAlertItem}
         contentContainerStyle={styles.listContent}
-        ListHeaderComponent={
-          <View style={styles.statusBar}>
-            <View style={styles.statusCol}>
-              <Text style={styles.statusLabel}>SURVEILLANCE BEACON</Text>
-              <Text style={styles.statusVal}>ACTIVE TELEMETRY</Text>
-            </View>
-            <View style={styles.statusColRight}>
-              <Text style={styles.statusLabel}>GEO COORDINATES</Text>
-              <Text style={styles.statusVal}>{geoLoc}</Text>
-            </View>
-          </View>
-        }
+        ItemSeparatorComponent={() => <View style={styles.rowSeparator} />}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <MaterialIcons name="security" size={48} color={COLORS.outline} style={{ marginBottom: 12 }} />
+            <MaterialIcons name="security" size={40} color={COLORS.textMuted} style={{ marginBottom: 12 }} />
             <Text style={styles.emptyTitle}>Sector Clear</Text>
             <Text style={styles.emptySubtitle}>No high-priority sightings currently flagged in your sector.</Text>
           </View>
@@ -216,11 +216,11 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
         onPress={onSosTrigger}
         style={({ pressed }) => [
           styles.sosFab,
-          pressed && { transform: [{ scale: 0.92 }], opacity: 0.85 },
+          pressed && { transform: [{ scale: 0.94 }], opacity: 0.9 },
         ]}
         hitSlop={8}
       >
-        <MaterialIcons name="warning" size={20} color="#FFFFFF" />
+        <MaterialIcons name="warning" size={18} color="#FFFFFF" />
         <Text style={styles.sosText}>SOS</Text>
       </Pressable>
     </ScreenWrapper>
@@ -229,225 +229,250 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
 
 const styles = StyleSheet.create({
   header: {
-    height: SPACING.touchTargetMin + 8,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.outlineVariant,
+    height: 52,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: COLORS.border,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: SPACING.gutter,
+    backgroundColor: COLORS.background,
   },
-  headerTitleContainer: {
+  headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
   },
-  headerTitle: {
-    ...TYPOGRAPHY.headlineSmMobile,
+  unitBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.surface,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: ROUNDED.SM,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    gap: 5,
+  },
+  unitTitle: {
+    ...TYPOGRAPHY.labelCaps,
     color: COLORS.onSurface,
-    fontWeight: '700',
-    fontSize: 16,
+    fontWeight: '800',
+    fontSize: 12,
+    letterSpacing: 0.5,
+  },
+  dutySubtitle: {
+    ...TYPOGRAPHY.labelCaps,
+    color: COLORS.onSurfaceVariant,
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   telemetryTag: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.surfaceContainer,
+    backgroundColor: 'rgba(16, 185, 129, 0.10)',
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 3,
     borderRadius: ROUNDED.FULL,
     borderWidth: 1,
-    borderColor: COLORS.outlineVariant,
+    borderColor: 'rgba(16, 185, 129, 0.25)',
   },
   onlineDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: COLORS.secondary,
-    marginRight: 6,
+    backgroundColor: COLORS.success,
+    marginRight: 5,
   },
   telemetryText: {
     ...TYPOGRAPHY.labelCaps,
     fontSize: 9,
-    color: COLORS.secondary,
+    color: COLORS.success,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  metricStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.surface,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: COLORS.border,
+    paddingHorizontal: SPACING.gutter,
+    paddingVertical: 8,
+  },
+  metricItem: {
+    flex: 1,
+  },
+  metricDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: COLORS.border,
+    marginHorizontal: 10,
+  },
+  metricLabel: {
+    ...TYPOGRAPHY.labelCaps,
+    fontSize: 8,
+    color: COLORS.textMuted,
+    letterSpacing: 0.6,
+    marginBottom: 2,
+  },
+  metricValue: {
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.onSurface,
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  metricValueMono: {
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.onSurfaceVariant,
+    fontSize: 10,
     fontFamily: 'monospace',
+    fontWeight: '600',
   },
   listContent: {
     padding: SPACING.gutter,
     paddingBottom: 96,
   },
-  statusBar: {
+  rowItem: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: COLORS.surfaceContainer,
+    backgroundColor: COLORS.surface,
+    padding: 12,
     borderRadius: ROUNDED.MD,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
     borderWidth: 1,
-    borderColor: COLORS.outlineVariant,
-    marginBottom: SPACING.md,
+    borderColor: COLORS.border,
   },
-  statusCol: {
-    flex: 1,
+  rowItemPressed: {
+    backgroundColor: COLORS.surfaceVariant,
   },
-  statusColRight: {
-    flex: 1,
-    alignItems: 'flex-end',
+  rowSeparator: {
+    height: 8,
   },
-  statusLabel: {
-    ...TYPOGRAPHY.labelCaps,
-    fontSize: 8,
-    color: COLORS.onSurfaceVariant,
-    marginBottom: 2,
+  thumbnailContainer: {
+    position: 'relative',
+    marginRight: 12,
   },
-  statusVal: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.onSurface,
-    fontWeight: '600',
-    fontSize: 11,
-    fontFamily: 'monospace',
-  },
-  alertCard: {
-    padding: SPACING.md,
-    marginBottom: SPACING.md,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    marginBottom: SPACING.sm,
-  },
-  cardSubtitle: {
-    ...TYPOGRAPHY.labelCaps,
-    fontSize: 10,
-    color: COLORS.primary,
-    marginBottom: 2,
-  },
-  cardTitle: {
-    ...TYPOGRAPHY.titleMedium,
-    color: COLORS.onSurface,
-    fontWeight: '700',
-  },
-  matchBadge: {
-    backgroundColor: 'rgba(245, 158, 11, 0.15)',
-    borderWidth: 1,
-    borderColor: COLORS.primary,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: ROUNDED.FULL,
-  },
-  matchText: {
-    ...TYPOGRAPHY.labelCaps,
-    fontSize: 10,
-    color: COLORS.primary,
-    fontFamily: 'monospace',
-    fontWeight: '700',
-  },
-  cardBody: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 4,
-    marginBottom: SPACING.md,
-  },
-  imageWrapper: {
-    width: 88,
-    height: 88,
-    borderRadius: ROUNDED.MD,
-    overflow: 'hidden',
+  thumbnail: {
+    width: 52,
+    height: 52,
+    borderRadius: ROUNDED.SM,
     backgroundColor: COLORS.surfaceHigh,
     borderWidth: 1,
-    borderColor: COLORS.outlineVariant,
-    position: 'relative',
-  },
-  mugshot: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
+    borderColor: COLORS.border,
   },
   avatarPlaceholder: {
-    flex: 1,
+    width: 52,
+    height: 52,
+    borderRadius: ROUNDED.SM,
+    backgroundColor: COLORS.surfaceVariant,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  verifiedTag: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(9, 13, 22, 0.85)',
-    paddingVertical: 2,
-    alignItems: 'center',
+  avatarText: {
+    ...TYPOGRAPHY.titleMedium,
+    fontSize: 16,
+    fontWeight: '800',
+    color: COLORS.primary,
   },
-  verifiedText: {
-    ...TYPOGRAPHY.labelCaps,
-    fontSize: 8,
-    color: COLORS.secondary,
-    fontFamily: 'monospace',
+  statusBeacon: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    borderWidth: 1.5,
+    borderColor: COLORS.surface,
   },
   metaCol: {
     flex: 1,
-    justifyContent: 'space-around',
+    justifyContent: 'center',
+    gap: 3,
   },
-  metaRow: {
-    marginVertical: 1,
-  },
-  metaLabel: {
-    ...TYPOGRAPHY.labelCaps,
-    fontSize: 8,
-    color: COLORS.onSurfaceVariant,
-  },
-  metaValue: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.onSurface,
-    fontWeight: '500',
-    fontSize: 12,
-  },
-  threatRow: {
+  nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 1,
+    justifyContent: 'space-between',
+    paddingRight: 6,
   },
-  threatDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginRight: 6,
-  },
-  threatText: {
-    ...TYPOGRAPHY.bodySmall,
+  targetName: {
+    ...TYPOGRAPHY.bodyMedium,
     fontWeight: '700',
-    fontSize: 11,
-    fontFamily: 'monospace',
+    color: COLORS.onSurface,
+    fontSize: 15,
   },
-  fileNo: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.onSurfaceVariant,
-    fontFamily: 'monospace',
-    fontSize: 11,
+  matchChip: {
+    backgroundColor: 'rgba(56, 189, 248, 0.12)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: ROUNDED.SM,
+    borderWidth: 1,
+    borderColor: 'rgba(56, 189, 248, 0.3)',
   },
-  assignmentStrip: {
+  matchChipText: {
+    ...TYPOGRAPHY.labelCaps,
+    fontSize: 9,
+    color: COLORS.primary,
+    fontWeight: '700',
+  },
+  detailRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.surfaceContainer,
-    borderRadius: ROUNDED.SM,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    marginBottom: SPACING.sm,
-    borderWidth: 1,
-    borderColor: COLORS.outlineVariant,
   },
-  assignmentText: {
+  locationText: {
     ...TYPOGRAPHY.bodySmall,
-    fontSize: 11,
     color: COLORS.onSurfaceVariant,
+    fontSize: 12,
     flex: 1,
   },
-  actionRow: {
+  tagRow: {
     flexDirection: 'row',
-    gap: 8,
-    paddingTop: 4,
+    alignItems: 'center',
+    gap: 5,
   },
-  actionBtn: {
-    flex: 1,
+  fileNoText: {
+    ...TYPOGRAPHY.labelCaps,
+    fontSize: 9,
+    fontFamily: 'monospace',
+    color: COLORS.textMuted,
+  },
+  dotSeparator: {
+    color: COLORS.textMuted,
+    fontSize: 9,
+  },
+  threatLabel: {
+    ...TYPOGRAPHY.labelCaps,
+    fontSize: 9,
+    fontWeight: '700',
+  },
+  statusLabel: {
+    ...TYPOGRAPHY.labelCaps,
+    fontSize: 9,
+    color: COLORS.onSurfaceVariant,
+  },
+  actionCol: {
+    marginLeft: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dispatchBtn: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: ROUNDED.SM,
+  },
+  dispatchBtnText: {
+    ...TYPOGRAPHY.labelCaps,
+    fontSize: 9,
+    fontWeight: '900',
+    color: '#0B0D13',
+    letterSpacing: 0.5,
   },
   emptyContainer: {
     paddingVertical: 64,
@@ -470,21 +495,21 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 24,
     right: 20,
-    width: 58,
-    height: 58,
-    borderRadius: 29,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: COLORS.error,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: COLORS.error,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.35,
+    shadowRadius: 6,
+    elevation: 6,
   },
   sosText: {
     ...TYPOGRAPHY.labelCaps,
-    fontSize: 9,
+    fontSize: 8,
     fontWeight: '900',
     color: '#FFFFFF',
     marginTop: 1,

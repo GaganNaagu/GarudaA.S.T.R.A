@@ -1,52 +1,52 @@
 @import "tailwindcss";
 
 :root {
-  /* Primary Tactical Canvas (60% Rule - Deep Obsidian Void) */
-  --background: #090d16;
-  --foreground: #f8fafc;
+  /* Primary Tactical Canvas (60% Rule - Deep Neutral Obsidian Void) */
+  --background: #0b0d13;
+  --foreground: #f1f5f9;
 
-  /* Elevated Surfaces & Cards (30% Rule) */
-  --card: #111726;
-  --card-foreground: #f8fafc;
-  --popover: #111726;
-  --popover-foreground: #f8fafc;
+  /* Elevated Surfaces & Cards (30% Rule - Neutral Slate) */
+  --card: #131720;
+  --card-foreground: #f1f5f9;
+  --popover: #131720;
+  --popover-foreground: #f1f5f9;
 
-  /* Single Brand Accent (10% Rule - Tactical Amber Gold) */
-  --primary: #f59e0b;
-  --primary-foreground: #090d16;
+  /* Single Brand Accent (10% Rule - Precision Defense Cyan) */
+  --primary: #38bdf8;
+  --primary-foreground: #0b0d13;
 
   /* Elevated Secondary / Hover Tiers */
-  --secondary: #172033;
-  --secondary-foreground: #f8fafc;
+  --secondary: #1a202c;
+  --secondary-foreground: #f1f5f9;
 
   /* Muted Hierarchy & Secondary Text */
-  --muted: #172033;
+  --muted: #1a202c;
   --muted-foreground: #94a3b8;
 
   /* Active Interactive Accent */
-  --accent: #f59e0b;
-  --accent-foreground: #090d16;
+  --accent: #38bdf8;
+  --accent-foreground: #0b0d13;
 
-  /* Status Accents */
-  --destructive: #ef4444;
+  /* Status Accents (Functional Signals) */
+  --destructive: #f43f5e;
   --destructive-foreground: #ffffff;
   --success: #10b981;
   --success-foreground: #ffffff;
   --warning: #f59e0b;
-  --warning-foreground: #090d16;
-  --info: #3b82f6;
-  --info-foreground: #ffffff;
+  --warning-foreground: #0b0d13;
+  --info: #38bdf8;
+  --info-foreground: #0b0d13;
 
-  /* Telemetry & AI Signals (Facial Recognition & Radar) */
-  --telemetry: #06b6d4;
-  --telemetry-foreground: #090d16;
+  /* Telemetry & AI Signals */
+  --telemetry: #38bdf8;
+  --telemetry-foreground: #0b0d13;
 
-  /* Hairline Borders & Inputs (Zero muddy shadows) */
-  --border: rgba(255, 255, 255, 0.08);
-  --border-subtle: rgba(255, 255, 255, 0.05);
-  --border-strong: rgba(255, 255, 255, 0.15);
-  --input: #172033;
-  --ring: #f59e0b;
+  /* Hairline Borders & Inputs (Subtle 1px hairlines - zero muddy shadows) */
+  --border: rgba(255, 255, 255, 0.07);
+  --border-subtle: rgba(255, 255, 255, 0.04);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --input: #1a202c;
+  --ring: #38bdf8;
 
   /* Consistent Geometry (Cards 12px, Buttons/Inputs 8px, Chips 6px, Badges 9999px) */
   --radius: 0.75rem;

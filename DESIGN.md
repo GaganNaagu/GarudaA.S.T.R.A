@@ -1,21 +1,26 @@
 # DESIGN SYSTEM & AESTHETIC RULES
 
 ## 1. Visual Identity & Tone
-- **Aesthetic Direction:** Tactical Command Intelligence (Obsidian & Amber Gold) — A precision-engineered, mission-critical law enforcement and defense surveillance aesthetic. Dark-mode primary for 24/7 command center operations, tactile feedback, razor-sharp hairline borders, dense telemetry data hierarchy, and zero visual fluff.
+- **Aesthetic Direction:** Palantir / Defense Dark Slate (Linear & Gotham Grade) — Precision-engineered, mission-critical law enforcement and defense surveillance intelligence. Dark-mode primary for 24/7 command center operations, tactile feedback, razor-sharp hairline borders, dense telemetry data hierarchy, and zero visual fluff or "AI slop".
 - **Color Restraint (Strict 60-30-10 Rule):**
-  - **Primary Canvas (60%):** `#090D16` (Dark / Command Center) / `#F8FAFC` (Light / Field Daylight) — Deep Obsidian Void, NEVER pure `#000000` or `#FFFFFF`.
-  - **Elevated Surface (30%):** `#111726` (Dark Cards/Panels) & `#172033` (Elevated/Hover Tiers) / `#FFFFFF` (Light Cards) & `#F1F5F9` (Light Elevated).
-  - **Single Brand Accent (10%):** `#F59E0B` (Tactical Amber Gold) — High-alert visibility, reserved strictly for primary interactive CTAs, verified match alerts, and active focal states. Never use for decorative background wash or borders.
-  - **Tactical Telemetry & AI Signals:** `#06B6D4` (Tactical Cyan) — Reserved strictly for AI facial recognition confidence scores, live camera feeds, and radar pings.
-  - **Status Accents:**
-    - Confirmed / Secure: `#10B981` (Tactical Emerald)
-    - Warning / Pending: `#F59E0B` (Amber Gold)
-    - Critical Alert / Rejected: `#EF4444` (Tactical Crimson)
-    - Operational Info: `#3B82F6` (Cobalt)
+  - **Primary Canvas (60%):** `#0B0D13` (Dark / Command Center) / `#F8FAFC` (Light / Field Daylight) — Deep Neutral Obsidian, high contrast, zero muddy blue tint.
+  - **Elevated Surface (30%):** `#131720` (Dark Cards/Panels) & `#1A202C` (Elevated/Hover Tiers) / `#FFFFFF` (Light Cards) & `#F1F5F9` (Light Elevated).
+  - **Single Brand Accent (10%):** `#38BDF8` (Precision Defense Cyan / Sky) — High-clarity tactical focus, reserved strictly for primary interactive CTAs, active selection states, and live link beacons.
+  - **Status Signals (Functional, Never Decorative):**
+    - Critical Threat / Wanted / Rejected: `#F43F5E` (Tactical Rose/Crimson)
+    - High-Confidence Match / Sighting Lead: `#F59E0B` (Amber Gold)
+    - Confirmed / Secure / Nominal: `#10B981` (Tactical Emerald)
+    - Operational Info / Telemetry: `#38BDF8` (Defense Cyan)
   - **Ink / Text Hierarchy:**
-    - Dark Mode: Primary `#F8FAFC` (Slate 50), Secondary `#94A3B8` (Slate 400), Muted `#64748B` (Slate 500).
+    - Dark Mode: Primary `#F1F5F9` (Slate 100), Secondary `#94A3B8` (Slate 400), Muted `#64748B` (Slate 500).
     - Light Mode: Primary `#0F172A` (Slate 900), Secondary `#475569` (Slate 600), Muted `#94A3B8` (Slate 400).
-- **Borders & Depth:** Use crisp `1px` hairline borders (`rgba(255,255,255,0.08)` dark / `rgba(0,0,0,0.08)` light, or `#1E293B`) instead of muddy drop shadows.
+- **Borders & Depth:** Use crisp `1px` hairline borders (`rgba(255,255,255,0.07)` dark / `rgba(0,0,0,0.08)` light, or `#1E2533`) instead of muddy drop shadows.
+
+## 2. Anti-Slop Layout Architecture (Zero Tolerance)
+- **NO "Everything's a Card":** Never wrap every single list item in a thick-bordered, drop-shadowed box with multiple nested action buttons. Use Inset-Grouped Lists with hairline dividers (`StyleSheet.hairlineWidth`).
+- **NO Dual Buttons per Row:** List rows are tap-to-inspect targets (`Pressable` with subtle highlight). Specific actions belong in the detail sheet or swipe/context actions.
+- **NO Fake Sci-Fi / Cyberpunk Gimmicks:** No neon perimeter glows, scanline grids, or decorative fake coordinate widgets taking up 30% of the screen.
+- **NO Gaudy Yellow Tab Bars:** System navigation uses subtle slate inactive states and crisp brand highlights without thick yellow border boxes.
 
 ## 2. Typography & Spacing
 - **Font Pairing:**

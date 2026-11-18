@@ -684,12 +684,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    backgroundColor: COLORS.surfaceContainer,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.outlineVariant,
+    backgroundColor: COLORS.surface,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: COLORS.border,
     paddingTop: 8,
-    paddingBottom: 28, // High-fidelity clearance for modern rounded notch edges
-    paddingHorizontal: 12,
+    paddingHorizontal: 8,
   },
   navItem: {
     flex: 1,
@@ -699,12 +698,12 @@ const styles = StyleSheet.create({
   navItemInner: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 4,
-    paddingHorizontal: 12,
-    borderRadius: ROUNDED.DEFAULT,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: ROUNDED.SM,
   },
   navItemActive: {
-    backgroundColor: 'rgba(246, 190, 57, 0.12)',
+    backgroundColor: 'rgba(56, 189, 248, 0.10)',
   },
   navIcon: {
     fontSize: 20,
@@ -717,14 +716,13 @@ const styles = StyleSheet.create({
   navLabel: {
     ...TYPOGRAPHY.labelCaps,
     fontSize: 9,
-    color: COLORS.onSurfaceVariant,
-    opacity: 0.6,
+    color: COLORS.textMuted,
     marginTop: 3,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   navLabelActive: {
     color: COLORS.primary,
-    opacity: 1,
+    fontWeight: '700',
   },
   warningBanner: {
     flexDirection: 'row',
