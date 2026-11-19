@@ -8,6 +8,7 @@ import {
   Switch,
   Pressable,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SPACING, ROUNDED } from '../constants/theme';
 import { ScreenWrapper } from '../components/ScreenWrapper';
@@ -18,6 +19,7 @@ interface LoginScreenProps {
 }
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
+  const insets = useSafeAreaInsets();
   const [unitId, setUnitId] = useState('officer1@astra.gov');
   const [key, setKey] = useState('Password123!');
   const [showPassword, setShowPassword] = useState(false);
@@ -82,12 +84,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
   return (
     <ScreenWrapper
       scrollable
-      contentContainerStyle={styles.container}
+      contentContainerStyle={[
+        styles.container,
+        { paddingBottom: Math.max(insets.bottom, 24) },
+      ]}
     >
-      {/* Top Header */}
+      {/* Top Precision Department Bar */}
       <View style={styles.header}>
         <View style={styles.headerTitleContainer}>
-          <MaterialIcons name="shield" size={24} color={COLORS.primary} style={{ marginRight: 8 }} />
+          <MaterialIcons name="shield" size={22} color={COLORS.primary} style={{ marginRight: 8 }} />
           <Text style={styles.headerTitle}>GARUDA ASTRA</Text>
         </View>
         <View style={styles.badge}>
@@ -97,7 +102,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
 
       {/* Main Content Area */}
       <View style={styles.content}>
-        {/* Emblem & Tactical Subtitle */}
+        {/* Emblem & Operational Subtitle */}
         <View style={styles.portraitWrapper}>
           <View style={styles.portraitBorder}>
             <Image
@@ -132,6 +137,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                 placeholderTextColor={COLORS.outline}
                 keyboardAppearance="dark"
                 autoCapitalize="none"
+                autoCorrect={false}
               />
             </View>
           </View>
@@ -148,6 +154,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                 placeholderTextColor={COLORS.outline}
                 secureTextEntry={!showPassword}
                 keyboardAppearance="dark"
+                autoCapitalize="none"
               />
               <Pressable
                 onPress={() => setShowPassword(!showPassword)}
@@ -176,7 +183,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
             </View>
           </View>
 
-          {/* Primary CTA */}
+          {/* Primary CTA Button */}
           <PrimaryButton
             title={statusText}
             onPress={handleLogin}
@@ -195,10 +202,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    justifyContent: 'space-between',
+    justifyContent: 'center',
   },
   header: {
-    height: SPACING.touchTargetMin + 12,
+    height: 52,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.outlineVariant,
     flexDirection: 'row',
@@ -231,31 +238,32 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
   },
   content: {
-    flex: 1,
+    width: '100%',
+    maxWidth: 420,
+    alignSelf: 'center',
     paddingHorizontal: SPACING.gutter,
-    paddingTop: SPACING.xxl,
-    paddingBottom: SPACING['3xl'],
-    justifyContent: 'center',
+    paddingTop: SPACING.lg,
+    paddingBottom: SPACING.xl,
   },
   portraitWrapper: {
     alignItems: 'center',
-    marginBottom: SPACING.xxl,
+    marginBottom: SPACING.lg,
   },
   portraitBorder: {
-    width: 80,
-    height: 80,
+    width: 72,
+    height: 72,
     borderRadius: ROUNDED.LG,
     borderWidth: 1,
     borderColor: COLORS.outlineVariant,
     backgroundColor: COLORS.surfaceContainer,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
     overflow: 'hidden',
   },
   portrait: {
-    width: 60,
-    height: 60,
+    width: 52,
+    height: 52,
     borderRadius: ROUNDED.MD,
   },
   portraitTitle: {
@@ -268,13 +276,11 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.bodySmall,
     color: COLORS.onSurfaceVariant,
     textAlign: 'center',
-    maxWidth: 280,
-    lineHeight: 18,
+    maxWidth: 290,
+    lineHeight: 17,
   },
   form: {
     width: '100%',
-    maxWidth: 400,
-    alignSelf: 'center',
   },
   errorBanner: {
     flexDirection: 'row',
@@ -294,12 +300,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   inputGroup: {
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   inputLabel: {
     ...TYPOGRAPHY.labelCaps,
     color: COLORS.onSurfaceVariant,
-    marginBottom: 6,
+    marginBottom: 5,
     fontSize: 10,
     letterSpacing: 0.6,
   },
@@ -326,8 +332,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 4,
-    marginBottom: SPACING.lg,
+    marginTop: 2,
+    marginBottom: SPACING.md,
   },
   switchContainer: {
     flexDirection: 'row',
@@ -340,6 +346,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   loginBtn: {
-    marginTop: 4,
+    marginTop: 6,
+    width: '100%',
   },
 });

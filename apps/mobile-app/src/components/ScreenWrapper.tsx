@@ -3,18 +3,19 @@ import {
   StyleSheet,
   View,
   ViewStyle,
+  StyleProp,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { COLORS, SPACING } from '../constants/theme';
+import { COLORS } from '../constants/theme';
 
 export interface ScreenWrapperProps {
   children: React.ReactNode;
-  style?: ViewStyle;
-  contentContainerStyle?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
+  contentContainerStyle?: StyleProp<ViewStyle>;
   scrollable?: boolean;
   withKeyboardAvoid?: boolean;
   topInset?: boolean;
@@ -45,6 +46,7 @@ export const ScreenWrapper: React.FC<ScreenWrapperProps> = ({
       contentContainerStyle={[styles.scrollContent, contentContainerStyle]}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
+      bounces={false}
     >
       {children}
     </ScrollView>
@@ -59,7 +61,7 @@ export const ScreenWrapper: React.FC<ScreenWrapperProps> = ({
         <KeyboardAvoidingView
           style={styles.fill}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
         >
           {content}
         </KeyboardAvoidingView>
@@ -79,8 +81,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: SPACING.containerPadding,
-    paddingBottom: SPACING.groupSpacing,
+    flexGrow: 1,
   },
 });
 

@@ -119,10 +119,10 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
       case 'sm':
         return { height: 36, paddingHorizontal: SPACING.md, fontSize: 12 };
       case 'lg':
-        return { height: 52, paddingHorizontal: SPACING.xl, fontSize: 16 };
+        return { height: 50, paddingHorizontal: SPACING.lg, fontSize: 15 };
       case 'md':
       default:
-        return { height: SPACING.touchTargetMin, paddingHorizontal: SPACING.lg, fontSize: 14 };
+        return { height: 44, paddingHorizontal: SPACING.md, fontSize: 13 };
     }
   };
 
@@ -176,6 +176,8 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
               disabled && styles.disabledText,
               textStyle,
             ]}
+            numberOfLines={1}
+            ellipsizeMode="tail"
           >
             {title}
           </Text>
@@ -198,6 +200,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    maxWidth: '100%',
+    paddingHorizontal: 4,
   },
   iconWrapper: {
     marginRight: SPACING.sm,
@@ -206,6 +210,7 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.labelCaps,
     textAlign: 'center',
     letterSpacing: 0.5,
+    flexShrink: 1,
   },
   pressed: {
     opacity: 0.88,

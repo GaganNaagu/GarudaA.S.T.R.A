@@ -9,7 +9,7 @@ import {
   PermissionsAndroid,
   Image,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { COLORS, TYPOGRAPHY, SPACING, ROUNDED } from '../constants/theme';
@@ -22,6 +22,7 @@ interface PermissionGuardScreenProps {
 export const PermissionGuardScreen: React.FC<PermissionGuardScreenProps> = ({
   onAllPermissionsGranted,
 }) => {
+  const insets = useSafeAreaInsets();
   const [foregroundGranted, setForegroundGranted] = useState(false);
   const [backgroundGranted, setBackgroundGranted] = useState(false);
   const [notificationsGranted, setNotificationsGranted] = useState(false);
@@ -137,7 +138,13 @@ export const PermissionGuardScreen: React.FC<PermissionGuardScreenProps> = ({
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: Math.max(insets.bottom + 20, 36) },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Terminal Header */}
         <View style={styles.header}>
           <View style={styles.logoWrapper}>

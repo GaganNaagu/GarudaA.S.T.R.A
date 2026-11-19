@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View, Image } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SPACING, ROUNDED } from '../constants/theme';
 import { ScreenWrapper } from '../components/ScreenWrapper';
@@ -12,11 +13,19 @@ interface DutyToggleScreenProps {
 }
 
 export const DutyToggleScreen: React.FC<DutyToggleScreenProps> = ({ officerName, onAcknowledge }) => {
+  const insets = useSafeAreaInsets();
+
   return (
-    <ScreenWrapper scrollable contentContainerStyle={styles.container}>
+    <ScreenWrapper
+      scrollable
+      contentContainerStyle={[
+        styles.container,
+        { paddingBottom: Math.max(insets.bottom, 24) },
+      ]}
+    >
       <View style={styles.header}>
         <View style={styles.headerTitleContainer}>
-          <MaterialIcons name="security" size={24} color={COLORS.primary} style={{ marginRight: 8 }} />
+          <MaterialIcons name="security" size={22} color={COLORS.primary} style={{ marginRight: 8 }} />
           <Text style={styles.headerTitle}>DUTY CHECK</Text>
         </View>
       </View>
@@ -71,10 +80,10 @@ export const DutyToggleScreen: React.FC<DutyToggleScreenProps> = ({ officerName,
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    justifyContent: 'space-between',
+    justifyContent: 'center',
   },
   header: {
-    height: SPACING.touchTargetMin + 12,
+    height: 52,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.outlineVariant,
     flexDirection: 'row',
@@ -92,32 +101,30 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   content: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: SPACING.gutter,
-    paddingVertical: SPACING.xxl,
-    maxWidth: 420,
     width: '100%',
+    maxWidth: 420,
     alignSelf: 'center',
+    paddingHorizontal: SPACING.gutter,
+    paddingVertical: SPACING.xl,
   },
   portraitWrapper: {
     alignItems: 'center',
-    marginBottom: SPACING.xl,
+    marginBottom: SPACING.lg,
   },
   portraitBorder: {
-    width: 72,
-    height: 72,
+    width: 68,
+    height: 68,
     borderRadius: ROUNDED.LG,
     borderWidth: 1,
     borderColor: COLORS.outlineVariant,
     backgroundColor: COLORS.surfaceContainer,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   portrait: {
-    width: 52,
-    height: 52,
+    width: 48,
+    height: 48,
     borderRadius: ROUNDED.MD,
   },
   portraitTitle: {
@@ -131,17 +138,18 @@ const styles = StyleSheet.create({
     color: COLORS.onSurfaceVariant,
     textAlign: 'center',
     lineHeight: 18,
+    maxWidth: 300,
   },
   card: {
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.md,
   },
   cardContent: {
-    padding: SPACING.lg,
+    padding: SPACING.md,
   },
   statusRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.md,
   },
   statusDot: {
     width: 10,
@@ -159,7 +167,7 @@ const styles = StyleSheet.create({
   statusDesc: {
     ...TYPOGRAPHY.bodySmall,
     color: COLORS.onSurfaceVariant,
-    lineHeight: 18,
+    lineHeight: 17,
   },
   btnPrimary: {
     width: '100%',

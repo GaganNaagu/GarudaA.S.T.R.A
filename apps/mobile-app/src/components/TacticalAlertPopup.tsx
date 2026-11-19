@@ -294,6 +294,7 @@ const styles = StyleSheet.create({
   container: {
     width: '100%',
     maxWidth: 380,
+    maxHeight: '92%',
     backgroundColor: COLORS.surface,
     borderRadius: ROUNDED.LG,
     borderWidth: 1,
