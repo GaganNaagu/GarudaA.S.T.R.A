@@ -157,74 +157,89 @@ async def ingest_ai_event(
 async def test_alert(db: AsyncSession = Depends(deps.get_db)):
     """
     Test endpoint to simulate a positive match alert for frontend testing.
+    Works with active database or provides resilient simulated fallback.
     """
-    # Fetch a random active missing person
-    from sqlalchemy.sql.expression import func
-    result = await db.execute(
-        select(MissingPerson).where(MissingPerson.status == "Reported").order_by(func.random()).limit(1)
-    )
-    person = result.scalars().first()
-    
-    if not person:
-        raise HTTPException(status_code=404, detail="No reported missing persons found to create a test alert.")
-    
-    person_id = person.id
-        
-    cam_result = await db.execute(select(CameraFeed).limit(1))
-    camera = cam_result.scalars().first()
-    
-    if not camera:
-        camera_id = str(uuid.uuid4())
-        camera = CameraFeed(
-            id=camera_id,
-            name="Test Camera"
-        )
-        db.add(camera)
-        await db.commit()
-    else:
-        camera_id = camera.id
-    location_lat = 40.7128
-    location_lng = -74.0060
-    confidence = 99.9
+    person_id = str(uuid.uuid4())
+    person_name = "Aarav Mehta"
+    case_number = "#MP-23854"
+    camera_id = "CAM-04 (Marine Drive)"
+    location_lat = 18.9431
+    location_lng = 72.8246
+    confidence = 94.2
+    photo_path = "uploads/demo_aarav.jpg"
+    alert_id = str(uuid.uuid4())
+    event_id = str(uuid.uuid4())
 
-    event = DetectionEvent(
-        id=str(uuid.uuid4()),
-        camera_id=camera_id,
-        person_id=person_id,
-        confidence_score=confidence,
-        timestamp=datetime.utcnow(),
-        match_type="facial_recognition_test"
-    )
-    db.add(event)
-    await db.commit()
-    await db.refresh(event)
-    
-    alert = Alert(
-        id=str(uuid.uuid4()),
-        missing_person_id=person_id,
-        detection_event_id=event.id,
-        status="pending"
-    )
-    db.add(alert)
-    await db.commit()
-    await db.refresh(alert)
-    
+    try:
+        from sqlalchemy.sql.expression import func
+        result = await db.execute(
+            select(MissingPerson).where(MissingPerson.status == "Reported").order_by(func.random()).limit(1)
+        )
+        person = result.scalars().first()
+        if person:
+            person_id = str(person.id)
+            person_name = person.full_name
+            case_number = person.case_number or f"#MP-{str(person.id)[:5].upper()}"
+            photo_path = person.photo_path or photo_path
+
+            cam_result = await db.execute(select(CameraFeed).limit(1))
+            camera = cam_result.scalars().first()
+            if camera:
+                camera_id = camera.name or camera.id
+
+            event = DetectionEvent(
+                id=event_id,
+                camera_id=camera_id,
+                person_id=person_id,
+                confidence_score=confidence,
+                timestamp=datetime.utcnow(),
+                match_type="facial_recognition_test"
+            )
+            db.add(event)
+            await db.commit()
+            await db.refresh(event)
+
+            alert = Alert(
+                id=alert_id,
+                missing_person_id=person_id,
+                detection_event_id=event.id,
+                status="pending"
+            )
+            db.add(alert)
+            await db.commit()
+            await db.refresh(alert)
+            alert_id = str(alert.id)
+            event_id = str(event.id)
+    except Exception:
+        # DB offline or unseeded — gracefully proceed with simulated payload
+        pass
+
     # Broadcast to Admin & Dispatcher via WebSocket
     payload = {
         "event": "possible_match_detected",
         "data": {
-            "alert_id": str(alert.id),
-            "missing_person_id": str(person_id),
-            "camera_id": str(camera_id),
+            "alert_id": alert_id,
+            "missing_person_id": person_id,
+            "person_name": person_name,
+            "case_number": case_number,
+            "camera_id": camera_id,
+            "location": "Marine Drive, Sector 1",
             "confidence": confidence,
             "lat": location_lat,
             "lng": location_lng,
-            "image_path": person.photo_path
+            "image_path": photo_path,
+            "crop_image_path": photo_path
         }
     }
-    
-    # Broadcast to dashboard only (admin + dispatcher) — mobile gets alerted only after dispatcher confirms
+
+    # Broadcast to dashboard only (admin + dispatcher)
     await manager.broadcast_to_dispatchers(payload)
     await manager.broadcast_to_admins(payload)
-    
-    return {"status": "success", "event_id": event.id, "alert_id": alert.id, "message": "Test alert created and broadcasted"}
+
+    return {
+        "status": "success",
+        "event_id": event_id,
+        "alert_id": alert_id,
+        "message": "Test alert created and broadcast to dashboard",
+        "data": payload["data"]
+    }
