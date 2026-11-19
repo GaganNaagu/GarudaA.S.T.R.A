@@ -35,13 +35,18 @@ function getImageUrl(path: string | null) {
 }
 
 function mapAlert(a: any) {
+  const rawScore = a.detection_event?.confidence_score
+  let confText = '—'
+  if (rawScore != null) {
+    const num = typeof rawScore === 'number' ? rawScore : parseFloat(rawScore)
+    confText = `${(num > 1 ? num : num * 100).toFixed(0)}%`
+  }
+
   return {
     id: String(a.id),
     personName: a.missing_person?.full_name ?? 'Unknown Subject',
     caseNumber: a.missing_person?.case_number ?? '—',
-    confidence: a.detection_event?.confidence_score != null
-      ? `${(a.detection_event.confidence_score * 100).toFixed(0)}%`
-      : '—',
+    confidence: confText,
     status: a.status === 'pending' || a.status === 'Pending'
       ? 'Pending'
       : a.status === 'Verified' || a.status === 'Confirmed'
@@ -72,7 +77,13 @@ export default function AlertsPage() {
     try {
       if (!silent) setLoading(true)
       const data = await getAlerts()
-      setAlerts(data.map(mapAlert))
+      setAlerts(prev => {
+        const fetched = data.map(mapAlert)
+        const fetchedIds = new Set(fetched.map((a: any) => a.id))
+        // Preserve any recent optimistic/live alert not yet in backend response
+        const uncommitted = prev.filter(a => !fetchedIds.has(a.id))
+        return [...uncommitted, ...fetched]
+      })
     } catch (err) {
       console.error('Failed to fetch alerts', err)
     } finally {
@@ -87,21 +98,23 @@ export default function AlertsPage() {
   useEffect(() => {
     if (lastMessage && lastMessage.event === 'possible_match_detected') {
       const d = lastMessage.data
+      const rawConf = typeof d.confidence === 'number' ? d.confidence : parseFloat(d.confidence || '0')
+      const confPercent = rawConf > 1 ? Math.round(rawConf) : Math.round(rawConf * 100)
       const optimistic = {
         id: String(d.alert_id),
         personName: d.person_name || 'Possible Target Match',
         caseNumber: d.case_number || 'AUTO',
-        confidence: `${Math.round(d.confidence * 100)}%`,
+        confidence: `${confPercent}%`,
         status: 'Pending',
         rawTime: new Date().toISOString(),
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        camera: String(d.camera_id).substring(0, 8),
+        camera: String(d.camera_id).substring(0, 16),
         cropImagePath: d.crop_image_path ?? null,
         personImagePath: d.image_path ?? null,
         assignments: [],
       }
       setAlerts(prev => [optimistic, ...prev.filter(a => a.id !== optimistic.id)])
-      setTimeout(() => fetchAlerts(true), 1000)
+      setTimeout(() => fetchAlerts(true), 1500)
     } else if (lastMessage && lastMessage.event === 'alert_status_updated') {
       const updatedAlert = mapAlert(lastMessage.data)
       setAlerts(prev => prev.map(a => a.id === updatedAlert.id ? updatedAlert : a))

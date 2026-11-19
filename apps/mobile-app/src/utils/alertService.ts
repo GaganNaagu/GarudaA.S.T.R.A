@@ -88,23 +88,32 @@ export function normalizeAlert(payload: BackendAlertPayload): AlertItem {
   };
 }
 
-// Safely load Notifications with try/catch to prevent crashes in environments where native module is missing (e.g. Expo Go)
+// Safely load Notifications on-demand to prevent module evaluation crashes (e.g. ExpoApplication runtime not ready)
 let Notifications: any = null;
-try {
-  Notifications = require('expo-notifications');
-  if (Notifications?.setNotificationHandler) {
-    Notifications.setNotificationHandler({
-      handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: true,
-        shouldShowBanner: true,
-        shouldShowList: true,
-      }),
-    });
+let notificationsChecked = false;
+
+function getNotificationModule() {
+  if (!notificationsChecked) {
+    notificationsChecked = true;
+    try {
+      Notifications = require('expo-notifications');
+      if (Notifications?.setNotificationHandler) {
+        Notifications.setNotificationHandler({
+          handleNotification: async () => ({
+            shouldShowAlert: true,
+            shouldPlaySound: true,
+            shouldSetBadge: true,
+            shouldShowBanner: true,
+            shouldShowList: true,
+          }),
+        });
+      }
+    } catch (err) {
+      // In Expo Go or when native module is missing, gracefully disable push alerts
+      Notifications = null;
+    }
   }
-} catch (err) {
-  console.warn('⚠️ [NOTIFICATIONS] Native notifications module not available in current runtime:', err);
+  return Notifications;
 }
 
 /**
@@ -127,8 +136,9 @@ export function injectAlert(payload: BackendAlertPayload): AlertItem | null {
   callbacks.onTacticalPopup(alert);
 
   // Send local push notification if native module is available
-  if (Notifications?.scheduleNotificationAsync) {
-    Notifications.scheduleNotificationAsync({
+  const notif = getNotificationModule();
+  if (notif?.scheduleNotificationAsync) {
+    notif.scheduleNotificationAsync({
       content: {
         title: `🚨 ${alert.threatLevel} THREAT DETECTED`,
         body: `Match for ${alert.title} at ${alert.lastSeenLocation}`,

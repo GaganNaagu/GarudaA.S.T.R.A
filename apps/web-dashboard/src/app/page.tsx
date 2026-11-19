@@ -64,11 +64,13 @@ export default function Dashboard() {
 
         if (alerts.length > 0) {
           const m = alerts[0]
+          const rawConf = m.detection_event?.confidence_score ?? 88
+          const confVal = rawConf > 1 ? Math.round(rawConf) : Math.round(rawConf * 100)
           setLatestMatch({
             id: m.id,
             name: m.missing_person?.full_name || 'Subject Under Review',
             caseNumber: m.missing_person?.case_number || 'N/A',
-            confidence: m.detection_event?.confidence_score ? Math.round(m.detection_event.confidence_score * 100) : 88,
+            confidence: confVal,
             location: m.detection_event?.location || 'Central Sector Camera 04',
             camera: m.detection_event?.camera_id || 'CAM-04',
             time: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
@@ -85,11 +87,13 @@ export default function Dashboard() {
 
     if (lastMessage.event === 'possible_match_detected') {
       const data = lastMessage.data
+      const rawConf = typeof data.confidence === 'number' ? data.confidence : parseFloat(data.confidence || '88')
+      const confVal = rawConf > 1 ? Math.round(rawConf) : Math.round(rawConf * 100)
       setLatestMatch({
         id: data.alert_id,
         name: data.person_name || 'Positive Sighting Target',
         caseNumber: data.case_number || 'ALERT-AUTO',
-        confidence: Math.round(data.confidence * 100),
+        confidence: confVal,
         location: data.location || 'Camera Sector Live',
         camera: data.camera_id,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),

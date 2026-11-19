@@ -64,6 +64,20 @@ async def ingest_ai_event(
     upload_dir.mkdir(parents=True, exist_ok=True)
     now_str = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
     
+    # Resolve camera_id to a valid UUID for the foreign key
+    cam_uuid = None
+    try:
+        cam_uuid = uuid.UUID(str(camera_id))
+    except (ValueError, TypeError):
+        cam_by_name = await db.execute(select(CameraFeed).where(CameraFeed.name == str(camera_id)).limit(1))
+        found_cam = cam_by_name.scalars().first()
+        if found_cam:
+            cam_uuid = found_cam.id
+        else:
+            first_cam = await db.execute(select(CameraFeed).limit(1))
+            c = first_cam.scalars().first()
+            cam_uuid = c.id if c else None
+
     events_created = []
     
     for idx, face in enumerate(faces):
@@ -78,7 +92,7 @@ async def ingest_ai_event(
             continue
             
         # Save the cropped face image
-        filename = f"{camera_id}_{now_str}_{location_lat}_{location_lng}_{idx}.jpg"
+        filename = f"{str(camera_id).replace(' ', '_')}_{now_str}_{location_lat}_{location_lng}_{idx}.jpg"
         file_path = upload_dir / filename
         with open(file_path, "wb") as f:
             f.write(preprocessed_bytes)
@@ -101,9 +115,10 @@ async def ingest_ai_event(
             if confidence_percentage < 40.0:
                 confidence_percentage = min(confidence_percentage + 30.0, 100.0)
                 
+            event_uuid = uuid.uuid4()
             event = DetectionEvent(
-                id=str(uuid.uuid4()),
-                camera_id=camera_id,
+                id=event_uuid,
+                camera_id=cam_uuid or uuid.uuid4(),
                 person_id=missing_person_id,
                 confidence_score=confidence_percentage,
                 timestamp=datetime.utcnow(),
@@ -114,11 +129,13 @@ async def ingest_ai_event(
             await db.commit()
             await db.refresh(event)
             
+            alert_uuid = uuid.uuid4()
             alert = Alert(
-                id=str(uuid.uuid4()),
+                id=alert_uuid,
                 missing_person_id=missing_person_id,
                 detection_event_id=event.id,
-                status="pending"
+                status="Pending",
+                severity="High"
             )
             db.add(alert)
             await db.commit()
@@ -135,17 +152,20 @@ async def ingest_ai_event(
                 "data": {
                     "alert_id": str(alert.id),
                     "missing_person_id": str(missing_person_id),
+                    "person_name": person.full_name if person else "Possible Target Match",
+                    "case_number": person.case_number if person else "AUTO",
                     "camera_id": str(camera_id),
                     "confidence": confidence_percentage,
                     "lat": location_lat,
                     "lng": location_lng,
-                    "image_path": photo_path
+                    "image_path": photo_path,
+                    "crop_image_path": relative_path
                 }
             }
             await manager.broadcast_to_dispatchers(payload)
             await manager.broadcast_to_admins(payload)
             
-            events_created.append({"event_id": event.id, "alert_id": alert.id})
+            events_created.append({"event_id": str(event.id), "alert_id": str(alert.id)})
     
     if not events_created:
         return {"status": "success", "message": "Faces detected, but no match found"}
@@ -176,43 +196,52 @@ async def test_alert(db: AsyncSession = Depends(deps.get_db)):
             select(MissingPerson).where(MissingPerson.status == "Reported").order_by(func.random()).limit(1)
         )
         person = result.scalars().first()
-        if person:
+        if not person:
+            result = await db.execute(select(MissingPerson).order_by(func.random()).limit(1))
+            person = result.scalars().first()
+
+        cam_result = await db.execute(select(CameraFeed).limit(1))
+        camera = cam_result.scalars().first()
+
+        if person and camera:
             person_id = str(person.id)
             person_name = person.full_name
             case_number = person.case_number or f"#MP-{str(person.id)[:5].upper()}"
             photo_path = person.photo_path or photo_path
+            camera_name = camera.name or f"CAM-{str(camera.id)[:8]}"
 
-            cam_result = await db.execute(select(CameraFeed).limit(1))
-            camera = cam_result.scalars().first()
-            if camera:
-                camera_id = camera.name or camera.id
-
+            event_uuid = uuid.uuid4()
             event = DetectionEvent(
-                id=event_id,
-                camera_id=camera_id,
-                person_id=person_id,
+                id=event_uuid,
+                camera_id=camera.id,
+                person_id=person.id,
                 confidence_score=confidence,
                 timestamp=datetime.utcnow(),
-                match_type="facial_recognition_test"
+                match_type="facial_recognition_test",
+                image_path=photo_path
             )
             db.add(event)
             await db.commit()
             await db.refresh(event)
 
+            alert_uuid = uuid.uuid4()
             alert = Alert(
-                id=alert_id,
-                missing_person_id=person_id,
+                id=alert_uuid,
+                missing_person_id=person.id,
                 detection_event_id=event.id,
-                status="pending"
+                status="Pending",
+                severity="High"
             )
             db.add(alert)
             await db.commit()
             await db.refresh(alert)
             alert_id = str(alert.id)
             event_id = str(event.id)
-    except Exception:
+            camera_id = camera_name
+    except Exception as e:
         # DB offline or unseeded — gracefully proceed with simulated payload
-        pass
+        import logging
+        logging.getLogger("astra").warning(f"test-alert DB persist error: {e}")
 
     # Broadcast to Admin & Dispatcher via WebSocket
     payload = {
