@@ -42,36 +42,46 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
       case 'primary':
         return {
           container: {
-            backgroundColor: COLORS.primary,
+            backgroundColor: '#e5a93c', // Rich sovereign imperial gold
             borderColor: 'transparent',
+            shadowColor: '#e5a93c',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.28,
+            shadowRadius: 8,
+            elevation: 4,
           },
           text: {
-            color: COLORS.onPrimary,
-            fontWeight: '700',
+            color: '#080d14',
+            fontWeight: '800',
+            letterSpacing: 0.8,
           },
-          spinnerColor: COLORS.onPrimary,
+          spinnerColor: '#080d14',
         };
       case 'secondary':
         return {
           container: {
-            backgroundColor: COLORS.surfaceHigh,
-            borderColor: COLORS.outlineVariant,
+            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+            borderColor: 'rgba(255, 255, 255, 0.12)',
+            borderWidth: 1,
           },
           text: {
-            color: COLORS.onSurface,
-            fontWeight: '600',
+            color: '#e2e8f0',
+            fontWeight: '700',
+            letterSpacing: 0.5,
           },
-          spinnerColor: COLORS.onSurface,
+          spinnerColor: '#e2e8f0',
         };
       case 'destructive':
         return {
           container: {
             backgroundColor: COLORS.errorContainer,
             borderColor: COLORS.error,
+            borderWidth: 1,
           },
           text: {
             color: COLORS.onError,
-            fontWeight: '700',
+            fontWeight: '800',
+            letterSpacing: 0.5,
           },
           spinnerColor: COLORS.onError,
         };
@@ -79,13 +89,15 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
         return {
           container: {
             backgroundColor: 'transparent',
-            borderColor: COLORS.outlineVariant,
+            borderColor: 'rgba(229, 169, 60, 0.4)',
+            borderWidth: 1,
           },
           text: {
-            color: COLORS.onSurface,
-            fontWeight: '600',
+            color: '#e5a93c',
+            fontWeight: '700',
+            letterSpacing: 0.5,
           },
-          spinnerColor: COLORS.onSurface,
+          spinnerColor: '#e5a93c',
         };
       case 'ghost':
         return {
@@ -94,22 +106,28 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
             borderColor: 'transparent',
           },
           text: {
-            color: COLORS.primary,
-            fontWeight: '600',
+            color: '#e5a93c',
+            fontWeight: '700',
           },
-          spinnerColor: COLORS.primary,
+          spinnerColor: '#e5a93c',
         };
       default:
         return {
           container: {
-            backgroundColor: COLORS.primary,
+            backgroundColor: '#e5a93c',
             borderColor: 'transparent',
+            shadowColor: '#e5a93c',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.28,
+            shadowRadius: 8,
+            elevation: 4,
           },
           text: {
-            color: COLORS.onPrimary,
-            fontWeight: '700',
+            color: '#080d14',
+            fontWeight: '800',
+            letterSpacing: 0.8,
           },
-          spinnerColor: COLORS.onPrimary,
+          spinnerColor: '#080d14',
         };
     }
   };
@@ -117,12 +135,12 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
   const getSizeStyles = (): { height: number; paddingHorizontal: number; fontSize: number } => {
     switch (size) {
       case 'sm':
-        return { height: 36, paddingHorizontal: SPACING.md, fontSize: 12 };
+        return { height: 38, paddingHorizontal: 14, fontSize: 11 };
       case 'lg':
-        return { height: 50, paddingHorizontal: SPACING.lg, fontSize: 15 };
+        return { height: 52, paddingHorizontal: 20, fontSize: 14 };
       case 'md':
       default:
-        return { height: 44, paddingHorizontal: SPACING.md, fontSize: 13 };
+        return { height: 46, paddingHorizontal: 16, fontSize: 13 };
     }
   };
 
@@ -137,7 +155,7 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
           <MaterialIcons
             name={icon as any}
             size={size === 'sm' ? 16 : 18}
-            color={(variantStyle.text.color as string) || COLORS.onPrimary}
+            color={(variantStyle.text.color as string) || '#080d14'}
           />
         </View>
       );
@@ -192,9 +210,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: ROUNDED.DEFAULT,
-    borderWidth: 1,
-    minHeight: 36,
+    borderRadius: 14, // Refined modern radius matching HIG and Android M3
+    minHeight: 38,
   },
   contentRow: {
     flexDirection: 'row',
@@ -204,12 +221,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   iconWrapper: {
-    marginRight: SPACING.sm,
+    marginRight: 8,
   },
   text: {
     ...TYPOGRAPHY.labelCaps,
     textAlign: 'center',
-    letterSpacing: 0.5,
     flexShrink: 1,
   },
   pressed: {

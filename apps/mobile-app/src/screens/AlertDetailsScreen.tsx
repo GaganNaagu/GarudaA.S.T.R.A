@@ -22,6 +22,14 @@ interface AlertDetailsScreenProps {
   currentOfficerId: string;
 }
 
+function formatBadge(raw: string | undefined): string {
+  if (!raw) return 'UNIT-042';
+  if (raw.length > 12) {
+    return `BADGE-${raw.slice(0, 6).toUpperCase()}`;
+  }
+  return raw;
+}
+
 export const AlertDetailsScreen: React.FC<AlertDetailsScreenProps> = ({
   alert,
   onBack,
@@ -173,7 +181,7 @@ export const AlertDetailsScreen: React.FC<AlertDetailsScreenProps> = ({
           <View style={styles.assignedRow}>
             <MaterialIcons name="local-police" size={18} color={COLORS.primary} style={{ marginRight: 8 }} />
             <Text style={styles.assignedText}>
-              {alert.assignments[0]?.officer?.user?.full_name || 'Active Patrol'} (Badge: {alert.assignments[0]?.officer?.badge_number || 'N/A'}) · [ {alert.assignments[0]?.status?.toUpperCase()} ]
+              {alert.assignments[0]?.officer?.user?.full_name || 'Active Patrol'} (Badge: {formatBadge(alert.assignments[0]?.officer?.badge_number)}) · [ {alert.assignments[0]?.status?.toUpperCase()} ]
             </Text>
           </View>
         ) : (
@@ -207,7 +215,7 @@ export const AlertDetailsScreen: React.FC<AlertDetailsScreenProps> = ({
           />
 
           <PrimaryButton
-            title="LOCATED / FOUND"
+            title="PERSON FOUND"
             onPress={() => handleStatusChange('FOUND')}
             variant={currentStatus === 'FOUND' ? 'primary' : 'secondary'}
             size="sm"
@@ -232,7 +240,7 @@ export const AlertDetailsScreen: React.FC<AlertDetailsScreenProps> = ({
 const styles = StyleSheet.create({
   scrollContent: {
     padding: SPACING.gutter,
-    paddingBottom: 96,
+    paddingBottom: 36,
   },
   header: {
     height: SPACING.touchTargetMin + 8,
@@ -242,6 +250,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: SPACING.md,
+    paddingRight: 40,
   },
   backButton: {
     flexDirection: 'row',

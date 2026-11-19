@@ -25,7 +25,7 @@ export const DutyToggleScreen: React.FC<DutyToggleScreenProps> = ({ officerName,
     >
       <View style={styles.header}>
         <View style={styles.headerTitleContainer}>
-          <MaterialIcons name="security" size={22} color={COLORS.primary} style={{ marginRight: 8 }} />
+          <MaterialIcons name="security" size={22} color="#e5a93c" style={{ marginRight: 8 }} />
           <Text style={styles.headerTitle}>DUTY CHECK</Text>
         </View>
       </View>
@@ -44,7 +44,7 @@ export const DutyToggleScreen: React.FC<DutyToggleScreenProps> = ({ officerName,
         <SurfaceCard style={styles.card}>
           <View style={styles.cardContent}>
             <View style={styles.statusRow}>
-              <View style={[styles.statusDot, { backgroundColor: COLORS.primary }]} />
+              <View style={[styles.statusDot, { backgroundColor: '#e5a93c' }]} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.statusTitle}>Active Patrol Duty</Text>
                 <Text style={styles.statusDesc}>
@@ -52,26 +52,28 @@ export const DutyToggleScreen: React.FC<DutyToggleScreenProps> = ({ officerName,
                 </Text>
               </View>
             </View>
-
-            <PrimaryButton
-              title="GO ON ACTIVE DUTY"
-              onPress={() => onAcknowledge('ACTIVE DUTY')}
-              variant="primary"
-              size="lg"
-              icon="radio-button-checked"
-              style={styles.btnPrimary}
-            />
           </View>
         </SurfaceCard>
 
-        <PrimaryButton
-          title="PROCEED OFF-DUTY (STANDBY)"
-          onPress={() => onAcknowledge('STANDBY / STAND DOWN')}
-          variant="secondary"
-          size="md"
-          icon="power-settings-new"
-          style={styles.btnSecondary}
-        />
+        <View style={styles.buttonStack}>
+          <PrimaryButton
+            title="GO ON ACTIVE DUTY"
+            onPress={() => onAcknowledge('ACTIVE DUTY')}
+            variant="primary"
+            size="lg"
+            icon="radio-button-checked"
+            style={styles.btnPrimary}
+          />
+
+          <PrimaryButton
+            title="PROCEED OFF-DUTY (STANDBY)"
+            onPress={() => onAcknowledge('STANDBY / STAND DOWN')}
+            variant="secondary"
+            size="md"
+            icon="power-settings-new"
+            style={styles.btnSecondary}
+          />
+        </View>
       </View>
     </ScreenWrapper>
   );
@@ -97,34 +99,35 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     ...TYPOGRAPHY.headlineSmMobile,
-    color: COLORS.primary,
-    fontWeight: '700',
+    color: '#e5a93c',
+    fontWeight: '800',
+    letterSpacing: 0.8,
   },
   content: {
     width: '100%',
     maxWidth: 420,
     alignSelf: 'center',
     paddingHorizontal: SPACING.gutter,
-    paddingVertical: SPACING.xl,
+    paddingVertical: SPACING.lg,
   },
   portraitWrapper: {
     alignItems: 'center',
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.md,
   },
   portraitBorder: {
-    width: 68,
-    height: 68,
+    width: 72,
+    height: 72,
     borderRadius: ROUNDED.LG,
     borderWidth: 1,
-    borderColor: COLORS.outlineVariant,
+    borderColor: 'rgba(229, 169, 60, 0.3)',
     backgroundColor: COLORS.surfaceContainer,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: SPACING.sm,
   },
   portrait: {
-    width: 48,
-    height: 48,
+    width: 52,
+    height: 52,
     borderRadius: ROUNDED.MD,
   },
   portraitTitle: {
@@ -141,7 +144,8 @@ const styles = StyleSheet.create({
     maxWidth: 300,
   },
   card: {
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.lg,
+    borderRadius: 14,
   },
   cardContent: {
     padding: SPACING.md,
@@ -149,7 +153,6 @@ const styles = StyleSheet.create({
   statusRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: SPACING.md,
   },
   statusDot: {
     width: 10,
@@ -162,12 +165,15 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.titleMedium,
     color: COLORS.onSurface,
     fontWeight: '700',
-    marginBottom: 2,
+    marginBottom: 4,
   },
   statusDesc: {
     ...TYPOGRAPHY.bodySmall,
     color: COLORS.onSurfaceVariant,
-    lineHeight: 17,
+    lineHeight: 18,
+  },
+  buttonStack: {
+    gap: 12,
   },
   btnPrimary: {
     width: '100%',

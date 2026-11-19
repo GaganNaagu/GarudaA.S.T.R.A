@@ -387,7 +387,7 @@ function MainApp() {
       }
       await updateAlertStatusApi(alertId, statusString);
     } catch (e) {
-      console.error('Failed to sync alert status with backend', e);
+      console.warn('⚠️ [ALERT STATUS] Local status updated; backend sync notice:', e);
     }
 
     let assignmentStatusStr = 'Accepted';

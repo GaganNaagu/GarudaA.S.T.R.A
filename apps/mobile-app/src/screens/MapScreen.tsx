@@ -209,7 +209,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ alerts }) => {
 const styles = StyleSheet.create({
   scrollContent: {
     padding: SPACING.gutter,
-    paddingBottom: 96,
+    paddingBottom: SPACING.md,
   },
   header: {
     height: SPACING.touchTargetMin + 8,
