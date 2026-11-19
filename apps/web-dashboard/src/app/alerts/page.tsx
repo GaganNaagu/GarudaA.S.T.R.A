@@ -97,7 +97,8 @@ export default function AlertsPage() {
 
   useEffect(() => {
     if (lastMessage && lastMessage.event === 'possible_match_detected') {
-      const d = lastMessage.data
+      const d = lastMessage.data || (lastMessage.alert_id ? lastMessage : null)
+      if (!d) return
       const rawConf = typeof d.confidence === 'number' ? d.confidence : parseFloat(d.confidence || '0')
       const confPercent = rawConf > 1 ? Math.round(rawConf) : Math.round(rawConf * 100)
       const optimistic = {
@@ -108,7 +109,7 @@ export default function AlertsPage() {
         status: 'Pending',
         rawTime: new Date().toISOString(),
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        camera: String(d.camera_id).substring(0, 16),
+        camera: d.camera_id ? String(d.camera_id).substring(0, 16) : 'CAM-LIVE-SECTOR',
         cropImagePath: d.crop_image_path ?? null,
         personImagePath: d.image_path ?? null,
         assignments: [],

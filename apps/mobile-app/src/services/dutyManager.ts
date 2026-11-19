@@ -32,6 +32,7 @@ let dutyActive = false;
 let currentConfig: DutyConfig | null = null;
 let messageUnsubscribe: (() => void) | null = null;
 let connectionUnsubscribe: (() => void) | null = null;
+let disconnectTimer: any = null;
 
 // ---------- Public API ----------
 
@@ -47,8 +48,14 @@ let connectionUnsubscribe: (() => void) | null = null;
  * Safe to call multiple times — no-ops if already on duty.
  */
 export async function goOnDuty(config: DutyConfig): Promise<boolean> {
-  if (dutyActive) {
-    console.log('ℹ️ [DUTY] Already ON DUTY.');
+  // Cancel any scheduled disconnection from prior goOffDuty calls
+  if (disconnectTimer) {
+    clearTimeout(disconnectTimer);
+    disconnectTimer = null;
+  }
+
+  if (dutyActive && SocketManager.isConnected()) {
+    console.log('ℹ️ [DUTY] Already ON DUTY and connected.');
     return true;
   }
 
@@ -201,9 +208,16 @@ export async function goOffDuty(): Promise<void> {
   // 2. Stop foreground service
   await ForegroundService.stopService();
 
-  // 3. Disconnect WebSocket (delay to ensure DUTY_OFF packet goes out)
-  setTimeout(() => {
-    SocketManager.disconnect();
+  // 3. Disconnect WebSocket (guarded timer so immediate re-connection in goOnDuty is never cancelled)
+  if (disconnectTimer) {
+    clearTimeout(disconnectTimer);
+    disconnectTimer = null;
+  }
+  disconnectTimer = setTimeout(() => {
+    if (!dutyActive) {
+      SocketManager.disconnect();
+    }
+    disconnectTimer = null;
   }, 500);
 
   // 4. Clean up event handlers

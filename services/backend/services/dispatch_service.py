@@ -22,10 +22,7 @@ class DispatchService:
         if not photo_path and getattr(alert, "detection_event", None) and alert.detection_event.image_path:
             photo_path = alert.detection_event.image_path
 
-        # The WebSocket payload mobile dutyManager expects for type=assignment
-        dispatch_payload = {
-            "type": "assignment",
-            "event": "possible_match_detected",
+        data_body = {
             "alert_id": str(alert.id),
             "missing_person_id": str(alert.missing_person_id) if alert.missing_person_id else None,
             "person_name": person_name,
@@ -37,6 +34,15 @@ class DispatchService:
             "lng": event_lng,
             "confidence": 99.2,
             "image_path": photo_path
+        }
+
+        # The WebSocket payload mobile dutyManager expects for type=assignment
+        # and web dashboard alerts page expects under data
+        dispatch_payload = {
+            "type": "assignment",
+            "event": "possible_match_detected",
+            "data": data_body,
+            **data_body
         }
 
         # Broadcast to all connected clients (patrols, admins, dispatchers)
