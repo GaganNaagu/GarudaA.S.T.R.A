@@ -206,6 +206,7 @@ export async function startService(config: ServiceConfig): Promise<boolean> {
   };
 
   try {
+    activeRunId++; // Fresh run ID to cleanly take over previous or stopped loops
     await startGpsTracking();
     const bgService = getBackgroundService();
     if (bgService) {

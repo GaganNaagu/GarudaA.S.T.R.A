@@ -21,15 +21,16 @@ async def get_ws_user(token: str) -> User:
     # Support development fallback token and local test tokens
     if "astra-tactical-auth-token" in token or "mock_token" in token:
         async with AsyncSessionLocal() as db:
+            # Map mobile tactical tokens to field officer so role is correctly recognized as patrol/officer
             result = await db.execute(
                 select(User)
                 .options(joinedload(User.role))
-                .where(User.email == "admin@astra.gov")
+                .where(User.email == "officer1@astra.gov")
             )
             user = result.scalar_one_or_none()
             if not user:
                 result = await db.execute(
-                    select(User).options(joinedload(User.role)).limit(1)
+                    select(User).options(joinedload(User.role)).where(User.email == "admin@astra.gov")
                 )
                 user = result.scalar_one_or_none()
             return user
@@ -50,6 +51,12 @@ async def get_ws_user(token: str) -> User:
             return user
     except JWTError:
         return None
+
+@router.get("/telemetry/active")
+async def get_active_telemetry():
+    """Returns currently deployed patrol units transmitting live telemetry."""
+    units = telemetry_service.get_active_units()
+    return {"units": list(units.values())}
 
 @router.websocket("/connect")
 async def websocket_endpoint(

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button"
 import { ShieldAlert, Crosshair, Map as MapIcon, Battery, Navigation, Radio, Zap, MoreVertical, Smartphone, Cpu, Wifi, X, Clock } from 'lucide-react'
 import { cn } from "@/lib/utils"
 import { useWebSocket } from '@/lib/websocket'
+import { getApiUrl } from '@/lib/api'
 
 import dynamic from 'next/dynamic'
 
@@ -43,39 +44,58 @@ const LiveMap = dynamic(() => import('@/components/map/LiveMap'), {
 export default function PatrolBoard() {
   const { lastMessage, isConnected } = useWebSocket()
   const [selectedDeviceUnit, setSelectedDeviceUnit] = useState<PatrolUnit | null>(null)
-  const [units, setUnits] = useState<Record<string, PatrolUnit>>({
-    'unit-101': {
-      id: 'unit-101',
-      name: 'Patrol Alpha (Officer Arjun)',
-      lat: 12.9716,
-      lng: 77.5946,
-      battery: 88,
-      charging: false,
-      status: 'Active Patrol',
-      lastUpdate: new Date()
-    },
-    'unit-102': {
-      id: 'unit-102',
-      name: 'Patrol Bravo (Inspector Priya)',
-      lat: 12.9784,
-      lng: 77.6012,
-      battery: 64,
-      charging: false,
-      status: 'Active Patrol',
-      lastUpdate: new Date()
-    },
-    'unit-103': {
-      id: 'unit-103',
-      name: 'Rapid Response (Inspector Vikram)',
-      lat: 12.9650,
-      lng: 77.5890,
-      battery: 92,
-      charging: true,
-      status: 'Responding',
-      lastUpdate: new Date()
-    }
-  })
+  const [units, setUnits] = useState<Record<string, PatrolUnit>>({})
   const [focusedLocation, setFocusedLocation] = useState<[number, number] | null>(null)
+
+  // Fetch initial active telemetry units on mount
+  useEffect(() => {
+    async function loadActiveUnits() {
+      try {
+        const res = await fetch(`${getApiUrl()}/ws/telemetry/active`)
+        if (res.ok) {
+          const json = await res.json()
+          if (json.units && Array.isArray(json.units)) {
+            const mapped: Record<string, PatrolUnit> = {}
+            for (const item of json.units) {
+              const data = item.data || {}
+              const lat = data.lat ?? data.gps?.lat ?? null
+              const lng = data.lng ?? data.gps?.lng ?? null
+              const devInfo = data.device_info || (data.platform ? {
+                platform: data.platform,
+                os_version: data.os_version || `${data.platform.toUpperCase()} Device`,
+                model: data.model || 'Field Terminal',
+                brand: data.brand || 'Mobile',
+                app_version: '2.1.0-alpha',
+                is_emulator: false
+              } : undefined)
+
+              mapped[item.unit_id] = {
+                id: item.unit_id,
+                name: data.officer_name || `Unit ${item.unit_id.substring(0, 8).toUpperCase()}`,
+                lat,
+                lng,
+                battery: data.battery ?? 0,
+                charging: data.charging ?? false,
+                status: data.status === 'on_duty' ? 'Active Patrol' : data.status || 'Active Patrol',
+                lastUpdate: new Date(),
+                device_info: devInfo
+              }
+            }
+            if (Object.keys(mapped).length > 0) {
+              setUnits(mapped)
+              const firstWithCoords = Object.values(mapped).find(u => u.lat != null && u.lng != null)
+              if (firstWithCoords && firstWithCoords.lat && firstWithCoords.lng) {
+                setFocusedLocation([firstWithCoords.lat, firstWithCoords.lng])
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Could not load initial active telemetry units', err)
+      }
+    }
+    loadActiveUnits()
+  }, [])
 
   useEffect(() => {
     if (!lastMessage) return
@@ -83,7 +103,7 @@ export default function PatrolBoard() {
     if (lastMessage.type === 'telemetry') {
       const data = lastMessage.data
 
-      if (data.event_type === 'DUTY_OFF' || data.status === 'OFF DUTY') {
+      if (data.event_type === 'DUTY_OFF' || data.status === 'OFF DUTY' || data.event_type === 'LOGOUT') {
         setUnits(prev => {
           const updated = { ...prev }
           delete updated[lastMessage.unit_id]
@@ -94,9 +114,6 @@ export default function PatrolBoard() {
         const lng = data.lng ?? data.gps?.lng ?? null
 
         setUnits(prev => {
-          // If previous only contained the 3 static demo units, clear them on first real field telemetry
-          const isInitialMockOnly = Object.keys(prev).every(k => ['unit-101', 'unit-102', 'unit-103'].includes(k))
-          const base = isInitialMockOnly ? {} : { ...prev }
           const devInfo = data.device_info || (data.platform ? {
             platform: data.platform,
             os_version: data.os_version || `${data.platform.toUpperCase()} Device`,
@@ -107,7 +124,7 @@ export default function PatrolBoard() {
           } : undefined)
 
           return {
-            ...base,
+            ...prev,
             [lastMessage.unit_id]: {
               id: lastMessage.unit_id,
               name: data.officer_name || `Unit ${lastMessage.unit_id.substring(0, 8).toUpperCase()}`,
@@ -180,10 +197,13 @@ export default function PatrolBoard() {
           <h3 className="font-semibold uppercase tracking-wider text-sm text-muted-foreground mb-4">Deployed Units ({unitList.length})</h3>
           
           {unitList.length === 0 ? (
-            <Card className="bg-secondary/20 border-dashed">
-              <CardContent className="py-8 text-center text-muted-foreground text-sm">
-                <Radio className="w-8 h-8 mx-auto mb-2 opacity-20" />
-                No telemetry signals received.
+            <Card className="bg-secondary/10 border-dashed border-border/80">
+              <CardContent className="py-10 text-center text-muted-foreground text-sm space-y-2">
+                <Radio className="w-10 h-10 mx-auto text-primary/40 animate-pulse" />
+                <div className="font-semibold text-foreground text-sm">No Field Units Transmitting</div>
+                <div className="text-xs max-w-xs mx-auto text-muted-foreground">
+                  Turn on duty mode in the mobile field terminal (Android emulator or iOS Expo app) to track live GPS telemetry and device specifications.
+                </div>
               </CardContent>
             </Card>
           ) : (

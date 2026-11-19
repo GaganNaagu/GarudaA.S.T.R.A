@@ -9,12 +9,30 @@ import uuid
 logger = logging.getLogger(__name__)
 
 class TelemetryService:
-    @staticmethod
-    async def process_patrol_telemetry(unit_id: str, payload: dict):
+    def __init__(self):
+        self._active_units: dict = {}
+
+    def get_active_units(self) -> dict:
+        return self._active_units
+
+    async def process_patrol_telemetry(self, unit_id: str, payload: dict):
         """
         Receives GPS and battery telemetry from a patrol unit.
-        Updates the database (optional) and broadcasts it in real-time to all Dashboard Dispatchers/Admins.
+        Updates the in-memory active unit state, database (optional),
+        and broadcasts it in real-time to all Dashboard Dispatchers/Admins.
         """
+        event_type = payload.get("event_type", "PERIODIC")
+        status = payload.get("status", "on_duty")
+
+        if event_type == "DUTY_OFF" or status == "OFF DUTY" or event_type == "LOGOUT":
+            if unit_id in self._active_units:
+                del self._active_units[unit_id]
+        else:
+            self._active_units[unit_id] = {
+                "unit_id": unit_id,
+                "data": payload,
+            }
+
         telemetry_event = {
             "type": "telemetry",
             "unit_id": unit_id,

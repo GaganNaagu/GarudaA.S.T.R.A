@@ -40,7 +40,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ alerts }) => {
   };
 
   return (
-    <ScreenWrapper scrollable contentContainerStyle={styles.scrollContent}>
+    <ScreenWrapper scrollable bottomInset={false} contentContainerStyle={styles.scrollContent}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerTitleContainer}>
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
   },
   radarContainer: {
     width: '100%',
-    height: 300,
+    height: 260,
     backgroundColor: COLORS.surface,
     borderRadius: ROUNDED.LG,
     borderWidth: 1,
@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     position: 'relative',
     overflow: 'hidden',
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   radarRing: {
     position: 'absolute',
@@ -449,6 +449,8 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     paddingHorizontal: 12,
     height: 36,
+    maxHeight: 36,
+    alignSelf: 'center',
   },
   targetPillSelected: {
     borderColor: COLORS.primary,

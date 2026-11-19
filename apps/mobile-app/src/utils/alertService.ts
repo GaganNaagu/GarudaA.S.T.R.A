@@ -59,6 +59,7 @@ export interface AlertServiceCallbacks {
 // ---------- State ----------
 
 let callbacks: AlertServiceCallbacks | null = null;
+const pendingAlertsQueue: BackendAlertPayload[] = [];
 
 const FALLBACK_LAT = 18.9431;
 const FALLBACK_LON = 72.8246;
@@ -123,7 +124,8 @@ function getNotificationModule() {
  */
 export function injectAlert(payload: BackendAlertPayload): AlertItem | null {
   if (!callbacks) {
-    console.warn('⚠️ [ALERT SERVICE] No callbacks registered. Call registerAlertCallbacks() first.');
+    console.log('📦 [ALERT SERVICE] Callbacks not yet ready, queuing incoming alert:', payload.title);
+    pendingAlertsQueue.push(payload);
     return null;
   }
 
@@ -136,18 +138,22 @@ export function injectAlert(payload: BackendAlertPayload): AlertItem | null {
   callbacks.onTacticalPopup(alert);
 
   // Send local push notification if native module is available
-  const notif = getNotificationModule();
-  if (notif?.scheduleNotificationAsync) {
-    notif.scheduleNotificationAsync({
-      content: {
-        title: `🚨 ${alert.threatLevel} THREAT DETECTED`,
-        body: `Match for ${alert.title} at ${alert.lastSeenLocation}`,
-        data: { alertId: alert.id },
-      },
-      trigger: null, // trigger immediately
-    }).catch((err: any) => {
-      console.warn('⚠️ [ALERT SERVICE] Failed to send push notification:', err);
-    });
+  try {
+    const notif = getNotificationModule();
+    if (notif?.scheduleNotificationAsync) {
+      notif.scheduleNotificationAsync({
+        content: {
+          title: `🚨 ${alert.threatLevel} THREAT DETECTED`,
+          body: `Match for ${alert.title} at ${alert.lastSeenLocation}`,
+          data: { alertId: alert.id },
+        },
+        trigger: null, // trigger immediately
+      }).catch((err: any) => {
+        console.warn('⚠️ [ALERT SERVICE] Failed to send push notification:', err);
+      });
+    }
+  } catch (e) {
+    // Non-critical in Expo Go
   }
 
   console.log(`
@@ -171,6 +177,13 @@ export function injectAlert(payload: BackendAlertPayload): AlertItem | null {
 export function registerAlertCallbacks(cbs: AlertServiceCallbacks) {
   callbacks = cbs;
   console.log('✅ [ALERT SERVICE] Callbacks registered.');
+  // Flush any queued alerts
+  while (pendingAlertsQueue.length > 0) {
+    const pending = pendingAlertsQueue.shift();
+    if (pending) {
+      injectAlert(pending);
+    }
+  }
 }
 
 /**

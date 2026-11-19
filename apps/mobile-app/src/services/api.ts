@@ -18,28 +18,39 @@ export async function loginApi(username: string, password: string) {
   formData.append('username', username.trim().toLowerCase());
   formData.append('password', password);
 
-  const response = await fetch(`${getApiUrl()}/auth/login`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: formData.toString(),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 3500);
 
-  if (!response.ok) {
-    let errorMsg = 'Invalid credentials';
-    try {
-      const errData = await response.json();
-      if (errData.error && errData.error.message) {
-        errorMsg = errData.error.message;
-      } else if (errData.detail) {
-        errorMsg = errData.detail;
-      }
-    } catch(e) {}
-    throw new Error(errorMsg);
+  try {
+    const response = await fetch(`${getApiUrl()}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: formData.toString(),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      let errorMsg = 'Invalid credentials';
+      try {
+        const errData = await response.json();
+        if (errData.error && errData.error.message) {
+          errorMsg = errData.error.message;
+        } else if (errData.detail) {
+          errorMsg = errData.detail;
+        }
+      } catch(e) {}
+      throw new Error(errorMsg);
+    }
+
+    return response.json();
+  } catch (err: any) {
+    clearTimeout(timeoutId);
+    throw err;
   }
-
-  return response.json();
 }
 
 export async function updateAlertStatusApi(id: string, status: string) {

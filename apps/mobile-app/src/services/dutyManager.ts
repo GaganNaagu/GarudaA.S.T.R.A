@@ -76,12 +76,18 @@ export async function goOnDuty(config: DutyConfig): Promise<boolean> {
 
   // 2. Wire up incoming alert messages from WebSocket → alertService
   messageUnsubscribe = SocketManager.onMessage((data: any) => {
-    // Handle alerts from backend
-    if (data.event === 'possible_match_detected' || data.type === 'assignment') {
-      const isAssignment = data.type === 'assignment';
-      const alertData = isAssignment ? data : data.data;
+    // Handle alerts and dispatched assignments from backend
+    const isStatusVerified = data.event === 'alert_status_updated' && (data.data?.status === 'Verified' || data.data?.status === 'Confirmed');
+    if (data.event === 'possible_match_detected' || data.type === 'assignment' || isStatusVerified) {
+      const isAssignment = data.type === 'assignment' || isStatusVerified;
+      const alertData = (data.type === 'assignment') ? data : (data.data || data);
+      
+      const personName = alertData.missing_person?.full_name || alertData.person_name || alertData.full_name || (isAssignment ? 'CONFIRMED SIGHTING LEAD' : 'POSSIBLE MATCH DETECTED');
+      const caseNumber = alertData.missing_person?.case_number || alertData.case_number || alertData.file_number || `#MP-${(alertData.alert_id || alertData.id || '').slice(-5) || '23854'}`;
+      const rawPhoto = alertData.missing_person?.photo_path || alertData.image_path || alertData.detection_event?.image_path || '';
+
       let finalPhotoUrl = '';
-      if (alertData.image_path) {
+      if (rawPhoto) {
         try {
           const wsUrlObj = new URL(config.wsUrl);
           let host = wsUrlObj.host;
@@ -91,7 +97,7 @@ export async function goOnDuty(config: DutyConfig): Promise<boolean> {
           const httpProtocol = wsUrlObj.protocol === 'wss:' && !host.includes('localhost') ? 'https:' : 'http:';
           const baseUrl = `${httpProtocol}//${host}`;
           // Handle absolute server paths: extract from 'uploads/' onwards
-          let photoPath = alertData.image_path.replace(/\\/g, '/');
+          let photoPath = rawPhoto.replace(/\\/g, '/');
           const uploadsIdx = photoPath.indexOf('uploads/');
           if (uploadsIdx > -1) {
             photoPath = photoPath.substring(uploadsIdx);
@@ -106,16 +112,16 @@ export async function goOnDuty(config: DutyConfig): Promise<boolean> {
       console.log('🖼️ COMPUTED IMAGE URL:', finalPhotoUrl);
 
       const alertPayload: BackendAlertPayload = {
-        id: alertData.alert_id || data.alert_id || String(Date.now()),
-        title: alertData.person_name || alertData.full_name || (isAssignment ? 'URGENT ASSIGNMENT' : 'POSSIBLE MATCH DETECTED'),
-        subtitle: alertData.person_name ? `Match for ${alertData.person_name}` : (alertData.message || 'Surveillance Lead Flagged'),
-        description: alertData.message || `Match Confidence: ${alertData.confidence || 98}%`,
+        id: alertData.alert_id || alertData.id || data.alert_id || String(Date.now()),
+        title: personName,
+        subtitle: isAssignment ? `Command Dispatched: ${personName}` : (alertData.message || 'Surveillance Lead Flagged'),
+        description: alertData.message || `Match Confirmed by Central Dispatch`,
         threatLevel: isAssignment ? 'CRITICAL' : (alertData.severity || 'HIGH'),
-        matchPercentage: alertData.confidence ? Math.round(alertData.confidence) : 98,
-        fileNo: alertData.case_number || alertData.file_number || `#MP-${(alertData.alert_id || '').slice(-5) || '23854'}`,
+        matchPercentage: alertData.confidence ? Math.round(alertData.confidence) : 99,
+        fileNo: caseNumber,
         lastSeenLocation: alertData.location_name || alertData.location || (alertData.lat ? `Lat ${alertData.lat.toFixed(4)}, Lng ${alertData.lng.toFixed(4)}` : 'Majestic Central Terminal'),
-        latitude: alertData.lat,
-        longitude: alertData.lng,
+        latitude: alertData.lat || alertData.detection_event?.camera_feed?.latitude || 18.9431,
+        longitude: alertData.lng || alertData.detection_event?.camera_feed?.longitude || 72.8246,
         mugshotUrl: finalPhotoUrl,
         assignments: alertData.assignments || [],
       };
