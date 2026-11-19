@@ -1,67 +1,69 @@
 /**
  * Garuda A.S.T.R.A Mobile Design Tokens
- * Synchronized with DESIGN.md and Next.js globals.css
- * Aesthetic: Grand Imperial Gold (Garuda Sovereign Intelligence)
+ * Design System: Adaptive Premium (Tactical Dark & Field Light)
+ * Aligned with DESIGN.md and Next.js globals.css
+ * Philosophy: Make the system powerful behind the scenes and extremely simple in the officer's hands.
  */
 
-export const COLORS = {
-  // Brand Colors (10% Accent Rule - Imperial Burnished Gold)
+// Tactical Dark Palette (Default - Command Center & Night Operations)
+export const TACTICAL_DARK_COLORS = {
+  // Brand Colors (10% Accent Rule - Sovereign Imperial Gold)
   primary: '#d4af37',
   primaryContainer: '#9a7822',
   
-  // Celestial Sunlight Gold & Secondary Accents
+  // Secondary Accents
   secondary: '#e8c86a',
   secondaryContainer: '#b38e2d',
   
-  // Primary Tactical Canvas (60% Rule - Deep Imperial Bronze-Obsidian)
-  background: '#0a0908',
-  surfaceDim: '#070605',
-  surface: '#131210',
+  // Canvas & Surfaces (60% Rule - Deep Slate Obsidian)
+  background: '#0b0f17',
+  surfaceDim: '#070a0f',
+  surface: '#111827',
   
   // Elevated Surfaces & Container Tiers (30% Rule)
-  surfaceLowest: '#070605',
-  surfaceLow: '#0e0d0b',
-  surfaceContainer: '#131210',
-  surfaceVariant: '#1b1916',
-  surfaceHigh: '#24211d',
-  surfaceHighest: '#2f2b26',
+  surfaceLowest: '#070a0f',
+  surfaceLow: '#0d131f',
+  surfaceContainer: '#111827',
+  surfaceVariant: '#1f2937',
+  surfaceHigh: '#283548',
+  surfaceHighest: '#374151',
   
-  // Hairline Outlines & Borders (Razor-sharp Burnished Gold Hairlines)
-  outline: 'rgba(212, 175, 55, 0.20)',
-  outlineVariant: 'rgba(212, 175, 55, 0.10)',
-  border: 'rgba(212, 175, 55, 0.15)',
-  borderSubtle: 'rgba(255, 255, 255, 0.05)',
-  borderStrong: 'rgba(212, 175, 55, 0.35)',
+  // Hairline Outlines & Borders (Clean, razor-sharp 1px hairlines)
+  outline: 'rgba(255, 255, 255, 0.12)',
+  outlineVariant: 'rgba(255, 255, 255, 0.06)',
+  border: 'rgba(255, 255, 255, 0.08)',
+  borderSubtle: 'rgba(255, 255, 255, 0.04)',
+  borderStrong: 'rgba(212, 175, 55, 0.28)',
   
-  // Text & Content Hierarchy (Warm Champagne Ink)
-  onBackground: '#fbf7ee',
-  onSurface: '#fbf7ee',
-  onSurfaceVariant: '#a8a29e',
-  textMuted: '#78716c',
-  onPrimary: '#0a0908',
-  onPrimaryContainer: '#fbf7ee',
-  onSecondary: '#0a0908',
-  onSecondaryContainer: '#fbf7ee',
+  // Text & Content Hierarchy (High Contrast, WCAG AAA >= 7:1)
+  onBackground: '#f9fafb',
+  onSurface: '#f9fafb',
+  onSurfaceVariant: '#9ca3af',
+  textMuted: '#6b7280',
+  onPrimary: '#0b0f17',
+  onPrimaryContainer: '#f9fafb',
+  onSecondary: '#0b0f17',
+  onSecondaryContainer: '#f9fafb',
   
   // Status Accents (Functional Signals)
-  error: '#e11d48',
-  errorContainer: '#881337',
+  error: '#ef4444',
+  errorContainer: '#7f1d1d',
   onError: '#ffffff',
-  onErrorContainer: '#ffe4e6',
+  onErrorContainer: '#fee2e2',
   
   success: '#10b981',
   successContainer: '#064e3b',
   onSuccess: '#ffffff',
   
-  warning: '#d4af37',
-  onWarning: '#0a0908',
+  warning: '#f59e0b',
+  onWarning: '#0b0f17',
   
   info: '#38bdf8',
-  onInfo: '#0a0908',
+  onInfo: '#0b0f17',
   
   // Inverted & High-Contrast
-  onInverseSurface: '#0a0908',
-  inverseSurface: '#fbf7ee',
+  onInverseSurface: '#0b0f17',
+  inverseSurface: '#f9fafb',
   inversePrimary: '#9a7822',
   
   // Fixed Variants
@@ -73,9 +75,77 @@ export const COLORS = {
   tertiaryContainer: '#b45309',
   tertiaryFixed: '#fef3c7',
   tertiaryFixedDim: '#f59e0b',
-  onTertiary: '#0a0908',
+  onTertiary: '#0b0f17',
   onTertiaryContainer: '#ffffff',
 };
+
+// Field Light Palette (Daylight & Direct Sunlight Operations)
+export const FIELD_LIGHT_COLORS = {
+  primary: '#b8860b',
+  primaryContainer: '#fef3c7',
+  
+  secondary: '#d97706',
+  secondaryContainer: '#ffedd5',
+  
+  background: '#f8fafc',
+  surfaceDim: '#f1f5f9',
+  surface: '#ffffff',
+  
+  surfaceLowest: '#ffffff',
+  surfaceLow: '#f8fafc',
+  surfaceContainer: '#ffffff',
+  surfaceVariant: '#f1f5f9',
+  surfaceHigh: '#e2e8f0',
+  surfaceHighest: '#cbd5e1',
+  
+  outline: 'rgba(0, 0, 0, 0.12)',
+  outlineVariant: 'rgba(0, 0, 0, 0.06)',
+  border: '#e2e8f0',
+  borderSubtle: 'rgba(0, 0, 0, 0.04)',
+  borderStrong: 'rgba(184, 134, 11, 0.35)',
+  
+  onBackground: '#0f172a',
+  onSurface: '#0f172a',
+  onSurfaceVariant: '#475569',
+  textMuted: '#94a3b8',
+  onPrimary: '#ffffff',
+  onPrimaryContainer: '#0f172a',
+  onSecondary: '#ffffff',
+  onSecondaryContainer: '#0f172a',
+  
+  error: '#dc2626',
+  errorContainer: '#fee2e2',
+  onError: '#ffffff',
+  onErrorContainer: '#7f1d1d',
+  
+  success: '#059669',
+  successContainer: '#d1fae5',
+  onSuccess: '#ffffff',
+  
+  warning: '#d97706',
+  onWarning: '#ffffff',
+  
+  info: '#0284c7',
+  onInfo: '#ffffff',
+  
+  onInverseSurface: '#f8fafc',
+  inverseSurface: '#0f172a',
+  inversePrimary: '#b8860b',
+  
+  primaryFixed: '#faecc8',
+  primaryFixedDim: '#b8860b',
+  secondaryFixed: '#fde68a',
+  secondaryFixedDim: '#d97706',
+  tertiary: '#d97706',
+  tertiaryContainer: '#fed7aa',
+  tertiaryFixed: '#ffedd5',
+  tertiaryFixedDim: '#d97706',
+  onTertiary: '#ffffff',
+  onTertiaryContainer: '#0f172a',
+};
+
+// Default export is Tactical Dark for field surveillance
+export const COLORS = TACTICAL_DARK_COLORS;
 
 // Strict 4pt Spacing Scale matching DESIGN.md
 export const SPACING = {

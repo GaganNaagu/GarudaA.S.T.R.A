@@ -265,10 +265,10 @@ function MainApp() {
               flags: 268435456, // FLAG_ACTIVITY_NEW_TASK
             }).catch(() => {
               // Fallback if intent fails
-              ToastAndroid.show('Tactical Terminal running. Press Home to minimize, or go OFF DUTY to exit.', ToastAndroid.SHORT);
+              ToastAndroid.show('Garuda Patrol App active. Press Home to minimize, or go OFF DUTY to exit.', ToastAndroid.SHORT);
             });
           } catch (e) {
-            ToastAndroid.show('Tactical Terminal running. Press Home to minimize, or go OFF DUTY to exit.', ToastAndroid.SHORT);
+            ToastAndroid.show('Garuda Patrol App active. Press Home to minimize, or go OFF DUTY to exit.', ToastAndroid.SHORT);
           }
         }
         return true; // Prevent default exit
@@ -480,9 +480,9 @@ function MainApp() {
     DutyManager.sendEvent('SOS', officer.unitId, officer.name, 'EMERGENCY SOS');
 
     Alert.alert(
-      'EMERGENCY SOS ACTIVATED',
-      'Tactical distress telemetry has been broadcast to command centers. Municipal patrol backups dispatched. Stay behind cover.',
-      [{ text: 'STAND BY / ACKNOWLEDGE', style: 'destructive' }],
+      'EMERGENCY ASSISTANCE ACTIVATED',
+      'Emergency distress signal broadcast to central dispatch and active sector patrol units. Backup is being dispatched.',
+      [{ text: 'ACKNOWLEDGE', style: 'destructive' }],
       { cancelable: false }
     );
   };
@@ -614,11 +614,11 @@ function BottomNavigationBar({
 }) {
   const insets = useSafeAreaInsets();
   const tabs: { key: ScreenType; label: string; icon: keyof typeof MaterialIcons.glyphMap }[] = [
-    { key: 'alerts', label: 'ALERTS', icon: 'notifications-active' },
-    { key: 'cases', label: 'CASES', icon: 'folder-shared' },
-    { key: 'logs', label: 'LOGS', icon: 'history' },
-    { key: 'map', label: 'MAP', icon: 'explore' },
-    { key: 'profile', label: 'PROFILE', icon: 'account-circle' },
+    { key: 'alerts', label: 'Alerts', icon: 'notifications-active' },
+    { key: 'cases', label: 'Cases', icon: 'folder-shared' },
+    { key: 'logs', label: 'Logs', icon: 'history' },
+    { key: 'map', label: 'Map', icon: 'explore' },
+    { key: 'profile', label: 'Profile', icon: 'account-circle' },
   ];
 
   return (

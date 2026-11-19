@@ -149,15 +149,15 @@ export const PermissionGuardScreen: React.FC<PermissionGuardScreenProps> = ({
               <PulseIndicator color={COLORS.error} size={84} pulseSize={1.5} duration={1800} />
             </View>
           </View>
-          <Text style={styles.terminalTitle}>GARUDA TERMINAL GUARD</Text>
-          <Text style={styles.terminalSubtitle}>SECURE BOOT SEQUENCER</Text>
+          <Text style={styles.terminalTitle}>GARUDA A.S.T.R.A</Text>
+          <Text style={styles.terminalSubtitle}>DEVICE READINESS & PERMISSIONS</Text>
         </View>
 
         {/* Informational Message */}
         <View style={styles.alertBox}>
           <MaterialIcons name="security" size={20} color={COLORS.primary} style={{ marginRight: 10 }} />
           <Text style={styles.alertText}>
-            Terminal authorization required. System policies strictly require active tactical telemetry and notification streams before terminal access.
+            Operational permissions check. Patrol dispatch requires active location telemetry and alert notification permissions before duty activation.
           </Text>
         </View>
 
@@ -168,12 +168,12 @@ export const PermissionGuardScreen: React.FC<PermissionGuardScreenProps> = ({
             <View style={styles.cardHeader}>
               <MaterialIcons name="gps-fixed" size={24} color={COLORS.primary} />
               <View style={styles.cardTitleBox}>
-                <Text style={styles.cardTitle}>TACTICAL FOREGROUND GPS</Text>
-                <Text style={styles.cardDesc}>Enables real-time radar mapping and visual scanning overlays.</Text>
+                <Text style={styles.cardTitle}>LOCATION ACCESS (FOREGROUND)</Text>
+                <Text style={styles.cardDesc}>Enables real-time patrol positioning and nearest sighting navigation.</Text>
               </View>
               <View style={[styles.statusBadge, foregroundGranted ? styles.badgeGreen : styles.badgeRed]}>
                 <Text style={[styles.badgeText, { color: foregroundGranted ? COLORS.secondary : COLORS.error }]}>
-                  {foregroundGranted ? 'AUTHORIZED' : 'LOCKED'}
+                  {foregroundGranted ? 'GRANTED' : 'REQUIRED'}
                 </Text>
               </View>
             </View>
@@ -184,12 +184,12 @@ export const PermissionGuardScreen: React.FC<PermissionGuardScreenProps> = ({
             <View style={styles.cardHeader}>
               <MaterialIcons name="sync" size={24} color={COLORS.primary} />
               <View style={styles.cardTitleBox}>
-                <Text style={styles.cardTitle}>HQ BACKUP TELEMETRY</Text>
-                <Text style={styles.cardDesc}>Ensures continuous background stream telemetry when app is minimized.</Text>
+                <Text style={styles.cardTitle}>BACKGROUND PATROL TELEMETRY</Text>
+                <Text style={styles.cardDesc}>Ensures continuous officer dispatch telemetry when the app is minimized.</Text>
               </View>
               <View style={[styles.statusBadge, backgroundGranted ? styles.badgeGreen : styles.badgeRed]}>
                 <Text style={[styles.badgeText, { color: backgroundGranted ? COLORS.secondary : COLORS.error }]}>
-                  {backgroundGranted ? 'AUTHORIZED' : 'LOCKED'}
+                  {backgroundGranted ? 'GRANTED' : 'REQUIRED'}
                 </Text>
               </View>
             </View>
@@ -200,12 +200,12 @@ export const PermissionGuardScreen: React.FC<PermissionGuardScreenProps> = ({
             <View style={styles.cardHeader}>
               <MaterialIcons name="notifications-active" size={24} color={COLORS.primary} />
               <View style={styles.cardTitleBox}>
-                <Text style={styles.cardTitle}>HQ COMMS DISPATCH</Text>
-                <Text style={styles.cardDesc}>Allows critical threat notifications and status displays in system bar.</Text>
+                <Text style={styles.cardTitle}>DISPATCH NOTIFICATIONS</Text>
+                <Text style={styles.cardDesc}>Delivers urgent sighting match alerts and status updates to your device.</Text>
               </View>
               <View style={[styles.statusBadge, notificationsGranted ? styles.badgeGreen : styles.badgeRed]}>
                 <Text style={[styles.badgeText, { color: notificationsGranted ? COLORS.secondary : COLORS.error }]}>
-                  {notificationsGranted ? 'AUTHORIZED' : 'LOCKED'}
+                  {notificationsGranted ? 'GRANTED' : 'REQUIRED'}
                 </Text>
               </View>
             </View>
@@ -218,9 +218,9 @@ export const PermissionGuardScreen: React.FC<PermissionGuardScreenProps> = ({
           onPress={requestAllPermissions}
           disabled={checking}
         >
-          <MaterialIcons name="lock-open" size={20} color={COLORS.background} style={{ marginRight: 8 }} />
+          <MaterialIcons name="check-circle" size={20} color={COLORS.background} style={{ marginRight: 8 }} />
           <Text style={styles.actionButtonText}>
-            {checking ? 'SYNCHRONIZING...' : 'AUTHORIZE TACTICAL BOOT'}
+            {checking ? 'VERIFYING...' : 'GRANT PERMISSIONS'}
           </Text>
         </TouchableOpacity>
 
@@ -230,13 +230,13 @@ export const PermissionGuardScreen: React.FC<PermissionGuardScreenProps> = ({
           hitSlop={8}
         >
           <Text style={{ ...TYPOGRAPHY.labelCaps, color: COLORS.onSurfaceVariant, fontSize: 10 }}>
-            Proceed to Field Terminal (Standby)
+            Proceed to Patrol Dashboard (Standby)
           </Text>
         </TouchableOpacity>
 
         {/* Footer info */}
         <Text style={styles.footerText}>
-          SECURE ENCRYPTED COMMS • PORT 92901 • HQ-VERIFIED
+          SECURE DISPATCH LINK • FIELD READY
         </Text>
       </ScrollView>
     </SafeAreaView>

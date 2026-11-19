@@ -1,51 +1,51 @@
 @import "tailwindcss";
 
 :root {
-  /* Primary Tactical Canvas (60% Rule - Deep Imperial Bronze-Obsidian) */
-  --background: #0a0908;
-  --foreground: #fbf7ee;
+  /* Primary Tactical Canvas (60% Rule - Deep Slate Obsidian) */
+  --background: #0b0f17;
+  --foreground: #f9fafb;
 
-  /* Elevated Surfaces & Cards (30% Rule - Rich Obsidian Bronze Tiers) */
-  --card: #131210;
-  --card-foreground: #fbf7ee;
-  --popover: #131210;
-  --popover-foreground: #fbf7ee;
+  /* Elevated Surfaces & Cards (30% Rule - Rich Slate Gray Tiers) */
+  --card: #111827;
+  --card-foreground: #f9fafb;
+  --popover: #111827;
+  --popover-foreground: #f9fafb;
 
-  /* Sovereign Brand Accent (10% Rule - Imperial Burnished Gold) */
+  /* Sovereign Brand Accent (10% Rule - Muted Imperial Gold) */
   --primary: #d4af37;
-  --primary-foreground: #0a0908;
+  --primary-foreground: #0b0f17;
 
   /* Elevated Secondary / Hover Tiers */
-  --secondary: #1b1916;
-  --secondary-foreground: #fbf7ee;
+  --secondary: #1f2937;
+  --secondary-foreground: #f9fafb;
 
-  /* Muted Hierarchy & Secondary Text */
-  --muted: #1b1916;
-  --muted-foreground: #a8a29e;
+  /* Muted Hierarchy & Secondary Text (WCAG AA Compliant >= 5.8:1) */
+  --muted: #1f2937;
+  --muted-foreground: #9ca3af;
 
   /* Active Interactive Accent */
   --accent: #d4af37;
-  --accent-foreground: #0a0908;
+  --accent-foreground: #0b0f17;
 
   /* Status Accents (Functional Signals) */
-  --destructive: #e11d48;
+  --destructive: #ef4444;
   --destructive-foreground: #ffffff;
   --success: #10b981;
   --success-foreground: #ffffff;
-  --warning: #d4af37;
-  --warning-foreground: #0a0908;
+  --warning: #f59e0b;
+  --warning-foreground: #0b0f17;
   --info: #38bdf8;
-  --info-foreground: #0a0908;
+  --info-foreground: #0b0f17;
 
   /* Telemetry & AI Signals */
   --telemetry: #38bdf8;
-  --telemetry-foreground: #0a0908;
+  --telemetry-foreground: #0b0f17;
 
   /* Hairline Borders & Inputs (Crisp 1px hairlines - zero muddy shadows) */
-  --border: rgba(212, 175, 55, 0.15);
-  --border-subtle: rgba(212, 175, 55, 0.08);
+  --border: rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(255, 255, 255, 0.04);
   --border-strong: rgba(212, 175, 55, 0.28);
-  --input: #1b1916;
+  --input: #1f2937;
   --ring: #d4af37;
 
   /* Consistent Geometry (Cards 12px, Buttons/Inputs 8px, Chips 6px, Badges 9999px) */
@@ -66,16 +66,16 @@
   --popover: #ffffff;
   --popover-foreground: #0f172a;
 
-  --primary: #d97706;
+  --primary: #b8860b;
   --primary-foreground: #ffffff;
 
   --secondary: #f1f5f9;
   --secondary-foreground: #0f172a;
 
   --muted: #f1f5f9;
-  --muted-foreground: #64748b;
+  --muted-foreground: #475569;
 
-  --accent: #d97706;
+  --accent: #b8860b;
   --accent-foreground: #ffffff;
 
   --destructive: #dc2626;
@@ -84,17 +84,17 @@
   --success-foreground: #ffffff;
   --warning: #d97706;
   --warning-foreground: #ffffff;
-  --info: #2563eb;
+  --info: #0284c7;
   --info-foreground: #ffffff;
 
   --telemetry: #0891b2;
   --telemetry-foreground: #ffffff;
 
-  --border: rgba(0, 0, 0, 0.08);
+  --border: #e2e8f0;
   --border-subtle: rgba(0, 0, 0, 0.04);
-  --border-strong: rgba(0, 0, 0, 0.15);
-  --input: #e2e8f0;
-  --ring: #d97706;
+  --border-strong: rgba(184, 134, 11, 0.35);
+  --input: #f1f5f9;
+  --ring: #b8860b;
 }
 
 @theme inline {

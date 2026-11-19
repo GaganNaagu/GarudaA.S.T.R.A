@@ -105,9 +105,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
               style={styles.portrait}
             />
           </View>
-          <Text style={styles.portraitTitle}>Tactical Terminal</Text>
+          <Text style={styles.portraitTitle}>Officer Sign In</Text>
           <Text style={styles.portraitSubtitle}>
-            Command authorization required for surveillance network access.
+            Department credentials required for field patrol and surveillance network access.
           </Text>
         </View>
 
@@ -121,7 +121,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
           )}
 
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>OFFICER CREDENTIAL</Text>
+            <Text style={styles.inputLabel}>OFFICER IDENTIFIER / EMAIL</Text>
             <View style={styles.inputContainer}>
               <MaterialIcons name="badge" size={18} color={COLORS.onSurfaceVariant} style={{ marginRight: 10 }} />
               <TextInput
@@ -137,7 +137,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>ENCRYPTION KEY</Text>
+            <Text style={styles.inputLabel}>PASSWORD / PIN</Text>
             <View style={styles.inputContainer}>
               <MaterialIcons name="vpn-key" size={18} color={COLORS.onSurfaceVariant} style={{ marginRight: 10 }} />
               <TextInput

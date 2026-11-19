@@ -6,6 +6,8 @@ import {
   Pressable,
   ScrollView,
   ViewStyle,
+  Linking,
+  Platform,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SPACING, ROUNDED } from '../constants/theme';
@@ -22,41 +24,55 @@ export const MapScreen: React.FC<MapScreenProps> = ({ alerts }) => {
 
   const activeAlert = alerts.find((a) => a.id === selectedAlertId) || alerts[0];
 
+  const handleOpenNavigation = () => {
+    if (!activeAlert) return;
+    const lat = activeAlert.latitude || 18.9431;
+    const lng = activeAlert.longitude || 72.8246;
+    const label = encodeURIComponent(activeAlert.lastSeenLocation || 'Sighting Location');
+    const url = Platform.select({
+      ios: `maps:0,0?q=${label}@${lat},${lng}`,
+      android: `geo:0,0?q=${lat},${lng}(${label})`,
+      default: `https://maps.google.com/?q=${lat},${lng}`,
+    });
+    Linking.openURL(url).catch(() => {
+      Linking.openURL(`https://maps.google.com/?q=${lat},${lng}`);
+    });
+  };
+
   return (
     <ScreenWrapper scrollable contentContainerStyle={styles.scrollContent}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerTitleContainer}>
-          <MaterialIcons name="explore" size={22} color={COLORS.primary} style={{ marginRight: 8 }} />
-          <Text style={styles.headerTitle}>TACTICAL RADAR</Text>
+          <MaterialIcons name="map" size={22} color={COLORS.primary} style={{ marginRight: 8 }} />
+          <Text style={styles.headerTitle}>PATROL SECTOR MAP</Text>
         </View>
         <View style={styles.gpsTag}>
           <View style={styles.gpsDot} />
-          <Text style={styles.gpsText}>BEACON ACTIVE</Text>
+          <Text style={styles.gpsText}>GPS ACTIVE</Text>
         </View>
       </View>
 
-      {/* Radar Map Visualizer */}
+      {/* Sector Map Visualizer Grid */}
       <View style={styles.radarContainer}>
-        {/* Radar Rings */}
+        {/* Concentric Sector Rings */}
         <View style={[styles.radarRing, { width: 90, height: 90, borderRadius: 45 }]} />
         <View style={[styles.radarRing, { width: 180, height: 180, borderRadius: 90 }]} />
         <View style={[styles.radarRing, { width: 270, height: 270, borderRadius: 135 }]} />
 
-        {/* Crosshair lines */}
+        {/* Axis dividers */}
         <View style={styles.crosshairH} />
         <View style={styles.crosshairV} />
 
-        {/* Center Unit Beacon (Officer) */}
+        {/* Center Patrol Unit Pin */}
         <View style={styles.unitBeacon}>
           <View style={styles.unitCenterDot} />
-          <Text style={styles.unitLabel}>UNIT-042</Text>
+          <Text style={styles.unitLabel}>PATROL 042</Text>
         </View>
 
-        {/* Dynamic Alert Targets */}
+        {/* Dynamic Sighting Pins */}
         {alerts.slice(0, 4).map((alert, index) => {
           const isSelected = alert.id === selectedAlertId;
-          // Deterministic radar offset positions
           const positions: ViewStyle[] = [
             { top: '22%', left: '30%' },
             { top: '35%', right: '22%' },
@@ -103,7 +119,7 @@ export const MapScreen: React.FC<MapScreenProps> = ({ alerts }) => {
         <SurfaceCard style={styles.detailCard}>
           <View style={styles.detailHeader}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.detailSubtitle}>SELECTED RADAR TARGET</Text>
+              <Text style={styles.detailSubtitle}>SELECTED SIGHTING LEAD</Text>
               <Text style={styles.detailTitle}>{activeAlert.title}</Text>
             </View>
             <View style={styles.matchBadge}>
@@ -120,13 +136,13 @@ export const MapScreen: React.FC<MapScreenProps> = ({ alerts }) => {
 
           <View style={styles.detailMetaGrid}>
             <View style={styles.metaBox}>
-              <Text style={styles.metaBoxLabel}>GPS LAT / LNG</Text>
+              <Text style={styles.metaBoxLabel}>GPS COORDINATES</Text>
               <Text style={styles.metaBoxVal}>
                 {activeAlert.latitude.toFixed(4)}, {activeAlert.longitude.toFixed(4)}
               </Text>
             </View>
             <View style={styles.metaBox}>
-              <Text style={styles.metaBoxLabel}>DOSSIER FILE</Text>
+              <Text style={styles.metaBoxLabel}>CASE FILE</Text>
               <Text style={styles.metaBoxVal}>{activeAlert.fileNo}</Text>
             </View>
             <View style={styles.metaBox}>
@@ -134,11 +150,23 @@ export const MapScreen: React.FC<MapScreenProps> = ({ alerts }) => {
               <Text style={styles.metaBoxVal}>{activeAlert.lastSeenTime}</Text>
             </View>
           </View>
+
+          {/* 1-Tap Navigation Intent */}
+          <Pressable
+            onPress={handleOpenNavigation}
+            style={({ pressed }) => [
+              styles.navButton,
+              pressed && { opacity: 0.8 },
+            ]}
+          >
+            <MaterialIcons name="navigation" size={16} color={COLORS.onPrimary} style={{ marginRight: 6 }} />
+            <Text style={styles.navButtonText}>NAVIGATE TO LOCATION</Text>
+          </Pressable>
         </SurfaceCard>
       )}
 
       {/* Target Quick Switcher Strip */}
-      <Text style={styles.sectionHeader}>PROXIMITY TARGETS ({alerts.length})</Text>
+      <Text style={styles.sectionHeader}>NEARBY SIGHTING LEADS ({alerts.length})</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.targetsScroll}>
         {alerts.map((alert, index) => {
           const isSelected = alert.id === selectedAlertId;
@@ -375,6 +403,22 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontFamily: 'monospace',
     fontWeight: '600',
+  },
+  navButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
+    backgroundColor: COLORS.primary,
+    borderRadius: ROUNDED.MD,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  navButtonText: {
+    ...TYPOGRAPHY.labelLarge,
+    color: COLORS.onPrimary,
+    fontWeight: '700',
+    fontSize: 12,
   },
   sectionHeader: {
     ...TYPOGRAPHY.labelCaps,

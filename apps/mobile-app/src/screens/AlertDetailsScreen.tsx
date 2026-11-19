@@ -5,6 +5,8 @@ import {
   Text,
   Image,
   Pressable,
+  Linking,
+  Platform,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SPACING, ROUNDED } from '../constants/theme';
@@ -43,6 +45,20 @@ export const AlertDetailsScreen: React.FC<AlertDetailsScreenProps> = ({
     setTimeout(() => {
       setFeedbackMessage(null);
     }, 4000);
+  };
+
+  const handleOpenNavigation = () => {
+    const lat = alert.latitude || 18.9431;
+    const lng = alert.longitude || 72.8246;
+    const label = encodeURIComponent(alert.lastSeenLocation || 'Sighting Location');
+    const url = Platform.select({
+      ios: `maps:0,0?q=${label}@${lat},${lng}`,
+      android: `geo:0,0?q=${lat},${lng}(${label})`,
+      default: `https://maps.google.com/?q=${lat},${lng}`,
+    });
+    Linking.openURL(url).catch(() => {
+      Linking.openURL(`https://maps.google.com/?q=${lat},${lng}`);
+    });
   };
 
   return (
@@ -99,17 +115,30 @@ export const AlertDetailsScreen: React.FC<AlertDetailsScreenProps> = ({
               <MaterialIcons name="schedule" size={14} color={COLORS.onSurfaceVariant} style={{ marginRight: 4 }} />
               <Text style={styles.metaTime}>Last seen {alert.lastSeenTime}</Text>
             </View>
+
+            {/* Quick 1-tap Turn-by-Turn Navigation Intent */}
+            <Pressable
+              onPress={handleOpenNavigation}
+              style={({ pressed }) => [
+                styles.navIntentBtn,
+                pressed && { opacity: 0.8 },
+              ]}
+              hitSlop={8}
+            >
+              <MaterialIcons name="navigation" size={14} color={COLORS.primary} style={{ marginRight: 5 }} />
+              <Text style={styles.navIntentText}>Open Turn-by-Turn Navigation</Text>
+            </Pressable>
           </View>
         </View>
       </SurfaceCard>
 
-      {/* Camera Telemetry Specs */}
+      {/* CCTV Camera Details */}
       {alert.telemetry && (
         <SurfaceCard style={styles.telemetryCard}>
-          <Text style={styles.sectionTitle}>CAMERA TELEMETRY</Text>
+          <Text style={styles.sectionTitle}>CCTV CAMERA DETAILS</Text>
           <View style={styles.telemetryGrid}>
             <View style={styles.telemetryItem}>
-              <Text style={styles.telemetryKey}>AZIMUTH</Text>
+              <Text style={styles.telemetryKey}>ANGLE</Text>
               <Text style={styles.telemetryVal}>{alert.telemetry.azimuth}</Text>
             </View>
             <View style={styles.telemetryItem}>
@@ -117,11 +146,11 @@ export const AlertDetailsScreen: React.FC<AlertDetailsScreenProps> = ({
               <Text style={styles.telemetryVal}>{alert.telemetry.zoom}</Text>
             </View>
             <View style={styles.telemetryItem}>
-              <Text style={styles.telemetryKey}>OPTICS</Text>
+              <Text style={styles.telemetryKey}>LENS</Text>
               <Text style={styles.telemetryVal}>{alert.telemetry.lens}</Text>
             </View>
             <View style={styles.telemetryItem}>
-              <Text style={styles.telemetryKey}>SIGNAL</Text>
+              <Text style={styles.telemetryKey}>FEED QUALITY</Text>
               <Text style={styles.telemetryVal}>{alert.telemetry.signal}</Text>
             </View>
           </View>
@@ -130,7 +159,7 @@ export const AlertDetailsScreen: React.FC<AlertDetailsScreenProps> = ({
 
       {/* Assignment Status */}
       <SurfaceCard style={styles.assignmentCard}>
-        <Text style={styles.sectionTitle}>DISPATCH ASSIGNMENT</Text>
+        <Text style={styles.sectionTitle}>PATROL UNIT ASSIGNMENT</Text>
         {isAssignedToOther ? (
           <View style={styles.lockedAssignment}>
             <MaterialIcons name="lock" size={20} color={COLORS.primary} style={{ marginRight: 8 }} />
@@ -333,6 +362,24 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.bodySmall,
     color: COLORS.onSurfaceVariant,
     fontSize: 11,
+  },
+  navIntentBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 6,
+    paddingVertical: 5,
+    paddingHorizontal: 8,
+    borderRadius: ROUNDED.SM,
+    backgroundColor: 'rgba(212, 175, 55, 0.10)',
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.25)',
+    alignSelf: 'flex-start',
+  },
+  navIntentText: {
+    ...TYPOGRAPHY.labelMedium,
+    color: COLORS.primary,
+    fontSize: 11,
+    fontWeight: '700',
   },
   sectionTitle: {
     ...TYPOGRAPHY.labelCaps,

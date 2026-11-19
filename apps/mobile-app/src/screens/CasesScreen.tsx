@@ -116,7 +116,7 @@ export const CasesScreen: React.FC<CasesScreenProps> = ({ cases }) => {
       <View style={styles.header}>
         <View style={styles.headerTitleContainer}>
           <MaterialIcons name="folder-shared" size={22} color={COLORS.primary} style={{ marginRight: 8 }} />
-          <Text style={styles.headerTitle}>ACTIVE DOSSIERS</Text>
+          <Text style={styles.headerTitle}>CASE REGISTRY</Text>
         </View>
         <View style={styles.badge}>
           <Text style={styles.badgeText}>{cases.length} REGISTERED</Text>

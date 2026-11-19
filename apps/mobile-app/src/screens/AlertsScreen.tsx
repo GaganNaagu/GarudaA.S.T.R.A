@@ -126,10 +126,10 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
               {alert.threatLevel} PRIORITY
             </Text>
             {alert.status && alert.status !== 'ALERT' && (
-              <>
+              <React.Fragment key={`status-${alert.id}`}>
                 <Text style={styles.dotSeparator}>•</Text>
                 <Text style={styles.statusLabel}>{alert.status}</Text>
-              </>
+              </React.Fragment>
             )}
           </View>
         </View>
@@ -145,7 +145,7 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
               ]}
               hitSlop={8}
             >
-              <Text style={styles.dispatchBtnText}>DISPATCH</Text>
+              <Text style={styles.dispatchBtnText}>RESPOND</Text>
             </Pressable>
           ) : (
             <MaterialIcons name="chevron-right" size={20} color={COLORS.textMuted} />
@@ -157,20 +157,20 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
 
   return (
     <ScreenWrapper>
-      {/* Top Header: Precision Defense Bar */}
+      {/* Top Header: Precision Operational Bar */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <View style={styles.unitBadge}>
             <MaterialIcons name="shield" size={16} color={COLORS.primary} />
-            <Text style={styles.unitTitle}>UNIT-042</Text>
+            <Text style={styles.unitTitle}>PATROL UNIT-042</Text>
           </View>
-          <Text style={styles.dutySubtitle}>ACTIVE PATROL</Text>
+          <Text style={styles.dutySubtitle}>ON DUTY</Text>
         </View>
 
         <View style={styles.headerRight}>
           <View style={styles.telemetryTag}>
             <View style={styles.onlineDot} />
-            <Text style={styles.telemetryText}>LINK NOMINAL</Text>
+            <Text style={styles.telemetryText}>GPS ONLINE</Text>
           </View>
         </View>
       </View>
@@ -190,7 +190,7 @@ export const AlertsScreen: React.FC<AlertsScreenProps> = ({
         </View>
         <View style={styles.metricDivider} />
         <View style={[styles.metricItem, { flex: 1.4 }]}>
-          <Text style={styles.metricLabel}>GPS BEACON</Text>
+          <Text style={styles.metricLabel}>PATROL POSITION</Text>
           <Text style={styles.metricValueMono}>{geoLoc}</Text>
         </View>
       </View>

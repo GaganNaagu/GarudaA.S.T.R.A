@@ -172,15 +172,15 @@ export const TacticalAlertPopup: React.FC<TacticalAlertPopupProps> = ({
             { transform: [{ scale: scaleAnim }] },
           ]}
         >
-          {/* Top Tactical Alert Banner */}
+          {/* Top Alert Banner */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <View style={styles.alertIconPulse}>
                 <MaterialIcons name="security" size={18} color={COLORS.primary} />
               </View>
               <View>
-                <Text style={styles.headerTitle}>SIGHTING LEAD DETECTED</Text>
-                <Text style={styles.headerSubtitle}>Central Biometric Stream</Text>
+                <Text style={styles.headerTitle}>SIGHTING MATCH DETECTED</Text>
+                <Text style={styles.headerSubtitle}>Live CCTV Surveillance Feed</Text>
               </View>
             </View>
 
@@ -200,7 +200,7 @@ export const TacticalAlertPopup: React.FC<TacticalAlertPopupProps> = ({
 
           {/* Main Card Content */}
           <View style={styles.content}>
-            {/* Target Photo with Hairline Gold Frame */}
+            {/* Target Photo with Hairline Frame */}
             <View style={styles.photoContainer}>
               <Image
                 source={{ uri: photoUri }}
@@ -211,7 +211,7 @@ export const TacticalAlertPopup: React.FC<TacticalAlertPopupProps> = ({
               {/* Live Detection Tag */}
               <View style={styles.feedTag}>
                 <View style={styles.liveDot} />
-                <Text style={styles.feedTagText}>LIVE CAMERA INTERCEPT</Text>
+                <Text style={styles.feedTagText}>LIVE CAMERA FRAME</Text>
               </View>
             </View>
 
@@ -251,14 +251,14 @@ export const TacticalAlertPopup: React.FC<TacticalAlertPopupProps> = ({
                 <View style={styles.infoRow}>
                   <MaterialIcons name="folder-shared" size={16} color={COLORS.onSurfaceVariant} style={{ marginRight: 8, marginTop: 2 }} />
                   <Text style={styles.infoValueMono}>
-                    Dossier {alert.fileNo || '#MP-23854'}
+                    Case Record {alert.fileNo || '#MP-23854'}
                   </Text>
                 </View>
               </View>
             </View>
           </View>
 
-          {/* Action Footer */}
+          {/* Action Footer (Uber/Rapido Driver-style Ergonomics) */}
           <View style={styles.footer}>
             <TouchableOpacity
               style={styles.actionButton}
@@ -266,7 +266,7 @@ export const TacticalAlertPopup: React.FC<TacticalAlertPopupProps> = ({
               activeOpacity={0.85}
             >
               <MaterialIcons name="gps-fixed" size={18} color={COLORS.onPrimary} style={{ marginRight: 8 }} />
-              <Text style={styles.actionButtonText}>ACKNOWLEDGE & DISPATCH</Text>
+              <Text style={styles.actionButtonText}>ACCEPT & DISPATCH UNIT</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -274,7 +274,7 @@ export const TacticalAlertPopup: React.FC<TacticalAlertPopupProps> = ({
               onPress={handleClose}
               hitSlop={8}
             >
-              <Text style={styles.dismissButtonText}>Dismiss to Background</Text>
+              <Text style={styles.dismissButtonText}>Dismiss / Standby</Text>
             </TouchableOpacity>
           </View>
         </Animated.View>
