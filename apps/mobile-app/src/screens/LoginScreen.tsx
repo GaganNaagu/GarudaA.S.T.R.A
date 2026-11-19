@@ -202,7 +202,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
   },
   header: {
     height: 52,
@@ -242,8 +242,10 @@ const styles = StyleSheet.create({
     maxWidth: 420,
     alignSelf: 'center',
     paddingHorizontal: SPACING.gutter,
-    paddingTop: SPACING.lg,
+    paddingTop: SPACING.md,
     paddingBottom: SPACING.xl,
+    flex: 1,
+    justifyContent: 'center',
   },
   portraitWrapper: {
     alignItems: 'center',

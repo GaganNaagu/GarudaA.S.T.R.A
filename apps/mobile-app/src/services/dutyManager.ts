@@ -64,7 +64,14 @@ export async function goOnDuty(config: DutyConfig): Promise<boolean> {
 
   // 1. Connect WebSocket
   const token = await SecureStore.getItemAsync('astra_token');
-  const wsUrlWithToken = token ? `${config.wsUrl}?token=${token}` : config.wsUrl;
+  let wsUrlWithToken = config.wsUrl;
+  if (token) {
+    if (wsUrlWithToken.includes('token=')) {
+      wsUrlWithToken = wsUrlWithToken.replace(/token=[^&]+/, `token=${token}`);
+    } else {
+      wsUrlWithToken += (wsUrlWithToken.includes('?') ? '&' : '?') + `token=${token}`;
+    }
+  }
   SocketManager.connect(wsUrlWithToken);
 
   // 2. Wire up incoming alert messages from WebSocket → alertService
