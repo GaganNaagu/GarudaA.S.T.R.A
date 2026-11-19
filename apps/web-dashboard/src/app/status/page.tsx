@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, CardContent } from "@/components/ui/Card"
 import { Badge } from "@/components/ui/Badge"
 import { Button } from "@/components/ui/Button"
@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { cn } from "@/lib/utils"
 import { useToast } from "@/components/ui/Toast"
+import { useWebSocket } from '@/lib/websocket'
 
 type Unit = {
   id: string
@@ -67,7 +68,47 @@ const initialColumns: Column[] = [
 
 export default function StatusPage() {
   const { toast } = useToast()
+  const { lastMessage } = useWebSocket()
   const [columns, setColumns] = useState<Column[]>(initialColumns)
+
+  useEffect(() => {
+    if (!lastMessage || lastMessage.type !== 'telemetry') return
+    const data = lastMessage.data || {}
+    const unitId = lastMessage.unit_id || data.officer_id || 'UNIT-042'
+    const officerName = data.officer_name || `Inspector ${unitId}`
+    const location = (data.lat != null && data.lng != null)
+      ? `${Number(data.lat).toFixed(4)}° N, ${Number(data.lng).toFixed(4)}° E`
+      : 'Active GPS Field Vector'
+
+    setColumns((prev) => {
+      const exists = prev.some((col) => col.units.some((u) => u.id === unitId))
+      if (exists) {
+        return prev.map((col) => ({
+          ...col,
+          units: col.units.map((u) => u.id === unitId ? { ...u, location, time: 'Live Stream' } : u)
+        }))
+      }
+      return prev.map((col) => {
+        if (col.id === 'onsite') {
+          return {
+            ...col,
+            units: [
+              {
+                id: unitId,
+                officer: officerName,
+                location,
+                time: 'Live Stream',
+                type: 'Rapid Patrol',
+                task: 'Live GPS Field Telemetry Stream Active'
+              },
+              ...col.units
+            ]
+          }
+        }
+        return col
+      })
+    })
+  }, [lastMessage])
 
   const handleMoveUnit = (unitId: string, fromColId: string, toColId: 'standby' | 'enroute' | 'onsite') => {
     setColumns((prev) => {

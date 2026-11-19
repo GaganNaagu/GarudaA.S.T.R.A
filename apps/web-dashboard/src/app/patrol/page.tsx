@@ -78,19 +78,32 @@ export default function PatrolBoard() {
           return updated
         })
       } else {
-        setUnits(prev => ({
-          ...prev,
-          [lastMessage.unit_id]: {
-            id: lastMessage.unit_id,
-            name: data.officer_name || `Unit ${lastMessage.unit_id.substring(0, 4).toUpperCase()}`,
-            lat: data.lat,
-            lng: data.lng,
-            battery: data.battery ?? 0,
-            charging: data.charging ?? false,
-            status: data.status === 'on_duty' ? 'Active Patrol' : data.status || 'Active Patrol',
-            lastUpdate: new Date()
+        const lat = data.lat ?? data.gps?.lat ?? null
+        const lng = data.lng ?? data.gps?.lng ?? null
+
+        setUnits(prev => {
+          // If previous only contained the 3 static demo units, clear them on first real field telemetry
+          const isInitialMockOnly = Object.keys(prev).every(k => ['unit-101', 'unit-102', 'unit-103'].includes(k))
+          const base = isInitialMockOnly ? {} : { ...prev }
+          return {
+            ...base,
+            [lastMessage.unit_id]: {
+              id: lastMessage.unit_id,
+              name: data.officer_name || `Unit ${lastMessage.unit_id.substring(0, 8).toUpperCase()}`,
+              lat,
+              lng,
+              battery: data.battery ?? 0,
+              charging: data.charging ?? false,
+              status: data.status === 'on_duty' ? 'Active Patrol' : data.status || 'Active Patrol',
+              lastUpdate: new Date()
+            }
           }
-        }))
+        })
+
+        // Auto-focus incoming real unit on the map if not already focused
+        if (lat != null && lng != null) {
+          setFocusedLocation(prev => prev ?? [lat, lng])
+        }
       }
     }
   }, [lastMessage])

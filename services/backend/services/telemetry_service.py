@@ -13,7 +13,7 @@ class TelemetryService:
     async def process_patrol_telemetry(unit_id: str, payload: dict):
         """
         Receives GPS and battery telemetry from a patrol unit.
-        Updates the database (optional) and broadcasts it to all Dispatchers.
+        Updates the database (optional) and broadcasts it in real-time to all Dashboard Dispatchers/Admins.
         """
         telemetry_event = {
             "type": "telemetry",
@@ -21,24 +21,41 @@ class TelemetryService:
             "data": payload
         }
         
-        # Save lat/lng to DB for distance calculation
         lat = payload.get("lat")
         lng = payload.get("lng")
-        
+        officer_name = payload.get("officer_name", "Field Officer")
+        battery = payload.get("battery", 100)
+
+        # Optional DB update - safely guarded so that DB latency or offline DB never drops live broadcasts
         if lat is not None and lng is not None:
-            async with AsyncSessionLocal() as db:
-                result = await db.execute(
-                    select(Officer)
-                    .options(joinedload(Officer.dispatch_unit))
-                    .where(Officer.user_id == uuid.UUID(unit_id))
-                )
-                officer = result.scalar_one_or_none()
-                if officer and officer.dispatch_unit:
-                    officer.dispatch_unit.last_known_lat = lat
-                    officer.dispatch_unit.last_known_lng = lng
-                    await db.commit()
-        
+            try:
+                # Try parsing as UUID if unit_id is a valid UUID string
+                parsed_uuid = None
+                try:
+                    parsed_uuid = uuid.UUID(unit_id)
+                except (ValueError, AttributeError):
+                    pass
+
+                if parsed_uuid:
+                    async with AsyncSessionLocal() as db:
+                        result = await db.execute(
+                            select(Officer)
+                            .options(joinedload(Officer.dispatch_unit))
+                            .where(Officer.user_id == parsed_uuid)
+                        )
+                        officer = result.scalar_one_or_none()
+                        if officer and officer.dispatch_unit:
+                            officer.dispatch_unit.last_known_lat = lat
+                            officer.dispatch_unit.last_known_lng = lng
+                            await db.commit()
+            except Exception as db_err:
+                logger.debug(f"[TELEMETRY] Non-critical DB sync skipped: {db_err}")
+
         # Broadcast to dispatchers and admins so map updates in real-time
-        await manager.broadcast_global_alert(telemetry_event)
+        try:
+            await manager.broadcast_global_alert(telemetry_event)
+            logger.info(f"📡 [TELEMETRY] Broadcast {unit_id} ({officer_name}) -> lat: {lat}, lng: {lng}, battery: {battery}%")
+        except Exception as broadcast_err:
+            logger.error(f"❌ [TELEMETRY] Broadcast failed: {broadcast_err}")
 
 telemetry_service = TelemetryService()

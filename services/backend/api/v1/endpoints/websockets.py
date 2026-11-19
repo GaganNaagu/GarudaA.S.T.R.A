@@ -78,10 +78,11 @@ async def websocket_endpoint(
                 await websocket.send_json({"type": "pong"})
                 continue
                 
-            # If the user is a patrol/officer, they might be sending telemetry
-            if data.get("type") == "telemetry" and user.role.name in ["patrol", "officer"]:
+            # Process incoming live patrol telemetry and broadcast to dashboard
+            if data.get("type") == "telemetry":
                 payload = data.get("payload", {})
-                await telemetry_service.process_patrol_telemetry(str(user.id), payload)
+                unit_id = payload.get("officer_id") or str(user.id)
+                await telemetry_service.process_patrol_telemetry(unit_id, payload)
 
     except (WebSocketDisconnect, RuntimeError):
         manager.disconnect(user)
