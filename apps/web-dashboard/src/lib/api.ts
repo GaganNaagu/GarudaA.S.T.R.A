@@ -265,6 +265,10 @@ export async function updateSettings(data: any) {
   })
 }
 
+export async function getDetectionLogs() {
+  return fetchApi('/ai-events/detections')
+}
+
 export async function uploadFootage(file: File, cameraId: string, sector: string, priority: string) {
   const formData = new FormData()
   formData.append('file', file)

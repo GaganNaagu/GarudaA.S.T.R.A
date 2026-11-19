@@ -24,6 +24,8 @@ import {
 } from 'lucide-react'
 import { cn } from "@/lib/utils"
 import { useToast } from "@/components/ui/Toast"
+import { getDetectionLogs } from '@/lib/api'
+import { useWebSocket } from '@/lib/websocket'
 
 interface DetectionLog {
   id: string
@@ -36,20 +38,51 @@ interface DetectionLog {
   notes?: string
 }
 
-const initialDetections: DetectionLog[] = [
-  { id: 'DET-10292', person: 'Aarav Mehta', confidence: 94.2, camera: 'CAM-012', location: 'Marine Drive Promenade', time: '2026-11-18 17:42:01', status: 'Verified Match', notes: 'Positive CCTV face crop identification' },
-  { id: 'DET-10291', person: 'Vikram Singh', confidence: 98.8, camera: 'CAM-088', location: 'CST Station Platform 4', time: '2026-11-18 17:35:45', status: 'Verified Match', notes: 'Subject matches red bulletin lead' },
-  { id: 'DET-10290', person: 'Priya Sharma', confidence: 78.5, camera: 'CAM-003', location: 'Bandra Station West Gate', time: '2026-11-18 17:28:12', status: 'Investigating', notes: 'Field officer dispatched for verification' },
-  { id: 'DET-10289', person: 'Ravi Verma', confidence: 88.1, camera: 'CAM-045', location: 'Colaba Causeway Crossroad', time: '2026-11-18 17:15:50', status: 'Flagged', notes: 'High resemblance in crowd footage' },
-  { id: 'DET-10288', person: 'Ananya Roy', confidence: 89.9, camera: 'CAM-201', location: 'Andheri Metro Concourse', time: '2026-11-18 16:50:12', status: 'Verified Match', notes: 'Sighting confirmed by Patrol Unit-042' },
-  { id: 'DET-10287', person: 'Unknown Subject', confidence: 42.1, camera: 'CAM-015', location: 'Churchgate Terminal Exit', time: '2026-11-18 16:30:00', status: 'Low Confidence', notes: 'Motion blur below verification threshold' },
-]
-
 export default function LogsPage() {
   const { toast } = useToast()
-  const [logs, setLogs] = useState<DetectionLog[]>(initialDetections)
+  const { lastMessage } = useWebSocket()
+  const [logs, setLogs] = useState<DetectionLog[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
+
+  const fetchLogs = async () => {
+    try {
+      setLoading(true)
+      const data = await getDetectionLogs()
+      if (Array.isArray(data) && data.length > 0) {
+        setLogs(data)
+      }
+    } catch (err) {
+      console.error('Failed to load detection logs:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchLogs()
+  }, [])
+
+  useEffect(() => {
+    if (!lastMessage) return
+    if (lastMessage.event === 'possible_match_detected') {
+      const d = lastMessage.data
+      const rawConf = typeof d.confidence === 'number' ? d.confidence : parseFloat(d.confidence || '0')
+      const confVal = rawConf > 1 ? Math.round(rawConf) : Math.round(rawConf * 100)
+      const newLog: DetectionLog = {
+        id: `DET-${String(d.alert_id).slice(0, 8).toUpperCase()}`,
+        person: d.person_name || 'Possible Target Match',
+        confidence: confVal,
+        camera: d.camera_id || 'CAM-01',
+        location: d.location || 'Surveillance Sector',
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        status: confVal >= 90 ? 'Verified Match' : 'Flagged',
+        notes: `Live CCTV Match at ${d.camera_id}`
+      }
+      setLogs(prev => [newLog, ...prev])
+    }
+  }, [lastMessage])
 
   const filteredLogs = useMemo(() => {
     return logs.filter((log) => {

@@ -167,7 +167,12 @@ export const MapScreen: React.FC<MapScreenProps> = ({ alerts }) => {
 
       {/* Target Quick Switcher Strip */}
       <Text style={styles.sectionHeader}>NEARBY SIGHTING LEADS ({alerts.length})</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.targetsScroll}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={{ maxHeight: 44, flexGrow: 0, marginBottom: 8 }}
+        contentContainerStyle={styles.targetsScroll}
+      >
         {alerts.map((alert, index) => {
           const isSelected = alert.id === selectedAlertId;
           return (
@@ -429,8 +434,11 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   targetsScroll: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
-    paddingVertical: 4,
+    paddingVertical: 2,
+    height: 40,
   },
   targetPill: {
     flexDirection: 'row',
@@ -438,9 +446,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surfaceContainer,
     borderWidth: 1,
     borderColor: COLORS.outlineVariant,
-    borderRadius: ROUNDED.FULL,
+    borderRadius: 18,
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    height: 36,
   },
   targetPillSelected: {
     borderColor: COLORS.primary,

@@ -272,3 +272,42 @@ async def test_alert(db: AsyncSession = Depends(deps.get_db)):
         "message": "Test alert created and broadcast to dashboard",
         "data": payload["data"]
     }
+
+
+@router.get("/detections")
+async def get_detection_events(
+    db: AsyncSession = Depends(deps.get_db),
+    limit: int = 50
+):
+    """Retrieve live detection logs from database."""
+    from sqlalchemy.orm import joinedload
+    query = (
+        select(DetectionEvent)
+        .options(
+            joinedload(DetectionEvent.missing_person),
+            joinedload(DetectionEvent.camera_feed),
+            joinedload(DetectionEvent.alert)
+        )
+        .order_by(DetectionEvent.timestamp.desc())
+        .limit(limit)
+    )
+    result = await db.execute(query)
+    events = result.scalars().all()
+    
+    logs = []
+    for e in events:
+        status = "Verified Match" if (e.alert and e.alert.status == "Verified") else "Flagged" if e.confidence_score >= 80 else "Low Confidence"
+        logs.append({
+            "id": f"DET-{str(e.id)[:8].upper()}",
+            "raw_id": str(e.id),
+            "person": e.missing_person.full_name if e.missing_person else "Unknown Subject",
+            "case_number": e.missing_person.case_number if e.missing_person else "N/A",
+            "confidence": round(e.confidence_score, 1),
+            "camera": e.camera_feed.name if e.camera_feed else f"CAM-{str(e.camera_id)[:8].upper()}",
+            "location": e.camera_feed.name if e.camera_feed else "Surveillance Sector",
+            "time": e.timestamp.strftime("%Y-%m-%d %H:%M:%S") if e.timestamp else "Recent",
+            "status": status,
+            "notes": f"Match type: {e.match_type.replace('_', ' ').title()}" if e.match_type else "Facial recognition match",
+            "image_path": e.image_path,
+        })
+    return logs

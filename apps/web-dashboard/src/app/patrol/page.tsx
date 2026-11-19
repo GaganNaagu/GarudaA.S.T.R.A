@@ -3,11 +3,21 @@
 import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card"
 import { Badge } from "@/components/ui/Badge"
-import { ShieldAlert, Crosshair, Map as MapIcon, Battery, Navigation, Radio, Zap } from 'lucide-react'
+import { Button } from "@/components/ui/Button"
+import { ShieldAlert, Crosshair, Map as MapIcon, Battery, Navigation, Radio, Zap, MoreVertical, Smartphone, Cpu, Wifi, X, Clock } from 'lucide-react'
 import { cn } from "@/lib/utils"
 import { useWebSocket } from '@/lib/websocket'
 
 import dynamic from 'next/dynamic'
+
+export interface DeviceInfo {
+  platform: 'ios' | 'android' | 'web';
+  os_version: string;
+  model: string;
+  brand: string;
+  app_version: string;
+  is_emulator: boolean;
+}
 
 export interface PatrolUnit {
   id: string;
@@ -18,6 +28,7 @@ export interface PatrolUnit {
   charging: boolean;
   status: string;
   lastUpdate: Date;
+  device_info?: DeviceInfo;
 }
 
 const LiveMap = dynamic(() => import('@/components/map/LiveMap'), {
@@ -31,6 +42,7 @@ const LiveMap = dynamic(() => import('@/components/map/LiveMap'), {
 
 export default function PatrolBoard() {
   const { lastMessage, isConnected } = useWebSocket()
+  const [selectedDeviceUnit, setSelectedDeviceUnit] = useState<PatrolUnit | null>(null)
   const [units, setUnits] = useState<Record<string, PatrolUnit>>({
     'unit-101': {
       id: 'unit-101',
@@ -85,6 +97,15 @@ export default function PatrolBoard() {
           // If previous only contained the 3 static demo units, clear them on first real field telemetry
           const isInitialMockOnly = Object.keys(prev).every(k => ['unit-101', 'unit-102', 'unit-103'].includes(k))
           const base = isInitialMockOnly ? {} : { ...prev }
+          const devInfo = data.device_info || (data.platform ? {
+            platform: data.platform,
+            os_version: data.os_version || `${data.platform.toUpperCase()} Device`,
+            model: data.model || 'Field Terminal',
+            brand: data.brand || 'Mobile',
+            app_version: '2.1.0-alpha',
+            is_emulator: false
+          } : undefined)
+
           return {
             ...base,
             [lastMessage.unit_id]: {
@@ -95,7 +116,8 @@ export default function PatrolBoard() {
               battery: data.battery ?? 0,
               charging: data.charging ?? false,
               status: data.status === 'on_duty' ? 'Active Patrol' : data.status || 'Active Patrol',
-              lastUpdate: new Date()
+              lastUpdate: new Date(),
+              device_info: devInfo
             }
           }
         })
@@ -177,7 +199,19 @@ export default function PatrolBoard() {
                 <CardHeader className="pb-2 p-4">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-base">{unit.name}</CardTitle>
-                    <Badge variant={unit.status === 'Offline' ? 'secondary' : 'success'}>{unit.status}</Badge>
+                    <div className="flex items-center gap-1.5">
+                      <Badge variant={unit.status === 'Offline' ? 'secondary' : 'success'}>{unit.status}</Badge>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setSelectedDeviceUnit(unit)
+                        }}
+                        className="p-1 rounded hover:bg-white/10 text-muted-foreground hover:text-foreground transition-colors"
+                        title="View Device Specifications"
+                      >
+                        <MoreVertical className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
@@ -214,6 +248,114 @@ export default function PatrolBoard() {
           )}
         </div>
       </div>
+
+      {/* Device Specifications Modal */}
+      {selectedDeviceUnit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
+          <div className="bg-card border border-border rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+            <div className="flex items-center justify-between p-4 border-b border-border bg-muted/40">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                  <Smartphone className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm tracking-tight text-foreground">{selectedDeviceUnit.name}</h3>
+                  <p className="text-[11px] text-muted-foreground font-mono">ID: {selectedDeviceUnit.id}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedDeviceUnit(null)}
+                className="p-1 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 rounded-xl bg-secondary/30 border border-border/60">
+                  <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-1 flex items-center gap-1">
+                    <Smartphone className="w-3 h-3 text-primary" /> Platform
+                  </div>
+                  <div className="font-semibold text-xs text-foreground capitalize flex items-center gap-1.5">
+                    <Badge variant={selectedDeviceUnit.device_info?.platform === 'ios' ? 'default' : 'secondary'} className="text-[10px] py-0">
+                      {selectedDeviceUnit.device_info?.platform?.toUpperCase() || 'MOBILE'}
+                    </Badge>
+                    {selectedDeviceUnit.device_info?.is_emulator && (
+                      <span className="text-[10px] text-amber-400 font-mono">[EMU]</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-secondary/30 border border-border/60">
+                  <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-1 flex items-center gap-1">
+                    <Cpu className="w-3 h-3 text-primary" /> Hardware Model
+                  </div>
+                  <div className="font-semibold text-xs text-foreground truncate" title={selectedDeviceUnit.device_info?.model || 'Mobile Terminal'}>
+                    {selectedDeviceUnit.device_info?.model || 'Field Device'}
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-secondary/30 border border-border/60">
+                  <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-1 flex items-center gap-1">
+                    <Wifi className="w-3 h-3 text-primary" /> OS Version
+                  </div>
+                  <div className="font-semibold text-xs font-mono text-foreground">
+                    {selectedDeviceUnit.device_info?.os_version || 'Android / iOS'}
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-secondary/30 border border-border/60">
+                  <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-1 flex items-center gap-1">
+                    <Radio className="w-3 h-3 text-primary" /> App Version
+                  </div>
+                  <div className="font-semibold text-xs font-mono text-foreground">
+                    v{selectedDeviceUnit.device_info?.app_version || '2.1.0-alpha'}
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-secondary/20 border border-border/50 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground flex items-center gap-1.5">
+                    <Navigation className="w-3.5 h-3.5" /> GPS Coordinates
+                  </span>
+                  <span className="font-mono text-foreground font-semibold">
+                    {selectedDeviceUnit.lat != null ? selectedDeviceUnit.lat.toFixed(5) : 'N/A'}, {selectedDeviceUnit.lng != null ? selectedDeviceUnit.lng.toFixed(5) : 'N/A'}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground flex items-center gap-1.5">
+                    <Battery className="w-3.5 h-3.5" /> Power Status
+                  </span>
+                  <span className="font-mono text-foreground flex items-center gap-1.5 font-semibold">
+                    {selectedDeviceUnit.battery}%
+                    {selectedDeviceUnit.charging ? ' (Charging)' : ' (Discharging)'}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5" /> Last Telemetry Beat
+                  </span>
+                  <span className="font-mono text-foreground">
+                    {new Date(selectedDeviceUnit.lastUpdate).toLocaleTimeString()}
+                  </span>
+                </div>
+              </div>
+
+              <Button
+                variant="outline"
+                className="w-full text-xs"
+                onClick={() => setSelectedDeviceUnit(null)}
+              >
+                Close Specifications
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

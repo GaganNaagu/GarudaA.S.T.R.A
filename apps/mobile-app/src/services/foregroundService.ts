@@ -23,6 +23,49 @@ export interface ServiceConfig {
   delayMs?: number; 
 }
 
+export interface DeviceInfo {
+  platform: 'ios' | 'android' | 'web';
+  os_version: string;
+  model: string;
+  brand: string;
+  app_version: string;
+  is_emulator: boolean;
+}
+
+export function getDeviceDetails(): DeviceInfo {
+  const isIOS = Platform.OS === 'ios';
+  let model = isIOS ? 'Apple iPhone' : 'Android Device';
+  let brand = isIOS ? 'Apple' : 'Android';
+  let isEmulator = false;
+
+  if (Platform.OS === 'android') {
+    const c = Platform.constants as any;
+    model = c?.Model || c?.Brand || 'Android Device';
+    brand = c?.Manufacturer || c?.Brand || 'Android';
+    const lower = model.toLowerCase();
+    if (lower.includes('sdk') || lower.includes('emulator') || lower.includes('gphone') || lower.includes('goldfish')) {
+      isEmulator = true;
+      model = `Android Emulator (${c?.Model || 'Virtual Device'})`;
+    }
+  } else if (Platform.OS === 'ios') {
+    const c = Platform.constants as any;
+    if (c?.interfaceIdiom === 'pad') {
+      model = 'Apple iPad';
+    } else {
+      model = 'Apple iPhone';
+    }
+  }
+
+  return {
+    platform: Platform.OS as any,
+    os_version: `${Platform.OS.toUpperCase()} ${Platform.Version}`,
+    model,
+    brand,
+    app_version: '2.1.0-alpha',
+    is_emulator: isEmulator,
+  };
+}
+
 export interface TelemetryPayload {
   officer_id: string;
   officer_name: string;
@@ -33,6 +76,7 @@ export interface TelemetryPayload {
   socket_connected: boolean;
   timestamp: string;
   event_type: 'PERIODIC' | 'DUTY_ON' | 'DUTY_OFF' | 'LOGIN' | 'LOGOUT' | 'SOS';
+  device_info?: DeviceInfo;
 }
 
 // ---------- Internal State ----------
@@ -89,6 +133,7 @@ async function operationalLoop(taskDataArguments?: { delay: number; officerId: s
       }
 
       // 4. Build telemetry payload
+      const deviceInfo = getDeviceDetails();
       const telemetry: TelemetryPayload = {
         officer_id: officerId,
         officer_name: officerName,
@@ -99,6 +144,7 @@ async function operationalLoop(taskDataArguments?: { delay: number; officerId: s
         socket_connected: SocketManager.isConnected(),
         timestamp: new Date().toISOString(),
         event_type: 'PERIODIC',
+        device_info: deviceInfo,
       };
 
       // 5. Send telemetry via WebSocket
@@ -108,6 +154,7 @@ async function operationalLoop(taskDataArguments?: { delay: number; officerId: s
           ...telemetry,
           lat: gpsData ? gpsData.lat : null,
           lng: gpsData ? gpsData.lng : null,
+          device_info: deviceInfo,
         },
       });
 
@@ -241,20 +288,22 @@ export async function sendImmediateTelemetry(
     // Fail silently
   }
 
-  SocketManager.send({
-    type: 'telemetry',
-    payload: {
-      officer_id: officerId,
-      officer_name: officerName,
-      gps: gpsData,
-      lat: gpsData ? gpsData.lat : null,
-      lng: gpsData ? gpsData.lng : null,
-      battery: batteryLevel,
-      charging: batteryCharging,
-      status: customStatus || 'on_duty',
-      event_type: eventType,
-      timestamp,
-      socket_connected: SocketManager.isConnected(),
-    },
-  });
+    const deviceInfo = getDeviceDetails();
+    SocketManager.send({
+      type: 'telemetry',
+      payload: {
+        officer_id: officerId,
+        officer_name: officerName,
+        gps: gpsData,
+        lat: gpsData ? gpsData.lat : null,
+        lng: gpsData ? gpsData.lng : null,
+        battery: batteryLevel,
+        charging: batteryCharging,
+        status: customStatus || 'on_duty',
+        event_type: eventType,
+        timestamp,
+        socket_connected: SocketManager.isConnected(),
+        device_info: deviceInfo,
+      },
+    });
 }
