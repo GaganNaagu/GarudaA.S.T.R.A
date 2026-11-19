@@ -69,7 +69,9 @@ export const AlertDetailsScreen: React.FC<AlertDetailsScreenProps> = ({
           <MaterialIcons name="keyboard-arrow-left" size={24} color={COLORS.primary} />
           <Text style={styles.backText}>BACK</Text>
         </Pressable>
-        <Text style={styles.headerTitle}>DOSSIER #{alert.fileNo}</Text>
+        <Text style={styles.headerTitle}>
+          CASE {alert.fileNo ? (alert.fileNo.startsWith('#') ? alert.fileNo : `#${alert.fileNo}`) : '#CASE-RECORD'}
+        </Text>
         <View style={styles.threatBadge}>
           <Text style={styles.threatBadgeText}>{alert.threatLevel}</Text>
         </View>

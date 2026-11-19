@@ -155,7 +155,7 @@ function createConnection(url: string) {
     };
 
     wsInstance.onerror = (error: Event) => {
-      console.error('❌ [SOCKET] Connection error:', error);
+      console.warn('⚠️ [SOCKET] Connection status:', error);
     };
 
     wsInstance.onclose = () => {

@@ -21,13 +21,16 @@ export function getResolvedBackendUrls() {
   }
 
   const rawEnvApi = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-  const rawEnvWs = process.env.EXPO_PUBLIC_WS_URL || 'ws://localhost:8000/api/v1/ws/connect';
+  const rawEnvWs = process.env.EXPO_PUBLIC_WS_URL || 'ws://localhost:8000/api/v1/ws/connect?token=astra-tactical-auth-token';
 
   const apiUrl = (rawEnvApi.includes('dpdns.org') || !rawEnvApi)
     ? `http://${host}:8000/api/v1`
     : rawEnvApi.replace('localhost', host).replace('127.0.0.1', host);
 
-  const wsUrl = rawEnvWs.replace('localhost', host).replace('127.0.0.1', host);
+  let wsUrl = rawEnvWs.replace('localhost', host).replace('127.0.0.1', host);
+  if (!wsUrl.includes('token=')) {
+    wsUrl += (wsUrl.includes('?') ? '&' : '?') + 'token=astra-tactical-auth-token';
+  }
 
   return { host, apiUrl, wsUrl };
 }

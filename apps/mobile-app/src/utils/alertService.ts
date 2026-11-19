@@ -88,18 +88,24 @@ export function normalizeAlert(payload: BackendAlertPayload): AlertItem {
   };
 }
 
-import * as Notifications from 'expo-notifications';
-
-// Set up notification handler so it shows up even when app is foreground
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+// Safely load Notifications with try/catch to prevent crashes in environments where native module is missing (e.g. Expo Go)
+let Notifications: any = null;
+try {
+  Notifications = require('expo-notifications');
+  if (Notifications?.setNotificationHandler) {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      }),
+    });
+  }
+} catch (err) {
+  console.warn('⚠️ [NOTIFICATIONS] Native notifications module not available in current runtime:', err);
+}
 
 /**
  * Universal alert injection point.
@@ -120,17 +126,19 @@ export function injectAlert(payload: BackendAlertPayload): AlertItem | null {
   // Trigger full-screen tactical popup + audio
   callbacks.onTacticalPopup(alert);
 
-  // Send local push notification
-  Notifications.scheduleNotificationAsync({
-    content: {
-      title: `🚨 ${alert.threatLevel} THREAT DETECTED`,
-      body: `Match for ${alert.title} at ${alert.lastSeenLocation}`,
-      data: { alertId: alert.id },
-    },
-    trigger: null, // trigger immediately
-  }).catch((err) => {
-    console.warn('⚠️ [ALERT SERVICE] Failed to send push notification:', err);
-  });
+  // Send local push notification if native module is available
+  if (Notifications?.scheduleNotificationAsync) {
+    Notifications.scheduleNotificationAsync({
+      content: {
+        title: `🚨 ${alert.threatLevel} THREAT DETECTED`,
+        body: `Match for ${alert.title} at ${alert.lastSeenLocation}`,
+        data: { alertId: alert.id },
+      },
+      trigger: null, // trigger immediately
+    }).catch((err: any) => {
+      console.warn('⚠️ [ALERT SERVICE] Failed to send push notification:', err);
+    });
+  }
 
   console.log(`
 🚨 ============ INCOMING ALERT ============
