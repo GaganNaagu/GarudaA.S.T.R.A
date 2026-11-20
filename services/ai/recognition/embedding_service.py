@@ -68,7 +68,10 @@ def init_adaface_model():
             adaface_load_error = None
         else:
             logger.info("Downloading & Initializing AdaFace Model (IR50) from Hugging Face...")
-            model_dir = snapshot_download("minchul/cvlface_adaface_ir50_ms1mv2")
+            try:
+                model_dir = snapshot_download("minchul/cvlface_adaface_ir50_ms1mv2", local_files_only=True)
+            except Exception:
+                model_dir = snapshot_download("minchul/cvlface_adaface_ir50_ms1mv2")
             if model_dir not in sys.path:
                 sys.path.insert(0, model_dir)
                 

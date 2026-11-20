@@ -174,10 +174,10 @@ async function operationalLoop(taskDataArguments?: { delay: number; officerId: s
 // ---------- Public API ----------
 
 export async function startService(config: ServiceConfig): Promise<boolean> {
-  const permissionsOk = await ensureCriticalPermissions();
-  if (!permissionsOk) {
-    console.warn('⚠️ [FOREGROUND SERVICE] Permissions missing.');
-    return false;
+  try {
+    await ensureCriticalPermissions();
+  } catch (err) {
+    console.warn('⚠️ [FOREGROUND SERVICE] Non-fatal permission check exception:', err);
   }
 
   const delayMs = config.delayMs || 5000;

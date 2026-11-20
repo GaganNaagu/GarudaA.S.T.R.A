@@ -33,6 +33,7 @@ let currentConfig: DutyConfig | null = null;
 let messageUnsubscribe: (() => void) | null = null;
 let connectionUnsubscribe: (() => void) | null = null;
 let disconnectTimer: any = null;
+let periodicTelemetryTimer: any = null;
 
 // ---------- Public API ----------
 
@@ -173,6 +174,27 @@ export async function goOnDuty(config: DutyConfig): Promise<boolean> {
   );
 
   dutyActive = true;
+
+  // 6. Guaranteed continuous periodic telemetry loop (active foreground & Expo Go resilient)
+  if (periodicTelemetryTimer) {
+    clearInterval(periodicTelemetryTimer);
+    periodicTelemetryTimer = null;
+  }
+  const intervalMs = config.telemetryIntervalMs || 5000;
+  periodicTelemetryTimer = setInterval(async () => {
+    if (!dutyActive || !currentConfig) return;
+    try {
+      await ForegroundService.sendImmediateTelemetry(
+        'PERIODIC',
+        currentConfig.officerId,
+        currentConfig.officerName,
+        'ACTIVE DUTY'
+      );
+    } catch (err) {
+      console.warn('⚠️ [DUTY] Periodic telemetry tick error:', err);
+    }
+  }, intervalMs);
+
   console.log('✅ [DUTY] Officer is now ON DUTY. All systems active.');
   return true;
 }
@@ -189,6 +211,11 @@ export async function goOnDuty(config: DutyConfig): Promise<boolean> {
  * Safe to call multiple times — no-ops if already off duty.
  */
 export async function goOffDuty(): Promise<void> {
+  if (periodicTelemetryTimer) {
+    clearInterval(periodicTelemetryTimer);
+    periodicTelemetryTimer = null;
+  }
+
   if (!dutyActive && !ForegroundService.isServiceRunning()) {
     return;
   }
