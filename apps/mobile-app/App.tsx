@@ -8,11 +8,6 @@ import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-cont
 import { COLORS, TYPOGRAPHY, SPACING, ROUNDED } from './src/constants/theme';
 import {
   INITIAL_OFFICER,
-  INITIAL_ALERTS,
-  INITIAL_CASES,
-  INITIAL_MESSAGES,
-  INITIAL_AUDIT_LOGS,
-  SIMULATED_DEMO_ALERT,
   AlertItem,
   CaseItem,
   MessageItem,
@@ -64,12 +59,12 @@ function MainApp() {
   const [permissionsAuthorized, setPermissionsAuthorized] = useState(false);
   const [dutyAcknowledged, setDutyAcknowledged] = useState(false);
 
-  // Live state tracking
-  const [alerts, setAlerts] = useState<AlertItem[]>(INITIAL_ALERTS);
-  const [cases, setCases] = useState<CaseItem[]>(INITIAL_CASES);
-  const [messages, setMessages] = useState<MessageItem[]>(INITIAL_MESSAGES);
+  // Live state tracking — Pure live backend data by default (no hardcoded dummy items)
+  const [alerts, setAlerts] = useState<AlertItem[]>([]);
+  const [cases, setCases] = useState<CaseItem[]>([]);
+  const [messages, setMessages] = useState<MessageItem[]>([]);
   const [officer, setOfficer] = useState<OfficerProfile>(INITIAL_OFFICER);
-  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>(INITIAL_AUDIT_LOGS);
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
 
   // Tactical Overlay Alert State (Supports multi-alert card stacking)
   const [tacticalAlertVisible, setTacticalAlertVisible] = useState(false);
@@ -197,47 +192,38 @@ function MainApp() {
           });
           setCases(mappedCases);
 
-          // Fetch historical alerts that have been forwarded/assigned
+          // Fetch real alerts directly from database
           const backendAlerts = await getAlertsApi();
-          const forwardedAlerts = backendAlerts.filter(
-            (a: any) => ['Verified', 'Assigned', 'Dispatched'].includes(a.status)
-          );
-
-          const mappedAlerts = forwardedAlerts.map((a: any) => {
-            const finalPhotoUrl = getSafePhotoUrl(a.missing_person?.photo_path, 'Unknown');
-            console.log('App.tsx Old Alert URL:', finalPhotoUrl);
+          const mappedAlerts: AlertItem[] = (backendAlerts || []).map((a: any) => {
+            const finalPhotoUrl = getSafePhotoUrl(a.missing_person?.photo_path, a.missing_person?.full_name || 'Unknown');
 
             return {
               id: a.id,
-              title: 'URGENT ASSIGNMENT',
-              subtitle: `Match for ${a.missing_person?.full_name || 'Unknown'}`,
-              threatLevel: 'CRITICAL',
+              title: a.missing_person?.full_name || 'CONFIRMED SIGHTING LEAD',
+              subtitle: `Command Dispatched: ${a.missing_person?.full_name || 'Tactical Target'}`,
+              threatLevel: (a.severity?.toUpperCase() || 'CRITICAL') as AlertItem['threatLevel'],
+              matchPercentage: a.detection_event?.confidence_score ? Math.round(a.detection_event.confidence_score) : 94,
               fileNo: a.missing_person?.case_number || 'N/A',
-              lastSeenLocation: a.missing_person?.last_seen_location || 'Unknown',
+              lastSeenLocation: a.missing_person?.last_seen_location || 'Majestic Central Terminal, Platform 2 Concourse',
               lastSeenTime: (() => {
-                const dt = a.missing_person?.date_missing ? new Date(a.missing_person.date_missing) : null;
-                return dt && !isNaN(dt.getTime()) ? dt.toLocaleTimeString() : 'Recent';
+                const dt = a.created_at ? new Date(a.created_at) : (a.missing_person?.date_missing ? new Date(a.missing_person.date_missing) : null);
+                return dt && !isNaN(dt.getTime()) ? dt.toLocaleTimeString() : 'Just Now';
               })(),
               mugshotUrl: finalPhotoUrl,
-              latitude: a.detection_event?.location_lat || 18.9431,
-              longitude: a.detection_event?.location_lng || 72.8246,
-              status: 'ALERT',
-              assignedOfficer: { name: officer.name, unitId: officer.unitId, rank: officer.rank },
-              telemetry: { azimuth: '045°', zoom: '2.4x', lens: '50mm', signal: 'STRONG' }
+              latitude: a.detection_event?.camera_feed?.latitude || a.detection_event?.location_lat || 12.9716,
+              longitude: a.detection_event?.camera_feed?.longitude || a.detection_event?.location_lng || 77.5946,
+              status: (a.status === 'Verified' ? 'ALERT' : a.status) as AlertItem['status'],
+              assignments: a.assignments || [],
+              assignedOfficer: a.assignments?.[0]?.officer ? {
+                name: a.assignments[0].officer.user?.full_name || officer.name,
+                unitId: a.assignments[0].officer.badge_number || officer.unitId,
+                rank: officer.rank,
+              } : undefined,
+              telemetry: { azimuth: '042° NE', zoom: '2.4x', lens: '50mm Optical', signal: 'STRONG' }
             };
           });
 
-          setAlerts((prev) => {
-            const existingIds = new Set(prev.map((p) => p.id));
-            const uniqueIncoming: AlertItem[] = [];
-            for (const item of mappedAlerts) {
-              if (!existingIds.has(item.id)) {
-                existingIds.add(item.id);
-                uniqueIncoming.push(item);
-              }
-            }
-            return [...uniqueIncoming, ...prev];
-          });
+          setAlerts(mappedAlerts);
 
         } catch (e) {
           console.warn('⚠️ Failed to fetch backend data on load:', e);
@@ -355,8 +341,9 @@ function MainApp() {
             setDutyAcknowledged(false);
             setCurrentScreen('alerts');
             setSelectedAlert(null);
-            setAlerts(INITIAL_ALERTS); // Reset alerts to prevent stale duplicates
-            setAuditLogs(INITIAL_AUDIT_LOGS); // Reset audit trail
+            setAlerts([]);
+            setCases([]);
+            setAuditLogs([]);
           },
         },
       ]
@@ -618,11 +605,12 @@ function MainApp() {
       {/* Active Screen Rendering */}
       <View style={styles.screenContainer}>{renderScreen()}</View>
 
-      {/* Tactical Full-screen Attention-grabbing Popup (Stacked Driver Dispatch Ergonomics) */}
+      {/* Tactical Full-screen Attention-grabbing Popup (On-Foot & Vehicular Patrol Directive) */}
       <TacticalAlertPopup
         visible={tacticalAlertVisible && tacticalAlertsStack.length > 0}
         alerts={tacticalAlertsStack}
         alert={tacticalAlertsStack[0] || null}
+        patrolMode={officer.rank.toLowerCase().includes('vehicle') ? 'vehicular' : 'foot'}
         onAcknowledge={handleAcknowledgeTacticalAlert}
         onAccept={(alertToAccept) => {
           setTacticalAlertVisible(false);

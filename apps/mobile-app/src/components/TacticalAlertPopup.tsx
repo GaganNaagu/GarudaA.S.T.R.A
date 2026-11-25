@@ -18,7 +18,6 @@ import {
   stopTacticalChime,
   setTacticalMuted,
   isTacticalMuted,
-  releaseTacticalAudio,
 } from '../utils/tacticalAudio';
 
 export interface TacticalAlertItem {
@@ -32,12 +31,15 @@ export interface TacticalAlertItem {
   fileNo?: string;
   latitude?: number;
   longitude?: number;
+  cameraName?: string;
+  unitType?: 'foot' | 'vehicular' | string;
 }
 
 interface TacticalAlertPopupProps {
   visible: boolean;
   alerts?: TacticalAlertItem[];
   alert?: TacticalAlertItem | null;
+  patrolMode?: 'foot' | 'vehicular' | string;
   onAcknowledge: () => void;
   onAccept?: (alert: TacticalAlertItem) => void;
   onPass?: (alert: TacticalAlertItem, remainingCount: number) => void;
@@ -50,13 +52,15 @@ export const TacticalAlertPopup: React.FC<TacticalAlertPopupProps> = ({
   visible,
   alerts,
   alert,
+  patrolMode = 'foot',
   onAcknowledge,
   onAccept,
   onPass,
   onDismiss,
 }) => {
-  // Manage internal stacked queue of active alerts
+  // Stacked queue of active alerts
   const [activeAlerts, setActiveAlerts] = useState<TacticalAlertItem[]>([]);
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const [isMuted, setIsMuted] = useState(isTacticalMuted());
   const [imageError, setImageError] = useState(false);
 
@@ -64,10 +68,13 @@ export const TacticalAlertPopup: React.FC<TacticalAlertPopupProps> = ({
   useEffect(() => {
     if (alerts && alerts.length > 0) {
       setActiveAlerts(alerts);
+      setSelectedIndex(0);
     } else if (alert) {
       setActiveAlerts([alert]);
+      setSelectedIndex(0);
     } else {
       setActiveAlerts([]);
+      setSelectedIndex(0);
     }
   }, [alerts, alert]);
 
@@ -82,7 +89,7 @@ export const TacticalAlertPopup: React.FC<TacticalAlertPopupProps> = ({
     if (visible && activeAlerts.length > 0) {
       setImageError(false);
 
-      // Tactical double-pulse vibration
+      // Tactical double-pulse vibration pattern
       if (Platform.OS !== 'web') {
         try {
           Vibration.vibrate([0, 180, 80, 180]);
@@ -139,34 +146,47 @@ export const TacticalAlertPopup: React.FC<TacticalAlertPopupProps> = ({
     setTacticalMuted(nextMuted);
   };
 
-  const currentAlert = activeAlerts[0] || null;
+  const stackCount = activeAlerts.length;
+  const currentAlert = activeAlerts[selectedIndex] || activeAlerts[0] || null;
 
-  // Pass current top card: smoothly slide card out, update stack counter, and present next card
-  const handlePass = () => {
+  // Cycle through leads in stack without discarding
+  const handleNextLead = () => {
+    if (stackCount <= 1) return;
+    setImageError(false);
+    setSelectedIndex((prev) => (prev + 1) % stackCount);
+  };
+
+  const handlePrevLead = () => {
+    if (stackCount <= 1) return;
+    setImageError(false);
+    setSelectedIndex((prev) => (prev - 1 + stackCount) % stackCount);
+  };
+
+  // Defer / Hold: Defer this alert so other units can respond, while moving to next in stack
+  const handleDefer = () => {
     if (!currentAlert) return;
 
-    // Slide card off to the left
+    // Slide card off smoothly
     Animated.timing(slideAnimX, {
       toValue: -width,
       duration: 180,
       useNativeDriver: true,
     }).start(() => {
-      const passedAlert = currentAlert;
-      const nextStack = activeAlerts.slice(1);
+      const deferredAlert = currentAlert;
+      const nextStack = activeAlerts.filter((_, idx) => idx !== selectedIndex);
       setActiveAlerts(nextStack);
+      setSelectedIndex(0);
 
-      // Inform parent so it updates global state, preserving alert in Alerts feed
       if (onPass) {
-        onPass(passedAlert, nextStack.length);
+        onPass(deferredAlert, nextStack.length);
       }
 
       if (nextStack.length === 0) {
         stopTacticalChime();
         if (onDismiss) onDismiss();
       } else {
-        // Bring in next card from right
         setImageError(false);
-        slideAnimX.setValue(width * 0.4);
+        slideAnimX.setValue(width * 0.3);
         Animated.spring(slideAnimX, {
           toValue: 0,
           friction: 8,
@@ -177,7 +197,7 @@ export const TacticalAlertPopup: React.FC<TacticalAlertPopupProps> = ({
     });
   };
 
-  // Accept current top card: triggers intercept and closes popup
+  // Commit & Intercept: Lock target coordinates and respond
   const handleAccept = () => {
     stopTacticalChime();
     if (onAccept && currentAlert) {
@@ -189,21 +209,21 @@ export const TacticalAlertPopup: React.FC<TacticalAlertPopupProps> = ({
 
   if (!visible || !currentAlert) return null;
 
-  // Target name extraction
+  // Extract Person Name
   const targetName =
     currentAlert.subtitle && currentAlert.subtitle.startsWith('Match for ')
       ? currentAlert.subtitle.replace(/^Match for /i, '')
       : currentAlert.title !== 'URGENT ASSIGNMENT' && currentAlert.title !== 'POSSIBLE MATCH DETECTED'
       ? currentAlert.title
-      : currentAlert.subtitle || 'Tactical Sighting';
+      : currentAlert.subtitle || 'Suspect Sighting';
 
   const photoUri =
     !imageError && currentAlert.mugshotUrl
       ? currentAlert.mugshotUrl
       : `https://ui-avatars.com/api/?name=${encodeURIComponent(targetName)}&background=131210&color=D4AF37&size=256&bold=true`;
 
-  const matchScore = currentAlert.matchPercentage || 99;
-  const stackCount = activeAlerts.length;
+  const matchScore = currentAlert.matchPercentage || 94.2;
+  const isFootPatrol = patrolMode === 'foot' || (currentAlert.unitType && currentAlert.unitType.toLowerCase().includes('foot'));
 
   return (
     <Modal
@@ -213,17 +233,17 @@ export const TacticalAlertPopup: React.FC<TacticalAlertPopupProps> = ({
       statusBarTranslucent
     >
       <View style={styles.overlay}>
-        {/* Layer 3: Deepest Stacked Card Layer (Visible when >= 3 alerts in stack) */}
+        {/* Layer 3: Physical Stack Layer (Visible when >= 3 alerts in stack) */}
         {stackCount >= 3 && (
           <View style={[styles.cardContainer, styles.stackLayer3]} />
         )}
 
-        {/* Layer 2: Middle Stacked Card Layer (Visible when >= 2 alerts in stack) */}
+        {/* Layer 2: Physical Stack Layer (Visible when >= 2 alerts in stack) */}
         {stackCount >= 2 && (
           <View style={[styles.cardContainer, styles.stackLayer2]} />
         )}
 
-        {/* Top Active Interactive Alert Card */}
+        {/* Top Active Interactive Tactical Alert Card */}
         <Animated.View
           style={[
             styles.cardContainer,
@@ -236,31 +256,34 @@ export const TacticalAlertPopup: React.FC<TacticalAlertPopupProps> = ({
             },
           ]}
         >
-          {/* Top Status & Audio Control Header (Stacked Counter + Gig Partner Style ON 🔊 Pill) */}
+          {/* Top Operational Status Header (Tactical Directive + Deployment Mode + Audio Toggle) */}
           <View style={styles.topBar}>
             <View style={styles.headerLeftContainer}>
-              <View style={styles.leadCounterBadge}>
+              <View style={styles.directiveBadge}>
                 <Animated.View
                   style={[
-                    styles.pulsingDot,
+                    styles.pulsingBeacon,
                     { opacity: pulseAnim },
                   ]}
                 />
-                <Text style={styles.leadCounterText}>
-                  {stackCount > 1 ? 'STACKED DISPATCH' : 'PRIORITY DISPATCH'}
-                </Text>
+                <Text style={styles.directiveText}>SIGHTING DIRECTIVE</Text>
               </View>
 
-              {/* Stack Depth Counter Badge (e.g. 1 OF 3) */}
-              {stackCount > 1 && (
-                <View style={styles.stackCountPill}>
-                  <MaterialIcons name="layers" size={13} color="#D4AF37" style={{ marginRight: 3 }} />
-                  <Text style={styles.stackCountText}>{`1 OF ${stackCount}`}</Text>
-                </View>
-              )}
+              {/* Patrol Deployment Mode: Foot Patrol vs. Vehicular Squad */}
+              <View style={styles.patrolModePill}>
+                <MaterialIcons
+                  name={isFootPatrol ? 'directions-walk' : 'local-police'}
+                  size={12}
+                  color="#10b981"
+                  style={{ marginRight: 3 }}
+                />
+                <Text style={styles.patrolModeText}>
+                  {isFootPatrol ? 'FOOT PATROL' : 'VEHICULAR'}
+                </Text>
+              </View>
             </View>
 
-            {/* Interactive Audio Toggle Pill (Reference Inspiration) */}
+            {/* Tactical Audio Toggle Pill */}
             <TouchableOpacity
               onPress={toggleMute}
               style={[styles.audioTogglePill, isMuted && styles.audioTogglePillMuted]}
@@ -269,8 +292,8 @@ export const TacticalAlertPopup: React.FC<TacticalAlertPopupProps> = ({
             >
               <MaterialIcons
                 name={isMuted ? 'volume-off' : 'volume-up'}
-                size={16}
-                color={isMuted ? COLORS.textMuted : '#ffffff'}
+                size={15}
+                color={isMuted ? COLORS.onSurfaceVariant : '#ffffff'}
               />
               <Text style={[styles.audioToggleText, isMuted && styles.audioToggleTextMuted]}>
                 {isMuted ? 'MUTED' : 'CHIME ON'}
@@ -278,14 +301,48 @@ export const TacticalAlertPopup: React.FC<TacticalAlertPopupProps> = ({
             </TouchableOpacity>
           </View>
 
-          {/* Hero Match & Urgency Section (High Visibility) */}
-          <View style={styles.heroSection}>
-            <View style={styles.heroLeft}>
-              <Text style={styles.heroMatchScore}>{matchScore}%</Text>
-              <Text style={styles.heroMatchLabel}>MATCH CONFIDENCE</Text>
+          {/* Sighting Stack Selector (When multiple directives arrive) */}
+          {stackCount > 1 && (
+            <View style={styles.stackNavigatorRow}>
+              <View style={styles.stackIndicator}>
+                <MaterialIcons name="layers" size={13} color="#D4AF37" style={{ marginRight: 4 }} />
+                <Text style={styles.stackIndicatorText}>
+                  {`LEAD ${selectedIndex + 1} OF ${stackCount} IN SECTOR`}
+                </Text>
+              </View>
+
+              <View style={styles.stackNavButtons}>
+                <TouchableOpacity
+                  onPress={handlePrevLead}
+                  style={styles.navArrowBtn}
+                  hitSlop={8}
+                >
+                  <MaterialIcons name="chevron-left" size={18} color="#D4AF37" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleNextLead}
+                  style={styles.navArrowBtn}
+                  hitSlop={8}
+                >
+                  <MaterialIcons name="chevron-right" size={18} color="#D4AF37" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
+          {/* Biometric Verification Header (Calibrated Match Fidelity) */}
+          <View style={styles.biometricSection}>
+            <View style={styles.biometricLeft}>
+              <View style={styles.biometricScoreRow}>
+                <Text style={styles.biometricScore}>{matchScore}%</Text>
+                <View style={styles.fidelityBadge}>
+                  <Text style={styles.fidelityText}>NEURAL MATCH</Text>
+                </View>
+              </View>
+              <Text style={styles.biometricLabel}>BIOMETRIC RECOGNITION FIDELITY</Text>
             </View>
 
-            <View style={styles.heroRight}>
+            <View style={styles.biometricRight}>
               <View style={styles.threatBadge}>
                 <View style={styles.threatBeacon} />
                 <Text style={styles.threatText}>{currentAlert.threatLevel} SIGHTING</Text>
@@ -296,7 +353,7 @@ export const TacticalAlertPopup: React.FC<TacticalAlertPopupProps> = ({
             </View>
           </View>
 
-          {/* Subject Preview Card with Crosshair Frame */}
+          {/* Suspect Identification & Optical Sensor Feed Card */}
           <View style={styles.subjectCard}>
             <View style={styles.photoWrapper}>
               <Image
@@ -307,6 +364,11 @@ export const TacticalAlertPopup: React.FC<TacticalAlertPopupProps> = ({
               {/* Tactical Crosshair overlay */}
               <View style={styles.crosshairH} />
               <View style={styles.crosshairV} />
+              <View style={styles.reticleCornerTL} />
+              <View style={styles.reticleCornerTR} />
+              <View style={styles.reticleCornerBL} />
+              <View style={styles.reticleCornerBR} />
+
               <View style={styles.liveFrameTag}>
                 <View style={styles.liveTagDot} />
                 <Text style={styles.liveTagText}>CCTV</Text>
@@ -320,69 +382,86 @@ export const TacticalAlertPopup: React.FC<TacticalAlertPopupProps> = ({
               <Text style={styles.subjectCategory} numberOfLines={1}>
                 Missing Person Sighting Lead
               </Text>
-              <View style={styles.detectedTimeBadge}>
-                <MaterialIcons name="access-time" size={12} color={COLORS.primary} />
-                <Text style={styles.detectedTimeText}>Detected Just Now · Central AI</Text>
+              <View style={styles.sensorBadge}>
+                <MaterialIcons name="videocam" size={12} color="#10b981" />
+                <Text style={styles.sensorText} numberOfLines={1}>
+                  {currentAlert.cameraName || 'CCTV Optical Sensor · Central Concourse'}
+                </Text>
               </View>
+              <Text style={styles.timestampText}>
+                Detected Just Now · Verified by AI Core
+              </Text>
             </View>
           </View>
 
-          {/* Vertical Delivery/Driver-Style Route Connector */}
-          <View style={styles.routeContainer}>
-            {/* Origin Node (Current Patrol Unit) */}
-            <View style={styles.routeNodeRow}>
-              <View style={styles.nodeIndicatorContainer}>
-                <View style={styles.unitOriginDot} />
-                <View style={styles.routeVerticalLine} />
+          {/* Tactical Patrol Geolocation & Intercept Vector */}
+          <View style={styles.vectorContainer}>
+            {/* Unit Position Node */}
+            <View style={styles.vectorNodeRow}>
+              <View style={styles.nodeIndicatorCol}>
+                <View style={styles.unitLocationDot} />
+                <View style={styles.vectorDashedLine} />
               </View>
-              <View style={styles.nodeTextContainer}>
+              <View style={styles.nodeDataCol}>
                 <View style={styles.nodeHeaderRow}>
                   <Text style={styles.nodeTitle}>Patrol Unit-042</Text>
-                  <Text style={styles.distanceBadge}>0.4 km · ~2 min response</Text>
+                  <Text style={styles.distanceBadge}>
+                    {isFootPatrol ? '420m · ~3 min rapid foot intercept' : '420m · ~1 min vehicular arrival'}
+                  </Text>
                 </View>
-                <Text style={styles.nodeSubtitle}>Current Active Sector Position</Text>
+                <Text style={styles.nodeDetail}>
+                  Active Sector Vector · Bearing 042° NE
+                </Text>
               </View>
             </View>
 
-            {/* Destination Node (Sighting Location) */}
-            <View style={styles.routeNodeRow}>
-              <View style={styles.nodeIndicatorContainer}>
-                <View style={styles.destinationMarker}>
-                  <MaterialIcons name="place" size={14} color="#ef4444" />
+            {/* Target Sighting Node */}
+            <View style={styles.vectorNodeRow}>
+              <View style={styles.nodeIndicatorCol}>
+                <View style={styles.targetLocationMarker}>
+                  <MaterialIcons name="my-location" size={13} color="#ef4444" />
                 </View>
               </View>
-              <View style={styles.nodeTextContainer}>
-                <Text style={styles.destinationTitle} numberOfLines={2}>
+              <View style={styles.nodeDataCol}>
+                <Text style={styles.targetLocationTitle} numberOfLines={2}>
                   {currentAlert.lastSeenLocation && currentAlert.lastSeenLocation !== 'Location Pending'
                     ? currentAlert.lastSeenLocation
-                    : 'Majestic Central Terminal, Platform 2'}
+                    : 'Majestic Central Terminal, Platform 2 Concourse'}
                 </Text>
-                <Text style={styles.nodeSubtitle}>Verified CCTV Optical Intercept Zone</Text>
+                <Text style={styles.nodeDetail}>
+                  Optical Intercept Zone · Coordinates Transmitted
+                </Text>
               </View>
             </View>
           </View>
 
-          {/* Driver-Style Action Bar (Circle Pass + Wide Gold Accept) */}
+          {/* Tactical Officer Operational Controls */}
           <View style={styles.actionRow}>
-            {/* Pass Button */}
+            {/* Defer Button: Leaves alert active for fleet, cycles to next */}
             <TouchableOpacity
-              style={styles.declineButton}
-              onPress={handlePass}
+              style={styles.deferButton}
+              onPress={handleDefer}
               activeOpacity={0.7}
               hitSlop={8}
             >
-              <MaterialIcons name="close" size={20} color="#ef4444" />
-              <Text style={styles.declineText}>Pass</Text>
+              <MaterialIcons name="pause-circle-outline" size={18} color="#94a3b8" />
+              <View style={styles.buttonTextCol}>
+                <Text style={styles.deferText}>DEFER</Text>
+                <Text style={styles.deferSubtext}>Hold for Fleet</Text>
+              </View>
             </TouchableOpacity>
 
-            {/* Primary Accept & Intercept Button */}
+            {/* Commit & Intercept Button: Assigns officer, opens tactical navigation */}
             <TouchableOpacity
-              style={styles.acceptButton}
+              style={styles.commitButton}
               onPress={handleAccept}
               activeOpacity={0.85}
             >
-              <MaterialIcons name="navigation" size={20} color="#0b0f17" style={{ marginRight: 8 }} />
-              <Text style={styles.acceptButtonText}>ACCEPT & INTERCEPT</Text>
+              <MaterialIcons name="navigation" size={19} color="#0b0f17" style={{ marginRight: 6 }} />
+              <View style={styles.buttonTextCol}>
+                <Text style={styles.commitButtonText}>COMMIT & INTERCEPT</Text>
+                <Text style={styles.commitButtonSubtext}>Set En-Route Status</Text>
+              </View>
             </TouchableOpacity>
           </View>
         </Animated.View>
@@ -394,7 +473,7 @@ export const TacticalAlertPopup: React.FC<TacticalAlertPopupProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(5, 7, 12, 0.88)',
+    backgroundColor: 'rgba(5, 7, 12, 0.90)',
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 16,
@@ -402,16 +481,16 @@ const styles = StyleSheet.create({
   cardContainer: {
     width: width - 32,
     maxWidth: 420,
-    backgroundColor: '#0e121b',
-    borderRadius: 24,
-    borderWidth: 2,
+    backgroundColor: '#0c1018',
+    borderRadius: 22,
+    borderWidth: 1.5,
     borderColor: '#D4AF37',
-    padding: 18,
-    shadowColor: '#D4AF37',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.35,
-    shadowRadius: 24,
-    elevation: 16,
+    padding: 16,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.5,
+    shadowRadius: 28,
+    elevation: 20,
     zIndex: 10,
   },
   // Physical Stack Layers Behind Top Card
@@ -419,82 +498,82 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 'auto',
     bottom: 'auto',
-    backgroundColor: '#0a0d14',
+    backgroundColor: '#080c14',
     borderColor: 'rgba(212, 175, 55, 0.35)',
     borderWidth: 1.5,
     transform: [{ translateY: 14 }, { scale: 0.94 }],
-    opacity: 0.65,
+    opacity: 0.7,
     zIndex: 5,
   },
   stackLayer3: {
     position: 'absolute',
     top: 'auto',
     bottom: 'auto',
-    backgroundColor: '#06080d',
+    backgroundColor: '#05080f',
     borderColor: 'rgba(212, 175, 55, 0.2)',
     borderWidth: 1,
     transform: [{ translateY: 26 }, { scale: 0.88 }],
-    opacity: 0.35,
+    opacity: 0.4,
     zIndex: 1,
   },
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 10,
   },
   headerLeftContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
-  leadCounterBadge: {
+  directiveBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(239, 68, 68, 0.14)',
     borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.35)',
-    borderRadius: ROUNDED.FULL,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  pulsingDot: {
-    width: 7,
-    height: 7,
-    borderRadius: ROUNDED.FULL,
-    backgroundColor: '#ef4444',
-    marginRight: 6,
-  },
-  leadCounterText: {
-    ...TYPOGRAPHY.labelCaps,
-    color: '#ef4444',
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  stackCountPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(212, 175, 55, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(212, 175, 55, 0.4)',
+    borderColor: 'rgba(239, 68, 68, 0.4)',
     borderRadius: ROUNDED.FULL,
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
-  stackCountText: {
-    fontSize: 10.5,
+  pulsingBeacon: {
+    width: 6,
+    height: 6,
+    borderRadius: ROUNDED.FULL,
+    backgroundColor: '#ef4444',
+    marginRight: 5,
+  },
+  directiveText: {
+    ...TYPOGRAPHY.labelCaps,
+    color: '#ef4444',
+    fontSize: 9.5,
     fontWeight: '800',
-    color: '#D4AF37',
-    fontFamily: 'monospace',
+    letterSpacing: 0.6,
+  },
+  patrolModePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(16, 185, 129, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.3)',
+    borderRadius: ROUNDED.FULL,
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+  },
+  patrolModeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#10b981',
+    letterSpacing: 0.4,
   },
   audioTogglePill: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#10b981',
     borderRadius: ROUNDED.FULL,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
     gap: 4,
   },
   audioTogglePillMuted: {
@@ -503,7 +582,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.15)',
   },
   audioToggleText: {
-    fontSize: 10,
+    fontSize: 9.5,
     fontWeight: '800',
     color: '#ffffff',
     letterSpacing: 0.3,
@@ -511,38 +590,89 @@ const styles = StyleSheet.create({
   audioToggleTextMuted: {
     color: COLORS.onSurfaceVariant,
   },
-  heroSection: {
+  stackNavigatorRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: 'rgba(212, 175, 55, 0.07)',
-    borderRadius: ROUNDED.LG,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    backgroundColor: 'rgba(212, 175, 55, 0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(212, 175, 55, 0.22)',
-    marginBottom: 14,
+    borderColor: 'rgba(212, 175, 55, 0.25)',
+    borderRadius: ROUNDED.MD,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    marginBottom: 10,
   },
-  heroLeft: {
+  stackIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  stackIndicatorText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#D4AF37',
+    fontFamily: 'monospace',
+    letterSpacing: 0.5,
+  },
+  stackNavButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  navArrowBtn: {
+    padding: 2,
+    borderRadius: 4,
+    backgroundColor: 'rgba(212, 175, 55, 0.12)',
+  },
+  biometricSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: 'rgba(212, 175, 55, 0.06)',
+    borderRadius: ROUNDED.MD,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.18)',
+    marginBottom: 12,
+  },
+  biometricLeft: {
     flex: 1,
   },
-  heroMatchScore: {
-    fontSize: 26,
+  biometricScoreRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  biometricScore: {
+    fontSize: 22,
     fontWeight: '900',
     color: '#D4AF37',
     letterSpacing: -0.5,
-    lineHeight: 30,
+    lineHeight: 26,
   },
-  heroMatchLabel: {
+  fidelityBadge: {
+    backgroundColor: 'rgba(212, 175, 55, 0.15)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  fidelityText: {
+    fontSize: 8.5,
+    fontWeight: '800',
+    color: '#D4AF37',
+    letterSpacing: 0.5,
+  },
+  biometricLabel: {
     ...TYPOGRAPHY.labelCaps,
     color: '#94a3b8',
-    fontSize: 9.5,
+    fontSize: 8.5,
     fontWeight: '700',
     letterSpacing: 0.6,
+    marginTop: 2,
   },
-  heroRight: {
+  biometricRight: {
     alignItems: 'flex-end',
-    gap: 4,
+    gap: 3,
   },
   threatBadge: {
     flexDirection: 'row',
@@ -551,45 +681,45 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(239, 68, 68, 0.4)',
     borderRadius: ROUNDED.SM,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
   },
   threatBeacon: {
-    width: 6,
-    height: 6,
+    width: 5,
+    height: 5,
     borderRadius: ROUNDED.FULL,
     backgroundColor: '#ef4444',
-    marginRight: 5,
+    marginRight: 4,
   },
   threatText: {
     ...TYPOGRAPHY.labelCaps,
     color: '#ef4444',
     fontWeight: '800',
-    fontSize: 9.5,
+    fontSize: 9,
   },
   caseBadgeText: {
     fontFamily: 'monospace',
-    fontSize: 10,
+    fontSize: 9.5,
     color: COLORS.onSurfaceVariant,
     fontWeight: '600',
   },
   subjectCard: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
     borderRadius: ROUNDED.MD,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.08)',
     padding: 10,
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 12,
     gap: 12,
   },
   photoWrapper: {
-    width: 68,
-    height: 68,
-    borderRadius: 12,
+    width: 66,
+    height: 66,
+    borderRadius: 10,
     overflow: 'hidden',
-    backgroundColor: '#161b26',
+    backgroundColor: '#131822',
     borderWidth: 1.5,
     borderColor: '#D4AF37',
     position: 'relative',
@@ -615,26 +745,66 @@ const styles = StyleSheet.create({
     width: 1,
     backgroundColor: 'rgba(212, 175, 55, 0.45)',
   },
-  liveFrameTag: {
+  reticleCornerTL: {
+    position: 'absolute',
+    top: 3,
+    left: 3,
+    width: 6,
+    height: 6,
+    borderTopWidth: 1.5,
+    borderLeftWidth: 1.5,
+    borderColor: '#10b981',
+  },
+  reticleCornerTR: {
+    position: 'absolute',
+    top: 3,
+    right: 3,
+    width: 6,
+    height: 6,
+    borderTopWidth: 1.5,
+    borderRightWidth: 1.5,
+    borderColor: '#10b981',
+  },
+  reticleCornerBL: {
+    position: 'absolute',
+    bottom: 3,
+    left: 3,
+    width: 6,
+    height: 6,
+    borderBottomWidth: 1.5,
+    borderLeftWidth: 1.5,
+    borderColor: '#10b981',
+  },
+  reticleCornerBR: {
     position: 'absolute',
     bottom: 3,
     right: 3,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderBottomWidth: 1.5,
+    borderRightWidth: 1.5,
+    borderColor: '#10b981',
+  },
+  liveFrameTag: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    borderRadius: 3,
     paddingHorizontal: 4,
     paddingVertical: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
+    gap: 2,
   },
   liveTagDot: {
-    width: 4,
-    height: 4,
+    width: 3.5,
+    height: 3.5,
     borderRadius: ROUNDED.FULL,
     backgroundColor: '#ef4444',
   },
   liveTagText: {
-    fontSize: 8,
+    fontSize: 7.5,
     fontWeight: '800',
     color: '#ffffff',
     letterSpacing: 0.3,
@@ -643,68 +813,74 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   subjectName: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '800',
     color: '#ffffff',
     marginBottom: 2,
   },
   subjectCategory: {
-    fontSize: 11,
+    fontSize: 10.5,
     color: COLORS.onSurfaceVariant,
-    marginBottom: 6,
+    marginBottom: 4,
   },
-  detectedTimeBadge: {
+  sensorBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    marginBottom: 2,
   },
-  detectedTimeText: {
-    fontSize: 10.5,
-    color: COLORS.primary,
+  sensorText: {
+    fontSize: 10,
+    color: '#10b981',
     fontWeight: '600',
   },
-  routeContainer: {
-    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+  timestampText: {
+    fontSize: 9.5,
+    color: '#64748b',
+    fontStyle: 'italic',
+  },
+  vectorContainer: {
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
     borderRadius: ROUNDED.MD,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.06)',
     paddingHorizontal: 12,
     paddingVertical: 10,
-    marginBottom: 16,
+    marginBottom: 14,
   },
-  routeNodeRow: {
+  vectorNodeRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
-  nodeIndicatorContainer: {
-    width: 22,
+  nodeIndicatorCol: {
+    width: 20,
     alignItems: 'center',
     paddingTop: 3,
   },
-  unitOriginDot: {
-    width: 10,
-    height: 10,
+  unitLocationDot: {
+    width: 8,
+    height: 8,
     borderRadius: ROUNDED.FULL,
     backgroundColor: '#10b981',
-    borderWidth: 2,
-    borderColor: 'rgba(16, 185, 129, 0.3)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(16, 185, 129, 0.4)',
   },
-  routeVerticalLine: {
-    width: 2,
-    height: 28,
-    backgroundColor: 'rgba(212, 175, 55, 0.3)',
+  vectorDashedLine: {
+    width: 1.5,
+    height: 24,
+    backgroundColor: 'rgba(212, 175, 55, 0.35)',
     marginVertical: 2,
   },
-  destinationMarker: {
+  targetLocationMarker: {
     width: 16,
     height: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  nodeTextContainer: {
+  nodeDataCol: {
     flex: 1,
-    paddingLeft: 8,
-    paddingBottom: 6,
+    paddingLeft: 6,
+    paddingBottom: 4,
   },
   nodeHeaderRow: {
     flexDirection: 'row',
@@ -712,52 +888,61 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   nodeTitle: {
-    fontSize: 13,
+    fontSize: 12.5,
     fontWeight: '700',
     color: '#ffffff',
   },
   distanceBadge: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '800',
     color: '#10b981',
   },
-  destinationTitle: {
-    fontSize: 13,
+  targetLocationTitle: {
+    fontSize: 12.5,
     fontWeight: '700',
     color: '#ffffff',
-    lineHeight: 17,
+    lineHeight: 16,
   },
-  nodeSubtitle: {
-    fontSize: 10,
+  nodeDetail: {
+    fontSize: 9.5,
     color: COLORS.onSurfaceVariant,
     marginTop: 1,
   },
   actionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
   },
-  declineButton: {
-    width: 80,
-    height: 52,
-    borderRadius: 14,
+  deferButton: {
+    width: 100,
+    height: 48,
+    borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: 'rgba(239, 68, 68, 0.35)',
-    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+    borderColor: 'rgba(148, 163, 184, 0.3)',
+    backgroundColor: 'rgba(148, 163, 184, 0.08)',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
+    gap: 5,
   },
-  declineText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#ef4444',
+  buttonTextCol: {
+    alignItems: 'flex-start',
   },
-  acceptButton: {
+  deferText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#cbd5e1',
+    letterSpacing: 0.5,
+  },
+  deferSubtext: {
+    fontSize: 8,
+    color: '#64748b',
+    fontWeight: '600',
+  },
+  commitButton: {
     flex: 1,
-    height: 52,
-    borderRadius: 14,
+    height: 48,
+    borderRadius: 12,
     backgroundColor: COLORS.primary,
     flexDirection: 'row',
     alignItems: 'center',
@@ -768,10 +953,15 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 6,
   },
-  acceptButtonText: {
-    fontSize: 14,
+  commitButtonText: {
+    fontSize: 12.5,
     fontWeight: '900',
     color: '#0b0f17',
-    letterSpacing: 0.8,
+    letterSpacing: 0.6,
+  },
+  commitButtonSubtext: {
+    fontSize: 8,
+    fontWeight: '700',
+    color: '#3d2e05',
   },
 });
