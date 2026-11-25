@@ -159,12 +159,20 @@ export const TacticalAlertPopup: React.FC<TacticalAlertPopupProps> = ({
   const handleNextLead = () => {
     if (stackCount <= 1) return;
     setImageError(false);
+    Animated.sequence([
+      Animated.timing(slideAnimX, { toValue: 18, duration: 90, useNativeDriver: true }),
+      Animated.timing(slideAnimX, { toValue: 0, duration: 120, useNativeDriver: true }),
+    ]).start();
     setSelectedIndex((prev) => (prev + 1) % stackCount);
   };
 
   const handlePrevLead = () => {
     if (stackCount <= 1) return;
     setImageError(false);
+    Animated.sequence([
+      Animated.timing(slideAnimX, { toValue: -18, duration: 90, useNativeDriver: true }),
+      Animated.timing(slideAnimX, { toValue: 0, duration: 120, useNativeDriver: true }),
+    ]).start();
     setSelectedIndex((prev) => (prev - 1 + stackCount) % stackCount);
   };
 
@@ -239,102 +247,130 @@ export const TacticalAlertPopup: React.FC<TacticalAlertPopupProps> = ({
       statusBarTranslucent
     >
       <View style={styles.overlay}>
-        {/* Layer 3: Physical Stack Layer (Visible when >= 3 alerts in stack) */}
-        {stackCount >= 3 && (
-          <View style={[styles.cardContainer, styles.stackLayer3]} />
-        )}
-
-        {/* Layer 2: Physical Stack Layer (Visible when >= 2 alerts in stack) */}
-        {stackCount >= 2 && (
-          <View style={[styles.cardContainer, styles.stackLayer2]} />
-        )}
-
-        {/* Top Active Interactive Tactical Alert Card */}
-        <Animated.View
-          style={[
-            styles.cardContainer,
-            {
-              transform: [
-                { translateY: slideAnimY },
-                { translateX: slideAnimX },
-              ],
-              opacity: opacityAnim,
-            },
-          ]}
-        >
-          {/* Top Operational Status Header (Tactical Directive + Deployment Mode + Audio Toggle) */}
-          <View style={styles.topBar}>
-            <View style={styles.headerLeftContainer}>
-              <View style={styles.directiveBadge}>
-                <Animated.View
-                  style={[
-                    styles.pulsingBeacon,
-                    { opacity: pulseAnim },
-                  ]}
-                />
-                <Text style={styles.directiveText}>NEW SIGHTING ALERT</Text>
-              </View>
-
-              {/* Patrol Deployment Mode: Foot Patrol vs. Vehicular Squad */}
-              <View style={styles.patrolModePill}>
-                <MaterialIcons
-                  name={isFootPatrol ? 'directions-walk' : 'local-police'}
-                  size={12}
-                  color="#10b981"
-                  style={{ marginRight: 3 }}
-                />
-                <Text style={styles.patrolModeText}>
-                  {isFootPatrol ? 'WALKING PATROL' : 'VEHICLE PATROL'}
-                </Text>
-              </View>
-            </View>
-
-            {/* Tactical Audio Toggle Pill */}
-            <TouchableOpacity
-              onPress={toggleMute}
-              style={[styles.audioTogglePill, isMuted && styles.audioTogglePillMuted]}
-              activeOpacity={0.7}
-              hitSlop={10}
-            >
-              <MaterialIcons
-                name={isMuted ? 'volume-off' : 'volume-up'}
-                size={15}
-                color={isMuted ? COLORS.onSurfaceVariant : '#ffffff'}
-              />
-              <Text style={[styles.audioToggleText, isMuted && styles.audioToggleTextMuted]}>
-                {isMuted ? 'SOUND OFF' : 'ALERT SOUND ON'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Sighting Stack Selector (When multiple directives arrive) */}
-          {stackCount > 1 && (
-            <View style={styles.stackNavigatorRow}>
-              <View style={styles.stackIndicator}>
-                <MaterialIcons name="layers" size={13} color="#D4AF37" style={{ marginRight: 4 }} />
-                <Text style={styles.stackIndicatorText}>
-                  {`ALERT ${selectedIndex + 1} OF ${stackCount} NEAR YOU`}
-                </Text>
-              </View>
-
-              <View style={styles.stackNavButtons}>
-                <TouchableOpacity
-                  onPress={handlePrevLead}
-                  style={styles.navArrowBtn}
-                  hitSlop={8}
-                >
-                  <MaterialIcons name="chevron-left" size={18} color="#D4AF37" />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={handleNextLead}
-                  style={styles.navArrowBtn}
-                  hitSlop={8}
-                >
-                  <MaterialIcons name="chevron-right" size={18} color="#D4AF37" />
-                </TouchableOpacity>
+        <View style={styles.cardWrapper}>
+          {/* Physical Layer 3: Visible when >= 3 alerts in stack */}
+          {stackCount >= 3 && (
+            <View style={styles.physicalStackLayer3}>
+              <View style={styles.stackCardBottomLip}>
+                <View style={styles.stackCardLipLine} />
               </View>
             </View>
           )}
+
+          {/* Physical Layer 2: Visible when >= 2 alerts in stack */}
+          {stackCount >= 2 && (
+            <View style={styles.physicalStackLayer2}>
+              <View style={styles.stackCardBottomLip}>
+                <View style={styles.stackCardLipLine} />
+              </View>
+            </View>
+          )}
+
+          {/* Top Active Interactive Tactical Alert Card */}
+          <Animated.View
+            style={[
+              styles.cardContainer,
+              {
+                transform: [
+                  { translateY: slideAnimY },
+                  { translateX: slideAnimX },
+                ],
+                opacity: opacityAnim,
+              },
+            ]}
+          >
+            {/* Top Operational Status Header (Tactical Directive + Deployment Mode + Audio Toggle) */}
+            <View style={styles.topBar}>
+              <View style={styles.headerLeftContainer}>
+                <View style={styles.directiveBadge}>
+                  <Animated.View
+                    style={[
+                      styles.pulsingBeacon,
+                      { opacity: pulseAnim },
+                    ]}
+                  />
+                  <Text style={styles.directiveText}>SIGHTING ALERT</Text>
+                </View>
+
+                {/* Patrol Deployment Mode: Foot Patrol vs. Vehicular Squad */}
+                <View style={styles.patrolModePill}>
+                  <MaterialIcons
+                    name={isFootPatrol ? 'directions-walk' : 'local-police'}
+                    size={11}
+                    color="#10b981"
+                    style={{ marginRight: 3 }}
+                  />
+                  <Text style={styles.patrolModeText}>
+                    {isFootPatrol ? 'WALKING PATROL' : 'VEHICLE'}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Tactical Audio Toggle Pill */}
+              <TouchableOpacity
+                onPress={toggleMute}
+                style={[styles.audioTogglePill, isMuted && styles.audioTogglePillMuted]}
+                activeOpacity={0.7}
+                hitSlop={10}
+              >
+                <MaterialIcons
+                  name={isMuted ? 'volume-off' : 'volume-up'}
+                  size={14}
+                  color={isMuted ? COLORS.onSurfaceVariant : '#ffffff'}
+                />
+                <Text style={[styles.audioToggleText, isMuted && styles.audioToggleTextMuted]}>
+                  {isMuted ? 'MUTE' : 'SOUND ON'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Sighting Stack Selector (When multiple directives arrive) */}
+            {stackCount > 1 && (
+              <View style={styles.stackNavigatorRow}>
+                <View style={styles.stackIndicator}>
+                  <View style={styles.stackIconBadge}>
+                    <MaterialIcons name="layers" size={13} color="#0b0f17" />
+                    <Text style={styles.stackBadgeCount}>{stackCount}</Text>
+                  </View>
+                  <View style={styles.stackTextCol}>
+                    <Text style={styles.stackIndicatorText}>
+                      {`ALERT ${selectedIndex + 1} OF ${stackCount} STACKED`}
+                    </Text>
+                    <Text style={styles.stackSubtext}>Swipe or use arrows to view</Text>
+                  </View>
+                </View>
+
+                <View style={styles.stackNavButtons}>
+                  <TouchableOpacity
+                    onPress={handlePrevLead}
+                    style={styles.navArrowBtn}
+                    hitSlop={8}
+                  >
+                    <MaterialIcons name="chevron-left" size={18} color="#D4AF37" />
+                  </TouchableOpacity>
+
+                  <View style={styles.stackPillTracker}>
+                    {activeAlerts.map((_, idx) => (
+                      <View
+                        key={idx}
+                        style={[
+                          styles.trackerDot,
+                          idx === selectedIndex && styles.trackerDotActive,
+                        ]}
+                      />
+                    ))}
+                  </View>
+
+                  <TouchableOpacity
+                    onPress={handleNextLead}
+                    style={styles.navArrowBtn}
+                    hitSlop={8}
+                  >
+                    <MaterialIcons name="chevron-right" size={18} color="#D4AF37" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
 
           {/* Biometric Verification Header (Calibrated Match Fidelity) */}
           <View style={styles.biometricSection}>
@@ -472,8 +508,9 @@ export const TacticalAlertPopup: React.FC<TacticalAlertPopupProps> = ({
           </View>
         </Animated.View>
       </View>
-    </Modal>
-  );
+    </View>
+  </Modal>
+);
 };
 
 const styles = StyleSheet.create({
@@ -484,9 +521,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
   },
-  cardContainer: {
+  cardWrapper: {
     width: width - 32,
     maxWidth: 420,
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 24,
+  },
+  cardContainer: {
+    width: '100%',
     backgroundColor: '#0c1018',
     borderRadius: 22,
     borderWidth: 1.5,
@@ -499,28 +543,57 @@ const styles = StyleSheet.create({
     elevation: 20,
     zIndex: 10,
   },
-  // Physical Stack Layers Behind Top Card
-  stackLayer2: {
+  // Physical Stack Layers Peeking Behind Top Card
+  physicalStackLayer2: {
     position: 'absolute',
-    top: 'auto',
-    bottom: 'auto',
-    backgroundColor: '#080c14',
-    borderColor: 'rgba(212, 175, 55, 0.35)',
+    top: 10,
+    bottom: -11,
+    width: '93%',
+    backgroundColor: '#090e18',
+    borderRadius: 22,
     borderWidth: 1.5,
-    transform: [{ translateY: 14 }, { scale: 0.94 }],
-    opacity: 0.7,
-    zIndex: 5,
+    borderColor: '#D4AF37',
+    zIndex: 4,
+    opacity: 0.95,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.45,
+    shadowRadius: 10,
+    elevation: 8,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingBottom: 2,
   },
-  stackLayer3: {
+  physicalStackLayer3: {
     position: 'absolute',
-    top: 'auto',
-    bottom: 'auto',
+    top: 20,
+    bottom: -21,
+    width: '86%',
     backgroundColor: '#05080f',
-    borderColor: 'rgba(212, 175, 55, 0.2)',
-    borderWidth: 1,
-    transform: [{ translateY: 26 }, { scale: 0.88 }],
-    opacity: 0.4,
-    zIndex: 1,
+    borderRadius: 22,
+    borderWidth: 1.2,
+    borderColor: 'rgba(212, 175, 55, 0.65)',
+    zIndex: 2,
+    opacity: 0.8,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.5,
+    shadowRadius: 14,
+    elevation: 4,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingBottom: 2,
+  },
+  stackCardBottomLip: {
+    width: 36,
+    height: 3,
+    backgroundColor: 'rgba(212, 175, 55, 0.4)',
+    borderRadius: 2,
+    marginBottom: 2,
+  },
+  stackCardLipLine: {
+    width: '100%',
+    height: '100%',
   },
   topBar: {
     flexDirection: 'row',
@@ -532,6 +605,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    flexShrink: 1,
   },
   directiveBadge: {
     flexDirection: 'row',
@@ -541,7 +615,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(239, 68, 68, 0.4)',
     borderRadius: ROUNDED.FULL,
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 3.5,
   },
   pulsingBeacon: {
     width: 6,
@@ -553,9 +627,9 @@ const styles = StyleSheet.create({
   directiveText: {
     ...TYPOGRAPHY.labelCaps,
     color: '#ef4444',
-    fontSize: 9.5,
+    fontSize: 9,
     fontWeight: '800',
-    letterSpacing: 0.6,
+    letterSpacing: 0.5,
   },
   patrolModePill: {
     flexDirection: 'row',
@@ -565,21 +639,21 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(16, 185, 129, 0.3)',
     borderRadius: ROUNDED.FULL,
     paddingHorizontal: 7,
-    paddingVertical: 4,
+    paddingVertical: 3.5,
   },
   patrolModeText: {
-    fontSize: 9,
+    fontSize: 8.5,
     fontWeight: '800',
     color: '#10b981',
-    letterSpacing: 0.4,
+    letterSpacing: 0.3,
   },
   audioTogglePill: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#10b981',
     borderRadius: ROUNDED.FULL,
-    paddingHorizontal: 9,
-    paddingVertical: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3.5,
     gap: 4,
   },
   audioTogglePillMuted: {
@@ -588,7 +662,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.15)',
   },
   audioToggleText: {
-    fontSize: 9.5,
+    fontSize: 9,
     fontWeight: '800',
     color: '#ffffff',
     letterSpacing: 0.3,
@@ -600,34 +674,76 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: 'rgba(212, 175, 55, 0.08)',
+    backgroundColor: 'rgba(212, 175, 55, 0.09)',
     borderWidth: 1,
-    borderColor: 'rgba(212, 175, 55, 0.25)',
+    borderColor: 'rgba(212, 175, 55, 0.3)',
     borderRadius: ROUNDED.MD,
     paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingVertical: 6,
     marginBottom: 10,
   },
   stackIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 7,
+    flex: 1,
+  },
+  stackIconBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#D4AF37',
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 6,
+    gap: 3,
+  },
+  stackBadgeCount: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#0b0f17',
+  },
+  stackTextCol: {
+    justifyContent: 'center',
   },
   stackIndicatorText: {
     fontSize: 10,
     fontWeight: '800',
     color: '#D4AF37',
     fontFamily: 'monospace',
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
+  },
+  stackSubtext: {
+    fontSize: 8,
+    color: '#94a3b8',
+    fontWeight: '500',
   },
   stackNavButtons: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 5,
   },
   navArrowBtn: {
-    padding: 2,
-    borderRadius: 4,
-    backgroundColor: 'rgba(212, 175, 55, 0.12)',
+    padding: 3,
+    borderRadius: 6,
+    backgroundColor: 'rgba(212, 175, 55, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.3)',
+  },
+  stackPillTracker: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 2,
+  },
+  trackerDot: {
+    width: 5,
+    height: 5,
+    borderRadius: ROUNDED.FULL,
+    backgroundColor: 'rgba(212, 175, 55, 0.3)',
+  },
+  trackerDotActive: {
+    width: 12,
+    backgroundColor: '#D4AF37',
   },
   biometricSection: {
     flexDirection: 'row',
@@ -839,6 +955,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#10b981',
     fontWeight: '600',
+    flex: 1,
   },
   timestampText: {
     fontSize: 9.5,
@@ -892,16 +1009,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 8,
   },
   nodeTitle: {
-    fontSize: 12.5,
+    fontSize: 12,
     fontWeight: '700',
     color: '#ffffff',
+    flexShrink: 0,
   },
   distanceBadge: {
     fontSize: 10,
     fontWeight: '800',
     color: '#10b981',
+    flexShrink: 1,
+    textAlign: 'right',
   },
   targetLocationTitle: {
     fontSize: 12.5,
@@ -918,44 +1039,49 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    marginTop: 2,
   },
   deferButton: {
-    width: 100,
-    height: 48,
-    borderRadius: 12,
+    flex: 1,
+    height: 50,
+    borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: 'rgba(148, 163, 184, 0.3)',
-    backgroundColor: 'rgba(148, 163, 184, 0.08)',
+    borderColor: 'rgba(148, 163, 184, 0.35)',
+    backgroundColor: 'rgba(148, 163, 184, 0.1)',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 5,
+    paddingHorizontal: 8,
+    gap: 6,
   },
   buttonTextCol: {
     alignItems: 'flex-start',
+    justifyContent: 'center',
   },
   deferText: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#cbd5e1',
-    letterSpacing: 0.5,
+    color: '#e2e8f0',
+    letterSpacing: 0.4,
   },
   deferSubtext: {
-    fontSize: 8,
-    color: '#64748b',
+    fontSize: 8.5,
+    color: '#94a3b8',
     fontWeight: '600',
   },
   commitButton: {
-    flex: 1,
-    height: 48,
-    borderRadius: 12,
+    flex: 1.35,
+    height: 50,
+    borderRadius: 14,
     backgroundColor: COLORS.primary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 10,
+    gap: 6,
     shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.35,
     shadowRadius: 10,
     elevation: 6,
   },
@@ -963,11 +1089,11 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
     fontWeight: '900',
     color: '#0b0f17',
-    letterSpacing: 0.6,
+    letterSpacing: 0.5,
   },
   commitButtonSubtext: {
-    fontSize: 8,
+    fontSize: 8.5,
     fontWeight: '700',
-    color: '#3d2e05',
+    color: 'rgba(11, 15, 23, 0.8)',
   },
 });
