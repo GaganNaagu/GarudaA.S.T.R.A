@@ -71,9 +71,9 @@ function MainApp() {
   const [officer, setOfficer] = useState<OfficerProfile>(INITIAL_OFFICER);
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>(INITIAL_AUDIT_LOGS);
 
-  // Tactical Overlay Alert State
+  // Tactical Overlay Alert State (Supports multi-alert card stacking)
   const [tacticalAlertVisible, setTacticalAlertVisible] = useState(false);
-  const [incomingTacticalAlert, setIncomingTacticalAlert] = useState<AlertItem | null>(null);
+  const [tacticalAlertsStack, setTacticalAlertsStack] = useState<AlertItem[]>([]);
 
   // Degraded active permissions tracking (fault tolerance)
   const [degradedPermissions, setDegradedPermissions] = useState<('foreground' | 'background' | 'notifications')[]>([]);
@@ -94,7 +94,10 @@ function MainApp() {
           });
         },
         onTacticalPopup: (alert) => {
-          setIncomingTacticalAlert(alert);
+          setTacticalAlertsStack((prev) => {
+            if (prev.some((a) => a.id === alert.id)) return prev;
+            return [alert, ...prev]; // Stack incoming alert on top
+          });
           setTacticalAlertVisible(true);
         },
       });
@@ -117,7 +120,7 @@ function MainApp() {
       DutyManager.goOffDuty();
       unregisterAlertCallbacks();
       setTacticalAlertVisible(false);
-      setIncomingTacticalAlert(null);
+      setTacticalAlertsStack([]);
     }
 
     return () => {
@@ -331,8 +334,8 @@ function MainApp() {
 
   const handleAcknowledgeTacticalAlert = () => {
     setTacticalAlertVisible(false);
-    if (incomingTacticalAlert) {
-      handleSelectAlert(incomingTacticalAlert);
+    if (tacticalAlertsStack.length > 0) {
+      handleSelectAlert(tacticalAlertsStack[0]);
     }
   };
 
@@ -615,18 +618,28 @@ function MainApp() {
       {/* Active Screen Rendering */}
       <View style={styles.screenContainer}>{renderScreen()}</View>
 
-      {/* Tactical Full-screen Attention-grabbing Popup (Driver Dispatch Ergonomics) */}
+      {/* Tactical Full-screen Attention-grabbing Popup (Stacked Driver Dispatch Ergonomics) */}
       <TacticalAlertPopup
-        visible={tacticalAlertVisible}
-        alert={incomingTacticalAlert}
+        visible={tacticalAlertVisible && tacticalAlertsStack.length > 0}
+        alerts={tacticalAlertsStack}
+        alert={tacticalAlertsStack[0] || null}
         onAcknowledge={handleAcknowledgeTacticalAlert}
         onAccept={(alertToAccept) => {
           setTacticalAlertVisible(false);
+          setTacticalAlertsStack([]);
           handleRespondAlert(alertToAccept.id);
+        }}
+        onPass={(passedAlert, remainingInStack) => {
+          // Remove from active popup stack
+          setTacticalAlertsStack((prev) => prev.filter((a) => a.id !== passedAlert.id));
+          if (remainingInStack === 0) {
+            setTacticalAlertVisible(false);
+          }
+          // Note: The passed alert remains preserved in `alerts` feed so officer/department never ignores it!
         }}
         onDismiss={() => {
           setTacticalAlertVisible(false);
-          setIncomingTacticalAlert(null);
+          setTacticalAlertsStack([]);
         }}
       />
 

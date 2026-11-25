@@ -14,6 +14,7 @@ import { AlertItem } from '../utils/mockState';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 import { SurfaceCard } from '../components/SurfaceCard';
 import { PrimaryButton } from '../components/PrimaryButton';
+import { TacticalToast } from '../components/TacticalToast';
 
 interface AlertDetailsScreenProps {
   alert: AlertItem;
@@ -85,13 +86,12 @@ export const AlertDetailsScreen: React.FC<AlertDetailsScreenProps> = ({
         </View>
       </View>
 
-      {/* Inline Feedback Banner */}
-      {feedbackMessage && (
-        <View style={styles.feedbackBanner}>
-          <MaterialIcons name="check-circle" size={16} color={COLORS.secondary} style={{ marginRight: 6 }} />
-          <Text style={styles.feedbackText}>{feedbackMessage}</Text>
-        </View>
-      )}
+      {/* Universal Floating In-App Toast (Layout-Stable Overlay) */}
+      <TacticalToast
+        message={feedbackMessage}
+        topOffset={68}
+        onDismiss={() => setFeedbackMessage(null)}
+      />
 
       {/* Main Forensic Evidence Section */}
       <SurfaceCard style={styles.evidenceCard}>
@@ -286,23 +286,7 @@ const styles = StyleSheet.create({
     color: COLORS.error,
     fontWeight: '800',
   },
-  feedbackBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(16, 185, 129, 0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.3)',
-    borderRadius: ROUNDED.MD,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginBottom: SPACING.md,
-  },
-  feedbackText: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.success,
-    fontSize: 12,
-    flex: 1,
-  },
+
   evidenceCard: {
     padding: SPACING.md,
     marginBottom: SPACING.md,
