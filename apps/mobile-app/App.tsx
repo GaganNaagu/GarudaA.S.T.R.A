@@ -129,6 +129,34 @@ function MainApp() {
     };
   }, [isAuthorized, officer.status]);
 
+  // Listen for user clicking a push notification while app is backgrounded
+  useEffect(() => {
+    let sub: any = null;
+    try {
+      const Notifications = require('expo-notifications');
+      if (Notifications?.addNotificationResponseReceivedListener) {
+        sub = Notifications.addNotificationResponseReceivedListener((response: any) => {
+          const alertId = response.notification.request.content.data?.alertId;
+          if (alertId) {
+            setAlerts((currentAlerts) => {
+              const found = currentAlerts.find((a) => a.id === alertId);
+              if (found) {
+                setSelectedAlert(found);
+                setCurrentScreen('details');
+              }
+              return currentAlerts;
+            });
+          }
+        });
+      }
+    } catch (e) {
+      // Graceful fallback for non-native environments
+    }
+    return () => {
+      if (sub && sub.remove) sub.remove();
+    };
+  }, []);
+
   // Fetch initial data from backend
   useEffect(() => {
     if (isAuthorized) {
@@ -587,11 +615,19 @@ function MainApp() {
       {/* Active Screen Rendering */}
       <View style={styles.screenContainer}>{renderScreen()}</View>
 
-      {/* Tactical Full-screen Attention-grabbing Popup */}
+      {/* Tactical Full-screen Attention-grabbing Popup (Driver Dispatch Ergonomics) */}
       <TacticalAlertPopup
         visible={tacticalAlertVisible}
         alert={incomingTacticalAlert}
         onAcknowledge={handleAcknowledgeTacticalAlert}
+        onAccept={(alertToAccept) => {
+          setTacticalAlertVisible(false);
+          handleRespondAlert(alertToAccept.id);
+        }}
+        onDismiss={() => {
+          setTacticalAlertVisible(false);
+          setIncomingTacticalAlert(null);
+        }}
       />
 
       {/* Standardized Bottom Navigation Shell (hidden in details view) */}
