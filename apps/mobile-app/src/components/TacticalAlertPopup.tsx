@@ -15,7 +15,8 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, ROUNDED, SPACING } from '../constants/theme';
 import {
   playTacticalChime,
-  stopTacticalChime,
+  startTacticalAlertRingtone,
+  stopTacticalAlertRingtone,
   setTacticalMuted,
   isTacticalMuted,
 } from '../utils/tacticalAudio';
@@ -96,8 +97,8 @@ export const TacticalAlertPopup: React.FC<TacticalAlertPopupProps> = ({
         } catch (e) {}
       }
 
-      // Start creative tactical sonar chime
-      playTacticalChime();
+      // Start periodic tactical alert chime (once every 3.5s) until acknowledged or dismissed
+      startTacticalAlertRingtone();
 
       // Smooth slide up & fade in
       Animated.parallel([
@@ -128,7 +129,7 @@ export const TacticalAlertPopup: React.FC<TacticalAlertPopupProps> = ({
         ),
       ]).start();
     } else {
-      stopTacticalChime();
+      stopTacticalAlertRingtone();
       slideAnimY.setValue(60);
       slideAnimX.setValue(0);
       opacityAnim.setValue(0);
@@ -136,7 +137,7 @@ export const TacticalAlertPopup: React.FC<TacticalAlertPopupProps> = ({
     }
 
     return () => {
-      stopTacticalChime();
+      stopTacticalAlertRingtone();
     };
   }, [visible, activeAlerts.length > 0]);
 
@@ -144,6 +145,11 @@ export const TacticalAlertPopup: React.FC<TacticalAlertPopupProps> = ({
     const nextMuted = !isMuted;
     setIsMuted(nextMuted);
     setTacticalMuted(nextMuted);
+    if (nextMuted) {
+      stopTacticalAlertRingtone();
+    } else {
+      startTacticalAlertRingtone();
+    }
   };
 
   const stackCount = activeAlerts.length;
@@ -162,8 +168,8 @@ export const TacticalAlertPopup: React.FC<TacticalAlertPopupProps> = ({
     setSelectedIndex((prev) => (prev - 1 + stackCount) % stackCount);
   };
 
-  // Defer / Hold: Defer this alert so other units can respond, while moving to next in stack
-  const handleDefer = () => {
+  // Pass / Skip: Pass this alert to team, moving to next in stack
+  const handlePass = () => {
     if (!currentAlert) return;
 
     // Slide card off smoothly
@@ -172,17 +178,17 @@ export const TacticalAlertPopup: React.FC<TacticalAlertPopupProps> = ({
       duration: 180,
       useNativeDriver: true,
     }).start(() => {
-      const deferredAlert = currentAlert;
+      const passedAlert = currentAlert;
       const nextStack = activeAlerts.filter((_, idx) => idx !== selectedIndex);
       setActiveAlerts(nextStack);
       setSelectedIndex(0);
 
       if (onPass) {
-        onPass(deferredAlert, nextStack.length);
+        onPass(passedAlert, nextStack.length);
       }
 
       if (nextStack.length === 0) {
-        stopTacticalChime();
+        stopTacticalAlertRingtone();
         if (onDismiss) onDismiss();
       } else {
         setImageError(false);
@@ -197,9 +203,9 @@ export const TacticalAlertPopup: React.FC<TacticalAlertPopupProps> = ({
     });
   };
 
-  // Commit & Intercept: Lock target coordinates and respond
+  // Accept & Attend: Assign officer and open navigation
   const handleAccept = () => {
-    stopTacticalChime();
+    stopTacticalAlertRingtone();
     if (onAccept && currentAlert) {
       onAccept(currentAlert);
     } else {
@@ -266,7 +272,7 @@ export const TacticalAlertPopup: React.FC<TacticalAlertPopupProps> = ({
                     { opacity: pulseAnim },
                   ]}
                 />
-                <Text style={styles.directiveText}>SIGHTING DIRECTIVE</Text>
+                <Text style={styles.directiveText}>NEW SIGHTING ALERT</Text>
               </View>
 
               {/* Patrol Deployment Mode: Foot Patrol vs. Vehicular Squad */}
@@ -278,7 +284,7 @@ export const TacticalAlertPopup: React.FC<TacticalAlertPopupProps> = ({
                   style={{ marginRight: 3 }}
                 />
                 <Text style={styles.patrolModeText}>
-                  {isFootPatrol ? 'FOOT PATROL' : 'VEHICULAR'}
+                  {isFootPatrol ? 'WALKING PATROL' : 'VEHICLE PATROL'}
                 </Text>
               </View>
             </View>
@@ -296,7 +302,7 @@ export const TacticalAlertPopup: React.FC<TacticalAlertPopupProps> = ({
                 color={isMuted ? COLORS.onSurfaceVariant : '#ffffff'}
               />
               <Text style={[styles.audioToggleText, isMuted && styles.audioToggleTextMuted]}>
-                {isMuted ? 'MUTED' : 'CHIME ON'}
+                {isMuted ? 'SOUND OFF' : 'ALERT SOUND ON'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -307,7 +313,7 @@ export const TacticalAlertPopup: React.FC<TacticalAlertPopupProps> = ({
               <View style={styles.stackIndicator}>
                 <MaterialIcons name="layers" size={13} color="#D4AF37" style={{ marginRight: 4 }} />
                 <Text style={styles.stackIndicatorText}>
-                  {`LEAD ${selectedIndex + 1} OF ${stackCount} IN SECTOR`}
+                  {`ALERT ${selectedIndex + 1} OF ${stackCount} NEAR YOU`}
                 </Text>
               </View>
 
@@ -336,16 +342,16 @@ export const TacticalAlertPopup: React.FC<TacticalAlertPopupProps> = ({
               <View style={styles.biometricScoreRow}>
                 <Text style={styles.biometricScore}>{matchScore}%</Text>
                 <View style={styles.fidelityBadge}>
-                  <Text style={styles.fidelityText}>NEURAL MATCH</Text>
+                  <Text style={styles.fidelityText}>AI CONFIRMED</Text>
                 </View>
               </View>
-              <Text style={styles.biometricLabel}>BIOMETRIC RECOGNITION FIDELITY</Text>
+              <Text style={styles.biometricLabel}>FACE MATCH ACCURACY</Text>
             </View>
 
             <View style={styles.biometricRight}>
               <View style={styles.threatBadge}>
                 <View style={styles.threatBeacon} />
-                <Text style={styles.threatText}>{currentAlert.threatLevel} SIGHTING</Text>
+                <Text style={styles.threatText}>{currentAlert.threatLevel} PRIORITY</Text>
               </View>
               <Text style={styles.caseBadgeText}>
                 {currentAlert.fileNo || '#MP-2026-0891'}
@@ -380,16 +386,16 @@ export const TacticalAlertPopup: React.FC<TacticalAlertPopupProps> = ({
                 {targetName}
               </Text>
               <Text style={styles.subjectCategory} numberOfLines={1}>
-                Missing Person Sighting Lead
+                Missing Person Spotted
               </Text>
               <View style={styles.sensorBadge}>
                 <MaterialIcons name="videocam" size={12} color="#10b981" />
                 <Text style={styles.sensorText} numberOfLines={1}>
-                  {currentAlert.cameraName || 'CCTV Optical Sensor · Central Concourse'}
+                  {currentAlert.cameraName || 'CCTV Camera · Platform Concourse'}
                 </Text>
               </View>
               <Text style={styles.timestampText}>
-                Detected Just Now · Verified by AI Core
+                Spotted Just Now · Checked by AI
               </Text>
             </View>
           </View>
@@ -404,13 +410,13 @@ export const TacticalAlertPopup: React.FC<TacticalAlertPopupProps> = ({
               </View>
               <View style={styles.nodeDataCol}>
                 <View style={styles.nodeHeaderRow}>
-                  <Text style={styles.nodeTitle}>Patrol Unit-042</Text>
+                  <Text style={styles.nodeTitle}>Your Location</Text>
                   <Text style={styles.distanceBadge}>
-                    {isFootPatrol ? '420m · ~3 min rapid foot intercept' : '420m · ~1 min vehicular arrival'}
+                    {isFootPatrol ? '420m away · ~3 min walk' : '420m away · ~1 min drive'}
                   </Text>
                 </View>
                 <Text style={styles.nodeDetail}>
-                  Active Sector Vector · Bearing 042° NE
+                  Patrol Route · Moving towards spot
                 </Text>
               </View>
             </View>
@@ -429,7 +435,7 @@ export const TacticalAlertPopup: React.FC<TacticalAlertPopupProps> = ({
                     : 'Majestic Central Terminal, Platform 2 Concourse'}
                 </Text>
                 <Text style={styles.nodeDetail}>
-                  Optical Intercept Zone · Coordinates Transmitted
+                  Camera Spot · Map location marked
                 </Text>
               </View>
             </View>
@@ -437,21 +443,21 @@ export const TacticalAlertPopup: React.FC<TacticalAlertPopupProps> = ({
 
           {/* Tactical Officer Operational Controls */}
           <View style={styles.actionRow}>
-            {/* Defer Button: Leaves alert active for fleet, cycles to next */}
+            {/* Pass / Skip Button: Leaves alert active for fleet, cycles to next */}
             <TouchableOpacity
               style={styles.deferButton}
-              onPress={handleDefer}
+              onPress={handlePass}
               activeOpacity={0.7}
               hitSlop={8}
             >
-              <MaterialIcons name="pause-circle-outline" size={18} color="#94a3b8" />
+              <MaterialIcons name="fast-forward" size={18} color="#94a3b8" />
               <View style={styles.buttonTextCol}>
-                <Text style={styles.deferText}>DEFER</Text>
-                <Text style={styles.deferSubtext}>Hold for Fleet</Text>
+                <Text style={styles.deferText}>SKIP FOR NOW</Text>
+                <Text style={styles.deferSubtext}>Pass to team</Text>
               </View>
             </TouchableOpacity>
 
-            {/* Commit & Intercept Button: Assigns officer, opens tactical navigation */}
+            {/* Accept & Attend Button: Assigns officer, opens tactical navigation */}
             <TouchableOpacity
               style={styles.commitButton}
               onPress={handleAccept}
@@ -459,8 +465,8 @@ export const TacticalAlertPopup: React.FC<TacticalAlertPopupProps> = ({
             >
               <MaterialIcons name="navigation" size={19} color="#0b0f17" style={{ marginRight: 6 }} />
               <View style={styles.buttonTextCol}>
-                <Text style={styles.commitButtonText}>COMMIT & INTERCEPT</Text>
-                <Text style={styles.commitButtonSubtext}>Set En-Route Status</Text>
+                <Text style={styles.commitButtonText}>ACCEPT & ATTEND</Text>
+                <Text style={styles.commitButtonSubtext}>I am on the way</Text>
               </View>
             </TouchableOpacity>
           </View>

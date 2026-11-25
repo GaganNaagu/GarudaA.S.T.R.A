@@ -47,10 +47,25 @@ export const AlertDetailsScreen: React.FC<AlertDetailsScreenProps> = ({
   const isAssignedToOther = isAssigned && !isAssignedToMe;
   const otherOfficerAssignment = isAssignedToOther ? assignments[0] : null;
 
+  const getReadableStatus = (status: AlertItem['status']) => {
+    switch (status) {
+      case 'EN-ROUTE':
+        return 'On The Way';
+      case 'INVESTIGATING':
+        return 'Investigating';
+      case 'FOUND':
+        return 'Person Found';
+      case 'FALSE ALARM':
+        return 'False Alarm';
+      default:
+        return status;
+    }
+  };
+
   const handleStatusChange = (status: AlertItem['status']) => {
     setCurrentStatus(status);
     onUpdateStatus(alert.id, status);
-    setFeedbackMessage(`Status updated to ${status}. Transmitted to dispatch.`);
+    setFeedbackMessage(`Status updated: ${getReadableStatus(status)}. Sent to control room.`);
     setTimeout(() => {
       setFeedbackMessage(null);
     }, 4000);
@@ -197,7 +212,7 @@ export const AlertDetailsScreen: React.FC<AlertDetailsScreenProps> = ({
         <Text style={styles.sectionTitle}>OPERATIONAL FIELD CONTROLS</Text>
         <View style={styles.actionGrid}>
           <PrimaryButton
-            title="EN-ROUTE"
+            title="ON THE WAY"
             onPress={() => handleStatusChange('EN-ROUTE')}
             variant={currentStatus === 'EN-ROUTE' ? 'primary' : 'secondary'}
             size="sm"

@@ -101,11 +101,10 @@ function getNotificationModule() {
       if (Notifications?.setNotificationHandler) {
         Notifications.setNotificationHandler({
           handleNotification: async () => ({
-            shouldShowAlert: true,
-            shouldPlaySound: false, // Prevent overlapping system notification ringtone with in-app chime
-            shouldSetBadge: true,
             shouldShowBanner: true,
             shouldShowList: true,
+            shouldPlaySound: false, // Prevent overlapping system notification ringtone with in-app chime
+            shouldSetBadge: true,
           }),
         });
       }

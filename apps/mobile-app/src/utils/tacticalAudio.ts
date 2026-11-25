@@ -4,6 +4,7 @@ let activePlayer: any = null;
 let isMutedState = false;
 let isAudioModeConfigured = false;
 let lastPlayTimestamp = 0;
+let alertRingtoneInterval: any = null;
 
 /**
  * Configure audio subsystem for high-priority tactical playback
@@ -73,9 +74,46 @@ export async function playTacticalChime(force = false): Promise<void> {
 }
 
 /**
+ * Start playing the single clean chime periodically (every 3.5 seconds)
+ * until the officer accepts or dismisses the alert.
+ */
+export function startTacticalAlertRingtone(): void {
+  if (isMutedState) return;
+
+  stopTacticalAlertRingtone();
+
+  // Play single chime immediately
+  playTacticalChime(true);
+
+  // Repeat the single chime every 3.5 seconds until acknowledged/dismissed
+  alertRingtoneInterval = setInterval(() => {
+    if (isMutedState) {
+      stopTacticalAlertRingtone();
+      return;
+    }
+    playTacticalChime(true);
+  }, 3500);
+}
+
+/**
+ * Stop the periodic alert chime immediately upon user interaction
+ */
+export function stopTacticalAlertRingtone(): void {
+  if (alertRingtoneInterval) {
+    clearInterval(alertRingtoneInterval);
+    alertRingtoneInterval = null;
+  }
+  stopTacticalChime();
+}
+
+/**
  * Stop/pause tactical audio playback cleanly
  */
 export function stopTacticalChime(): void {
+  if (alertRingtoneInterval) {
+    clearInterval(alertRingtoneInterval);
+    alertRingtoneInterval = null;
+  }
   if (activePlayer) {
     try {
       activePlayer.pause();
@@ -103,9 +141,9 @@ export function releaseTacticalAudio(): void {
 export function setTacticalMuted(muted: boolean): boolean {
   isMutedState = muted;
   if (muted) {
-    stopTacticalChime();
+    stopTacticalAlertRingtone();
   } else {
-    playTacticalChime();
+    playTacticalChime(true);
   }
   return isMutedState;
 }
