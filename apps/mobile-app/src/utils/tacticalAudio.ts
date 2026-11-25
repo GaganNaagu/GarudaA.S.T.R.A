@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 let activePlayer: any = null;
 let isMutedState = false;
 let isAudioModeConfigured = false;
+let lastPlayTimestamp = 0;
 
 /**
  * Configure audio subsystem for high-priority tactical playback
@@ -24,11 +25,18 @@ async function ensureAudioMode() {
 }
 
 /**
- * Play the tactical alert chime.
- * Uses tactical_ping.wav (creative sonar advisory chime rather than an abrasive siren).
+ * Play a single clean, pleasant tactical advisory chime.
+ * Non-looping, comfortable volume, and single execution to prevent overlapping sound clutter.
  */
-export async function playTacticalChime(): Promise<void> {
+export async function playTacticalChime(force = false): Promise<void> {
   if (isMutedState) return;
+
+  const now = Date.now();
+  // Prevent rapid duplicate sound triggers (cooldown of 1200ms)
+  if (!force && now - lastPlayTimestamp < 1200) {
+    return;
+  }
+  lastPlayTimestamp = now;
 
   await ensureAudioMode();
 
@@ -37,10 +45,10 @@ export async function playTacticalChime(): Promise<void> {
     if (!createAudioPlayer) return;
 
     if (!activePlayer) {
-      // Use clean synthesized tactical sonar radar ping
+      // Pure, warm single acoustic bell chime (D5: 587.33 Hz)
       activePlayer = createAudioPlayer(require('../../assets/audio/tactical_ping.wav'));
-      activePlayer.loop = true;
-      activePlayer.volume = 0.95;
+      activePlayer.loop = false;
+      activePlayer.volume = 0.70;
     }
 
     try {
@@ -55,8 +63,8 @@ export async function playTacticalChime(): Promise<void> {
         if (activePlayer.remove) activePlayer.remove();
       } catch (e) {}
       activePlayer = createAudioPlayer(require('../../assets/audio/tactical_ping.wav'));
-      activePlayer.loop = true;
-      activePlayer.volume = 0.95;
+      activePlayer.loop = false;
+      activePlayer.volume = 0.70;
       activePlayer.play();
     }
   } catch (err) {

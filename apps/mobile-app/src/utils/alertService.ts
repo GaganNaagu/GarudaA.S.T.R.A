@@ -102,7 +102,7 @@ function getNotificationModule() {
         Notifications.setNotificationHandler({
           handleNotification: async () => ({
             shouldShowAlert: true,
-            shouldPlaySound: true,
+            shouldPlaySound: false, // Prevent overlapping system notification ringtone with in-app chime
             shouldSetBadge: true,
             shouldShowBanner: true,
             shouldShowList: true,
