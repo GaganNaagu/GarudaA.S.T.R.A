@@ -19,7 +19,15 @@ import {
   Info,
   Clock
 } from 'lucide-react'
-import { getMissingPerson, searchPerson, getSafeEvidenceUrl, SightingEvidence, getCaseEvidence } from '@/lib/api'
+import { 
+  getMissingPerson, 
+  searchPerson, 
+  getSafeEvidenceUrl, 
+  SightingEvidence, 
+  getCaseEvidence, 
+  getCaseTimeline, 
+  CaseTimelineResponse 
+} from '@/lib/api'
 import { EvidenceVaultTab } from '@/components/evidence/EvidenceVaultTab'
 import { InvestigationTimelineTab } from '@/components/timeline/InvestigationTimelineTab'
 
@@ -34,6 +42,7 @@ export default function CaseDetailPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'evidence' | 'timeline' | 'overview'>('evidence')
   const [evidenceList, setEvidenceList] = useState<SightingEvidence[]>([])
+  const [timelineData, setTimelineData] = useState<CaseTimelineResponse | null>(null)
   const [selectedSightingId, setSelectedSightingId] = useState<string | null>(null)
   const [confirmedCount, setConfirmedCount] = useState(0)
   const [isSearching, setIsSearching] = useState(false)
@@ -41,11 +50,16 @@ export default function CaseDetailPage() {
   const fetchCase = async () => {
     setIsLoading(true)
     try {
-      const data = await getMissingPerson(id)
+      // Parallel non-blocking fetch to eliminate network waterfalls
+      const [data, evidence, timeline] = await Promise.all([
+        getMissingPerson(id),
+        getCaseEvidence(id),
+        getCaseTimeline(id)
+      ])
       setPerson(data)
-
-      const evidence = await getCaseEvidence(id)
       setEvidenceList(evidence)
+      setTimelineData(timeline)
+
       const confirmed = evidence.filter((s: SightingEvidence) => s.verification_status === 'Confirmed').length
       setConfirmedCount(confirmed)
     } catch (err) {
@@ -238,8 +252,8 @@ export default function CaseDetailPage() {
         </button>
       </div>
 
-      {/* Active Tab View */}
-      {activeTab === 'evidence' ? (
+      {/* Tab Panels - Kept mounted with visibility toggle to guarantee 0ms instant tab switching */}
+      <div className={activeTab === 'evidence' ? 'block' : 'hidden'}>
         <EvidenceVaultTab
           caseId={id}
           person={{
@@ -252,15 +266,20 @@ export default function CaseDetailPage() {
           selectedSightingId={selectedSightingId}
           onEvidenceChange={(count) => setConfirmedCount(count)}
         />
-      ) : activeTab === 'timeline' ? (
+      </div>
+
+      <div className={activeTab === 'timeline' ? 'block' : 'hidden'}>
         <InvestigationTimelineTab
           caseId={id}
+          initialTimeline={timelineData}
           onNavigateToEvidence={(sightingId) => {
             setSelectedSightingId(sightingId || null)
             setActiveTab('evidence')
           }}
         />
-      ) : (
+      </div>
+
+      <div className={activeTab === 'overview' ? 'block' : 'hidden'}>
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Forensic Case Notes</CardTitle>
@@ -274,7 +293,7 @@ export default function CaseDetailPage() {
             </div>
           </CardContent>
         </Card>
-      )}
+      </div>
     </div>
   )
 }

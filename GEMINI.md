@@ -191,6 +191,39 @@ Before authoring or modifying any UI component or page:
 
 ---
 
+## ⚡ FRONTEND PERFORMANCE & TAB OPTIMIZATION GUIDELINES (MANDATORY FOR DEV 1 & DEV 2)
+
+To maintain sub-100ms UI responsiveness, high-density dashboard fluidity, and prevent sluggish tab switching across all pages:
+
+1. **NEVER UNMOUNT TABS ON SWITCH (KEEP-ALIVE PATTERN):**
+   - **Antipattern:** `{activeTab === 'tabA' ? <TabA /> : <TabB />}` destroys the component, dumps state, tears down the DOM, and causes full-page loading flashes on every click.
+   - **Mandatory Pattern:** Use CSS visibility toggles to keep rendered tabs alive:
+     ```tsx
+     <div className={activeTab === 'tabA' ? 'block' : 'hidden'}><TabA /></div>
+     <div className={activeTab === 'tabB' ? 'block' : 'hidden'}><TabB /></div>
+     ```
+   - This ensures **0ms instant switching**, preserves user scroll position, avoids reloading images/crops, and retains form or filter states.
+
+2. **ELIMINATE NETWORK WATERFALLS VIA `Promise.all`:**
+   - In page-level data loaders (e.g. `page.tsx`), always fetch parallel resources simultaneously:
+     ```tsx
+     const [person, evidence, timeline] = await Promise.all([
+       getMissingPerson(id),
+       getCaseEvidence(id),
+       getCaseTimeline(id)
+     ])
+     ```
+   - Pass pre-fetched data down as `initialData` so child tabs render immediately on mount without blank loading spinners.
+
+3. **CLIENT-SIDE STALE-WHILE-REVALIDATE IN-MEMORY CACHE:**
+   - Use in-memory client caching (`clientCache` in `lib/api.ts`) with a short TTL (30s) for read-heavy endpoints.
+   - Invalidate specific cache keys on mutation (`updateStatus`, `patchStatus`, etc.).
+
+4. **BACKGROUND REVALIDATION WITHOUT FULL-PAGE FLASH:**
+   - Child components with tab filters or refresh buttons must re-fetch quietly in the background (`isLoading` true only when initial data is null/empty).
+
+---
+
 ## 📋 GSD (GET SHIT DONE) & PLANNING RULES
 
 Whenever an AI agent is working on this codebase:

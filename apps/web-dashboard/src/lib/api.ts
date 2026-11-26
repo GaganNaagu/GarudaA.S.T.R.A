@@ -410,9 +410,35 @@ export function getSafeEvidenceUrl(rawPath: string | null): string {
   return `${baseUrl}${cleanPath}`
 }
 
-export async function getCaseEvidence(caseId: string): Promise<SightingEvidence[]> {
+// In-Memory Client Cache to eliminate tab-switching waterfalls and redundant HTTP roundtrips
+const clientCache = new Map<string, { data: any; timestamp: number }>()
+const CACHE_TTL_MS = 30000 // 30 seconds fresh window
+
+export function invalidateClientCache(keyPrefix?: string) {
+  if (!keyPrefix) {
+    clientCache.clear()
+    return
+  }
+  for (const key of Array.from(clientCache.keys())) {
+    if (key.includes(keyPrefix)) {
+      clientCache.delete(key)
+    }
+  }
+}
+
+export async function getCaseEvidence(caseId: string, forceFresh: boolean = false): Promise<SightingEvidence[]> {
+  const cacheKey = `evidence-${caseId}`
+  if (!forceFresh) {
+    const cached = clientCache.get(cacheKey)
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+      return cached.data
+    }
+  }
+
   try {
-    return await fetchApi(`/evidence/case/${caseId}`)
+    const data = await fetchApi(`/evidence/case/${caseId}`)
+    clientCache.set(cacheKey, { data, timestamp: Date.now() })
+    return data
   } catch (err) {
     console.warn(`Failed to fetch evidence for case ${caseId}, fallback to empty list`, err)
     return []
@@ -428,13 +454,17 @@ export async function updateSightingStatus(
   verification_status: 'Unreviewed' | 'Confirmed' | 'Rejected',
   review_notes?: string
 ): Promise<SightingEvidence> {
-  return fetchApi(`/evidence/sighting/${sightingId}/status`, {
+  const res = await fetchApi(`/evidence/sighting/${sightingId}/status`, {
     method: 'PATCH',
     body: JSON.stringify({
       verification_status,
       review_notes
     })
   })
+  // Invalidate case evidence and timeline caches on status change
+  invalidateClientCache('evidence')
+  invalidateClientCache('timeline')
+  return res
 }
 
 export interface TimelineEventLink {
@@ -476,15 +506,26 @@ export interface CaseTimelineResponse {
 export async function getCaseTimeline(
   caseId: string,
   category: string = 'all',
-  order: 'asc' | 'desc' = 'asc'
+  order: 'asc' | 'desc' = 'asc',
+  forceFresh: boolean = false
 ): Promise<CaseTimelineResponse> {
+  const cacheKey = `timeline-${caseId}-${category}-${order}`
+  if (!forceFresh) {
+    const cached = clientCache.get(cacheKey)
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+      return cached.data
+    }
+  }
+
   try {
     const params = new URLSearchParams()
     if (category && category !== 'all') {
       params.append('category', category)
     }
     params.append('order', order)
-    return await fetchApi(`/timeline/case/${caseId}?${params.toString()}`)
+    const data = await fetchApi(`/timeline/case/${caseId}?${params.toString()}`)
+    clientCache.set(cacheKey, { data, timestamp: Date.now() })
+    return data
   } catch (err) {
     console.warn(`Failed to fetch timeline for case ${caseId}, fallback to empty timeline`, err)
     return {

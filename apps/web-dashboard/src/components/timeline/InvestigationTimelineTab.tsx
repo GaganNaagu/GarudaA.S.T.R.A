@@ -35,6 +35,7 @@ import {
 
 interface InvestigationTimelineTabProps {
   caseId: string
+  initialTimeline?: CaseTimelineResponse | null
   onNavigateToEvidence?: (sightingId?: string) => void
 }
 
@@ -52,18 +53,19 @@ const CATEGORY_TABS: { label: string; value: TimelineCategory; icon: React.Eleme
 
 export function InvestigationTimelineTab({
   caseId,
+  initialTimeline,
   onNavigateToEvidence
 }: InvestigationTimelineTabProps) {
   const { toast } = useToast()
-  const [timeline, setTimeline] = useState<CaseTimelineResponse | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [timeline, setTimeline] = useState<CaseTimelineResponse | null>(initialTimeline || null)
+  const [isLoading, setIsLoading] = useState(!initialTimeline)
   const [category, setCategory] = useState<TimelineCategory>('all')
   const [order, setOrder] = useState<'asc' | 'desc'>('asc')
 
-  const fetchTimeline = async () => {
-    setIsLoading(true)
+  const fetchTimeline = async (showSpinner: boolean = true, forceFresh: boolean = false) => {
+    if (showSpinner && !timeline) setIsLoading(true)
     try {
-      const data = await getCaseTimeline(caseId, category, order)
+      const data = await getCaseTimeline(caseId, category, order, forceFresh)
       setTimeline(data)
     } catch (err: any) {
       toast(err.message || 'Failed to load timeline events', 'error')
@@ -73,8 +75,15 @@ export function InvestigationTimelineTab({
   }
 
   useEffect(() => {
+    if (initialTimeline && !timeline) {
+      setTimeline(initialTimeline)
+      setIsLoading(false)
+    }
+  }, [initialTimeline])
+
+  useEffect(() => {
     if (caseId) {
-      fetchTimeline()
+      fetchTimeline(false)
     }
   }, [caseId, category, order])
 
@@ -189,7 +198,7 @@ export function InvestigationTimelineTab({
           <Button
             variant="ghost"
             size="sm"
-            onClick={fetchTimeline}
+            onClick={() => fetchTimeline(true, true)}
             disabled={isLoading}
             className="h-8 w-8 p-0"
             title="Refresh Timeline"
