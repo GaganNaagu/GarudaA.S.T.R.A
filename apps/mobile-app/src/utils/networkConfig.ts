@@ -48,8 +48,9 @@ export function getResolvedBackendUrls() {
       c?.Brand?.toLowerCase().includes('google'));
 
   if (isAndroidEmulator) {
-    // Android emulator uses 'localhost' / '127.0.0.1' via adb reverse tcp:8000 tcp:8000
-    host = 'localhost';
+    // 10.0.2.2 always routes to the host machine's 127.0.0.1/0.0.0.0 on Android Emulator
+    // without depending on `adb reverse tcp:8000 tcp:8000`
+    host = '10.0.2.2';
   } else {
     // Inspect expo-constants for the development machine LAN IP
     let Constants: any = null;

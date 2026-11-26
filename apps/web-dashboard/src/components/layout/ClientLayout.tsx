@@ -21,6 +21,7 @@ export function ClientLayoutContent({ children }: { children: React.ReactNode })
   // Audio element ref for Garuda_Detect_Webapp.wav & audio context
   const audioContextRef = useRef<AudioContext | null>(null)
   const alertAudioRef = useRef<HTMLAudioElement | null>(null)
+  const isAudioUnlockedRef = useRef<boolean>(false)
 
   // Pre-warm and unlock audio on first user interaction (browser autoplay policy)
   useEffect(() => {
@@ -32,6 +33,7 @@ export function ClientLayoutContent({ children }: { children: React.ReactNode })
     }
 
     const unlock = () => {
+      isAudioUnlockedRef.current = true
       if (alertAudioRef.current) {
         alertAudioRef.current
           .play()
@@ -45,7 +47,7 @@ export function ClientLayoutContent({ children }: { children: React.ReactNode })
         audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)()
       }
       if (audioContextRef.current.state === 'suspended') {
-        audioContextRef.current.resume()
+        audioContextRef.current.resume().catch(() => {})
       }
       document.removeEventListener('click', unlock)
       document.removeEventListener('touchstart', unlock)
@@ -76,25 +78,34 @@ export function ClientLayoutContent({ children }: { children: React.ReactNode })
     setMobileMenuOpen(false)
   }, [pathname])
 
-  // Global alert sound using official Garuda_Detect_Webapp.wav from sfx/
+  // Global alert sound: ONLY play when a new alert arrives from backend,
+  // NOT when the operator presses "Confirm Lead" (type === 'assignment').
   useEffect(() => {
-    if (lastMessage && lastMessage.event === 'possible_match_detected') {
+    if (
+      lastMessage &&
+      lastMessage.event === 'possible_match_detected' &&
+      lastMessage.type !== 'assignment'
+    ) {
+      if (!isAudioUnlockedRef.current) {
+        // Browser autoplay policy blocks audio before user interaction; avoid throwing console.error
+        return
+      }
       try {
         if (alertAudioRef.current) {
           alertAudioRef.current.currentTime = 0
           alertAudioRef.current.play().catch((err) => {
-            console.warn('Pre-warmed audio play blocked, attempting fallback:', err)
+            if (err?.name === 'NotAllowedError') return
             const fallbackAudio = new Audio('/sounds/Garuda_Detect_Webapp.wav')
             fallbackAudio.volume = 0.85
-            fallbackAudio.play().catch((e) => console.error('Failed to play Garuda_Detect_Webapp.wav', e))
+            fallbackAudio.play().catch(() => {})
           })
         } else {
           const fallbackAudio = new Audio('/sounds/Garuda_Detect_Webapp.wav')
           fallbackAudio.volume = 0.85
-          fallbackAudio.play().catch((e) => console.error('Failed to play Garuda_Detect_Webapp.wav', e))
+          fallbackAudio.play().catch(() => {})
         }
-      } catch (e) {
-        console.error('Failed to play alert sound', e)
+      } catch {
+        // Ignore playback errors silently
       }
     }
   }, [lastMessage])

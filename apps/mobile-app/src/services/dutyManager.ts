@@ -29,6 +29,7 @@ export interface DutyConfig {
 // ---------- Internal State ----------
 
 let dutyActive = false;
+let dutyEpoch = 0;
 let currentConfig: DutyConfig | null = null;
 let messageUnsubscribe: (() => void) | null = null;
 let connectionUnsubscribe: (() => void) | null = null;
@@ -60,6 +61,8 @@ export async function goOnDuty(config: DutyConfig): Promise<boolean> {
     return true;
   }
 
+  const epoch = ++dutyEpoch;
+  dutyActive = true;
   currentConfig = config;
 
   console.log(`
@@ -72,6 +75,7 @@ export async function goOnDuty(config: DutyConfig): Promise<boolean> {
 
   // 1. Connect WebSocket
   const token = await SecureStore.getItemAsync('astra_token');
+  if (epoch !== dutyEpoch) return false;
   let wsUrlWithToken = config.wsUrl;
   if (token) {
     if (wsUrlWithToken.includes('token=')) {
@@ -83,6 +87,14 @@ export async function goOnDuty(config: DutyConfig): Promise<boolean> {
   SocketManager.connect(wsUrlWithToken);
 
   // 2. Wire up incoming alert messages from WebSocket → alertService
+  if (messageUnsubscribe) {
+    messageUnsubscribe();
+    messageUnsubscribe = null;
+  }
+  if (connectionUnsubscribe) {
+    connectionUnsubscribe();
+    connectionUnsubscribe = null;
+  }
   messageUnsubscribe = SocketManager.onMessage((data: any) => {
     // Handle alerts and dispatched assignments from backend
     const isStatusVerified = data.event === 'alert_status_updated' && (data.data?.status === 'Verified' || data.data?.status === 'Confirmed');
@@ -149,10 +161,10 @@ export async function goOnDuty(config: DutyConfig): Promise<boolean> {
     wsUrl: config.wsUrl,
     delayMs: config.telemetryIntervalMs || 15000,
   });
+  if (epoch !== dutyEpoch) return false;
 
   if (!serviceStarted) {
     console.warn('⚠️ [DUTY] Native background action unavailable in Expo Go. Continuing in active foreground telemetry mode.');
-    dutyActive = true;
     try {
       ForegroundService.sendImmediateTelemetry(
         'DUTY_ON',
@@ -166,14 +178,13 @@ export async function goOnDuty(config: DutyConfig): Promise<boolean> {
 
   // 5. Send immediate DUTY_ON telemetry after ensuring connection
   await SocketManager.waitForConnection(3000);
+  if (epoch !== dutyEpoch) return false;
   ForegroundService.sendImmediateTelemetry(
     'DUTY_ON',
     config.officerId,
     config.officerName,
     'ACTIVE DUTY'
   );
-
-  dutyActive = true;
 
   // 6. Guaranteed continuous periodic telemetry loop (active foreground & Expo Go resilient)
   if (periodicTelemetryTimer) {
@@ -211,12 +222,20 @@ export async function goOnDuty(config: DutyConfig): Promise<boolean> {
  * Safe to call multiple times — no-ops if already off duty.
  */
 export async function goOffDuty(): Promise<void> {
+  const epoch = ++dutyEpoch;
+  dutyActive = false;
+
+  if (disconnectTimer) {
+    clearTimeout(disconnectTimer);
+    disconnectTimer = null;
+  }
+
   if (periodicTelemetryTimer) {
     clearInterval(periodicTelemetryTimer);
     periodicTelemetryTimer = null;
   }
 
-  if (!dutyActive && !ForegroundService.isServiceRunning()) {
+  if (!dutyActive && !ForegroundService.isServiceRunning() && !SocketManager.isConnected()) {
     return;
   }
 
@@ -224,28 +243,29 @@ export async function goOffDuty(): Promise<void> {
 
   // 1. Send immediate DUTY_OFF telemetry (before disconnecting)
   if (currentConfig) {
-    ForegroundService.sendImmediateTelemetry(
-      'DUTY_OFF',
-      currentConfig.officerId,
-      currentConfig.officerName,
-      'OFF DUTY'
-    );
+    try {
+      ForegroundService.sendImmediateTelemetry(
+        'DUTY_OFF',
+        currentConfig.officerId,
+        currentConfig.officerName,
+        'OFF DUTY'
+      );
+    } catch (e) {
+      // Ignore if offline
+    }
   }
 
   // 2. Stop foreground service
   await ForegroundService.stopService();
 
-  // 3. Disconnect WebSocket (guarded timer so immediate re-connection in goOnDuty is never cancelled)
-  if (disconnectTimer) {
-    clearTimeout(disconnectTimer);
-    disconnectTimer = null;
+  // Guard against race conditions: if goOnDuty was called while stopping, do not disconnect
+  if (epoch !== dutyEpoch || dutyActive) {
+    console.log('ℹ️ [DUTY] Aborting off-duty teardown: New duty cycle active.');
+    return;
   }
-  disconnectTimer = setTimeout(() => {
-    if (!dutyActive) {
-      SocketManager.disconnect();
-    }
-    disconnectTimer = null;
-  }, 500);
+
+  // 3. Disconnect WebSocket
+  SocketManager.disconnect();
 
   // 4. Clean up event handlers
   if (messageUnsubscribe) {
@@ -257,7 +277,6 @@ export async function goOffDuty(): Promise<void> {
     connectionUnsubscribe = null;
   }
 
-  dutyActive = false;
   currentConfig = null;
   console.log('🛑 [DUTY] Officer is now OFF DUTY. All systems stopped.');
 }

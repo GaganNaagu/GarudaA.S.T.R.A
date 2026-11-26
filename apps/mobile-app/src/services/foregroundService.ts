@@ -148,7 +148,8 @@ async function operationalLoop(taskDataArguments?: { delay: number; officerId: s
       };
 
       // 5. Send telemetry via WebSocket
-      SocketManager.send({
+      // 5. Send telemetry via WebSocket
+      const sent = SocketManager.send({
         type: 'telemetry',
         payload: {
           ...telemetry,
@@ -159,7 +160,11 @@ async function operationalLoop(taskDataArguments?: { delay: number; officerId: s
       });
 
       // 7. Tactical logs
-      console.log(`📡 Telemetry streamed at ${new Date().toLocaleTimeString()} • GPS: ${gpsData ? 'OK' : 'FAIL'}`);
+      if (sent) {
+        console.log(`📡 Telemetry sent to backend at ${new Date().toLocaleTimeString()} • GPS: ${gpsData ? 'OK' : 'FAIL'}`);
+      } else {
+        console.warn(`⚠️ Telemetry NOT sent (WebSocket disconnected) at ${new Date().toLocaleTimeString()}`);
+      }
     } catch (err) {
       console.error('[FOREGROUND SERVICE] Unexpected loop error:', err);
     }
@@ -289,20 +294,21 @@ export async function sendImmediateTelemetry(
     // Fail silently
   }
 
-    const deviceInfo = getDeviceDetails();
-    SocketManager.send({
-      type: 'telemetry',
-      payload: {
-        officer_id: officerId,
-        officer_name: officerName,
-        gps: gpsData,
-        lat: gpsData ? gpsData.lat : null,
-        lng: gpsData ? gpsData.lng : null,
-        battery: batteryLevel,
-        charging: batteryCharging,
-        status: customStatus || 'on_duty',
-        event_type: eventType,
-        timestamp,
+  const deviceInfo = getDeviceDetails();
+  SocketManager.ensureConnected();
+  SocketManager.send({
+    type: 'telemetry',
+    payload: {
+      officer_id: officerId,
+      officer_name: officerName,
+      gps: gpsData,
+      lat: gpsData ? gpsData.lat : null,
+      lng: gpsData ? gpsData.lng : null,
+      battery: batteryLevel,
+      charging: batteryCharging,
+      status: customStatus || 'on_duty',
+      event_type: eventType,
+      timestamp,
         socket_connected: SocketManager.isConnected(),
         device_info: deviceInfo,
       },

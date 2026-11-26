@@ -28,6 +28,7 @@ const CONNECTION_TIMEOUT_MS = 10000;
 
 let wsInstance: WebSocket | null = null;
 let wsUrl: string | null = null;
+let lastKnownWsUrl: string | null = null;
 let connected = false;
 let intentionalDisconnect = false;
 let reconnectAttempts = 0;
@@ -209,6 +210,7 @@ function destroyConnection() {
  */
 export function connect(url: string): void {
   wsUrl = url;
+  lastKnownWsUrl = url;
   intentionalDisconnect = false;
   reconnectAttempts = 0;
 
@@ -239,14 +241,17 @@ export function disconnect(): void {
  * Called every tick from the foreground service loop.
  * If the connection is dead, attempts to reconnect immediately.
  */
-export function ensureConnected(): void {
-  if (intentionalDisconnect || !wsUrl) return;
+export function ensureConnected(fallbackUrl?: string): void {
+  const targetUrl = wsUrl || fallbackUrl || lastKnownWsUrl;
+  if (!targetUrl) return;
 
   if (!wsInstance || wsInstance.readyState === WebSocket.CLOSED) {
     // Connection is dead — reconnect now
     if (!reconnectTimer) {
       console.log('🔄 [SOCKET] Connection dead. Reconnecting from service loop...');
-      createConnection(wsUrl);
+      intentionalDisconnect = false;
+      wsUrl = targetUrl;
+      createConnection(targetUrl);
     }
   }
 }
@@ -288,15 +293,17 @@ export async function waitForConnection(timeoutMs: number = 5000): Promise<boole
  * Send data to the WebSocket server (e.g., telemetry).
  * Silently drops if not connected.
  */
-export function send(data: object): void {
+export function send(data: object): boolean {
   if (!wsInstance || wsInstance.readyState !== WebSocket.OPEN) {
     // Not connected — drop silently (telemetry is fire-and-forget)
-    return;
+    return false;
   }
   try {
     wsInstance.send(JSON.stringify(data));
+    return true;
   } catch (err) {
     console.warn('⚠️ [SOCKET] Send failed:', err);
+    return false;
   }
 }
 
