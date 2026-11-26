@@ -1,101 +1,84 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# GARUDA A.S.T.R.A — Unified Development Launcher (Linux / macOS / Git Bash)
-# Launches:
-#   1. FastAPI Backend on http://localhost:8000 (Swagger: /docs)
-#   2. Next.js Web Dashboard on http://localhost:3000
-#   3. Expo Mobile App on http://localhost:8081
+# GARUDA A.S.T.R.A — Launcher for 3 Separate Interactive Terminals
+# Opens:
+#   Window 1: FastAPI Backend (:8000)
+#   Window 2: Next.js Web Dashboard (:3000)
+#   Window 3: Expo Mobile App (:8081)
 # ==============================================================================
 
-set -e
-
-# Resolve project root directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 echo "==================================================================="
-echo "  🦅 GARUDA A.S.T.R.A — Unified Dev Launcher"
-echo "  Target: Backend (:8000) | Frontend (:3000) | Mobile (:8081)"
+echo "  🦅 Launching 3 Separate Interactive Terminals..."
+echo "  1. Backend Server (:8000)   -> run_backend.sh"
+echo "  2. Web Dashboard (:3000)    -> run_frontend.sh"
+echo "  3. Mobile Metro App (:8081) -> run_mobile.sh"
 echo "==================================================================="
 
-# 1. Detect Python Executable
-PYTHON_CMD=""
-if [ -f "services/venv/Scripts/python.exe" ]; then
-    PYTHON_CMD="services/venv/Scripts/python.exe"
-elif [ -f "services/venv/bin/python" ]; then
-    PYTHON_CMD="services/venv/bin/python"
-elif [ -f "venv/Scripts/python.exe" ]; then
-    PYTHON_CMD="venv/Scripts/python.exe"
-elif [ -f "venv/bin/python" ]; then
-    PYTHON_CMD="venv/bin/python"
-elif command -v python3 &> /dev/null; then
-    PYTHON_CMD="python3"
-elif command -v python &> /dev/null; then
-    PYTHON_CMD="python"
-else
-    echo "❌ Error: Python not found. Please install Python or set up services/venv."
-    exit 1
-fi
-echo "🐍 Using Python: $PYTHON_CMD"
-
-# 2. Check Node & NPM
-if ! command -v npm &> /dev/null; then
-    echo "❌ Error: Node.js / npm not found on PATH."
-    exit 1
-fi
-echo "📦 Using NPM: $(npm --version)"
-
-# 3. Setup ADB Reverse for connected Android devices/emulators
+# Setup ADB reverse once globally if available
 if command -v adb &> /dev/null; then
     if adb get-state 2>/dev/null | grep -q "device"; then
-        echo "📱 Android device detected. Forwarding localhost ports via ADB..."
+        echo "📱 Android device detected. Forwarding ports via ADB..."
         adb reverse tcp:8000 tcp:8000 2>/dev/null || true
         adb reverse tcp:8081 tcp:8081 2>/dev/null || true
-        echo "   ✔ tcp:8000 -> tcp:8000"
-        echo "   ✔ tcp:8081 -> tcp:8081"
     fi
 fi
 
-# Array to keep track of spawned child process PIDs
-PIDS=()
+# Function to spawn a script in a dedicated interactive terminal window
+spawn_terminal() {
+    local title="$1"
+    local script="$2"
 
-cleanup() {
-    echo ""
-    echo "🛑 Shutting down all Garuda A.S.T.R.A services..."
-    for pid in "${PIDS[@]}"; do
-        if kill -0 "$pid" 2>/dev/null; then
-            kill "$pid" 2>/dev/null || true
+    if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
+        # Windows / Git Bash
+        if [ -f "/c/Program Files/Git/git-bash.exe" ]; then
+            start "" "/c/Program Files/Git/git-bash.exe" --cd="$SCRIPT_DIR" -c "bash $script; echo ''; echo 'Press Enter to exit'; read"
+        elif [ -f "C:/Program Files/Git/git-bash.exe" ]; then
+            start "" "C:/Program Files/Git/git-bash.exe" --cd="$SCRIPT_DIR" -c "bash $script; echo ''; echo 'Press Enter to exit'; read"
+        else
+            cmd.exe /c start "$title" bash -c "cd '$SCRIPT_DIR' && bash $script; echo ''; echo 'Press Enter to exit'; read"
         fi
-    done
-    wait 2>/dev/null || true
-    echo "✔ All services stopped cleanly."
-    exit 0
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        # macOS Terminal
+        osascript -e "tell app \"Terminal\" to do script \"cd \\\"$SCRIPT_DIR\\\" && bash $script\""
+    elif command -v gnome-terminal &>/dev/null; then
+        gnome-terminal --title="$title" -- bash -c "cd '$SCRIPT_DIR' && bash $script; exec bash"
+    elif command -v x-terminal-emulator &>/dev/null; then
+        x-terminal-emulator -T "$title" -e bash -c "cd '$SCRIPT_DIR' && bash $script; exec bash" &
+    elif command -v konsole &>/dev/null; then
+        konsole --new-tab -e bash -c "cd '$SCRIPT_DIR' && bash $script; exec bash" &
+    elif command -v xfce4-terminal &>/dev/null; then
+        xfce4-terminal --title="$title" -e "bash -c 'cd \"$SCRIPT_DIR\" && bash $script; exec bash'" &
+    elif command -v kitty &>/dev/null; then
+        kitty --title "$title" bash -c "cd '$SCRIPT_DIR' && bash $script; exec bash" &
+    elif command -v alacritty &>/dev/null; then
+        alacritty -t "$title" -e bash -c "cd '$SCRIPT_DIR' && bash $script; exec bash" &
+    elif command -v xterm &>/dev/null; then
+        xterm -title "$title" -e bash -c "cd '$SCRIPT_DIR' && bash $script; exec bash" &
+    else
+        echo "⚠️ No GUI terminal detected. Running $title in background."
+        bash "$script" &
+    fi
 }
 
-trap cleanup INT TERM EXIT
-
 echo ""
-echo "🚀 Starting 1/3: FastAPI Backend on http://localhost:8000..."
-PYTHONPATH=. "$PYTHON_CMD" -m uvicorn services.backend.main:app --reload --host 0.0.0.0 --port 8000 2>&1 | sed -e 's/^/[BACKEND] /' &
-PIDS+=($!)
+echo "🚀 Spawning Backend window..."
+spawn_terminal "Garuda - Backend (:8000)" "run_backend.sh"
+sleep 1
 
-echo "🚀 Starting 2/3: Next.js Web Dashboard on http://localhost:3000..."
-(cd apps/web-dashboard && npm run dev) 2>&1 | sed -e 's/^/[WEB-DASH] /' &
-PIDS+=($!)
+echo "🚀 Spawning Web Dashboard window..."
+spawn_terminal "Garuda - Web Dashboard (:3000)" "run_frontend.sh"
+sleep 1
 
-echo "🚀 Starting 3/3: Expo Mobile App on http://localhost:8081..."
-(cd apps/mobile-app && npx expo start) 2>&1 | sed -e 's/^/[MOBILE] /' &
-PIDS+=($!)
+echo "🚀 Spawning Mobile App window..."
+spawn_terminal "Garuda - Mobile App (:8081)" "run_mobile.sh"
 
 echo ""
 echo "==================================================================="
-echo "  ✅ All 3 services are running concurrently!"
-echo "  • Backend API:      http://localhost:8000  (Docs: http://localhost:8000/docs)"
+echo "  ✅ All 3 interactive terminal windows are open and running!"
+echo "  • Backend API:      http://localhost:8000"
 echo "  • Web Dashboard:    http://localhost:3000"
-echo "  • Mobile App Metro: http://localhost:8081"
-echo ""
-echo "  👉 Press Ctrl+C at any time to stop all services."
+echo "  • Mobile App:       http://localhost:8081"
 echo "==================================================================="
-
-# Wait indefinitely for background jobs
-wait
