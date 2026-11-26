@@ -16,10 +16,12 @@ import {
   Search, 
   FileBox, 
   User,
-  Info
+  Info,
+  Clock
 } from 'lucide-react'
 import { getMissingPerson, searchPerson, getSafeEvidenceUrl, SightingEvidence, getCaseEvidence } from '@/lib/api'
 import { EvidenceVaultTab } from '@/components/evidence/EvidenceVaultTab'
+import { InvestigationTimelineTab } from '@/components/timeline/InvestigationTimelineTab'
 
 export default function CaseDetailPage() {
   const params = useParams()
@@ -30,7 +32,7 @@ export default function CaseDetailPage() {
 
   const [person, setPerson] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'evidence' | 'overview'>('evidence')
+  const [activeTab, setActiveTab] = useState<'evidence' | 'timeline' | 'overview'>('evidence')
   const [confirmedCount, setConfirmedCount] = useState(0)
   const [isSearching, setIsSearching] = useState(false)
 
@@ -203,6 +205,20 @@ export default function CaseDetailPage() {
 
         <button
           role="tab"
+          aria-selected={activeTab === 'timeline'}
+          onClick={() => setActiveTab('timeline')}
+          className={`pb-3 text-xs font-semibold flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${
+            activeTab === 'timeline'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Clock className="w-4 h-4" />
+          Investigation Timeline
+        </button>
+
+        <button
+          role="tab"
           aria-selected={activeTab === 'overview'}
           onClick={() => setActiveTab('overview')}
           className={`pb-3 text-xs font-semibold flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${
@@ -227,6 +243,11 @@ export default function CaseDetailPage() {
             photo_path: person.photo_path,
           }}
           onEvidenceChange={(count) => setConfirmedCount(count)}
+        />
+      ) : activeTab === 'timeline' ? (
+        <InvestigationTimelineTab
+          caseId={id}
+          onNavigateToEvidence={() => setActiveTab('evidence')}
         />
       ) : (
         <Card>

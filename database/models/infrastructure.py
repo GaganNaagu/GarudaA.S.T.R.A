@@ -23,6 +23,7 @@ class CameraFeed(Base, UUIDMixin, TimestampMixin):
     status: Mapped[str] = mapped_column(String(50), default="Online")
     last_heartbeat: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     location_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("locations.id"))
+    location: Mapped[Optional["Location"]] = relationship()
     
     detection_events: Mapped[List["DetectionEvent"]] = relationship(back_populates="camera_feed")
 

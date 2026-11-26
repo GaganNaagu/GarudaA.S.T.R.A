@@ -436,3 +436,63 @@ export async function updateSightingStatus(
     })
   })
 }
+
+export interface TimelineEventLink {
+  type: 'evidence' | 'map' | 'alert' | 'case'
+  label: string
+  sighting_id?: string | null
+  crop_image_path?: string | null
+  full_frame_path?: string | null
+  latitude?: number | null
+  longitude?: number | null
+  camera_id?: string | null
+  camera_name?: string | null
+  location_name?: string | null
+  alert_id?: string | null
+}
+
+export interface TimelineEvent {
+  id: string
+  event_type: string
+  category: 'case' | 'detection' | 'verification' | 'alert' | 'dispatch' | 'audit'
+  title: string
+  description: string
+  timestamp: string
+  severity?: string | null
+  confidence?: number | null
+  actor?: string | null
+  metadata?: Record<string, any>
+  link?: TimelineEventLink | null
+}
+
+export interface CaseTimelineResponse {
+  case_id: string
+  case_number: string
+  full_name: string
+  total_events: number
+  events: TimelineEvent[]
+}
+
+export async function getCaseTimeline(
+  caseId: string,
+  category: string = 'all',
+  order: 'asc' | 'desc' = 'asc'
+): Promise<CaseTimelineResponse> {
+  try {
+    const params = new URLSearchParams()
+    if (category && category !== 'all') {
+      params.append('category', category)
+    }
+    params.append('order', order)
+    return await fetchApi(`/timeline/case/${caseId}?${params.toString()}`)
+  } catch (err) {
+    console.warn(`Failed to fetch timeline for case ${caseId}, fallback to empty timeline`, err)
+    return {
+      case_id: caseId,
+      case_number: '',
+      full_name: '',
+      total_events: 0,
+      events: []
+    }
+  }
+}
