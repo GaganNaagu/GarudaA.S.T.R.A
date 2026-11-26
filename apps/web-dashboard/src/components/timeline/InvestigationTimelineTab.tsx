@@ -305,8 +305,16 @@ export function InvestigationTimelineTab({
                     {(cropUrl || link) && (
                       <div className="mt-3.5 pt-3 border-t border-border/40 flex flex-wrap items-center justify-between gap-3">
                         {cropUrl ? (
-                          <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-lg border border-border/80 overflow-hidden bg-muted/40 shrink-0">
+                          <div
+                            className="flex items-center gap-3 cursor-pointer group/crop hover:opacity-90 transition-opacity"
+                            onClick={() => {
+                              if (link?.sighting_id && onNavigateToEvidence) {
+                                onNavigateToEvidence(link.sighting_id)
+                              }
+                            }}
+                            title="Click to inspect this crop in Evidence Vault"
+                          >
+                            <div className="w-12 h-12 rounded-lg border border-border/80 overflow-hidden bg-muted/40 shrink-0 group-hover/crop:border-primary transition-colors">
                               <img
                                 src={cropUrl}
                                 alt="Detection Evidence Crop"
@@ -317,7 +325,10 @@ export function InvestigationTimelineTab({
                               />
                             </div>
                             <div className="text-xs space-y-0.5">
-                              <div className="font-medium text-foreground">Facial Crop Snapshot</div>
+                              <div className="font-medium text-foreground group-hover/crop:text-primary transition-colors flex items-center gap-1.5">
+                                <span>Facial Crop Snapshot</span>
+                                <ChevronRight className="w-3 h-3 text-muted-foreground group-hover/crop:translate-x-0.5 transition-transform" />
+                              </div>
                               <div className="text-[11px] text-muted-foreground font-mono">
                                 {link?.camera_name || 'Surveillance Node'}
                               </div>

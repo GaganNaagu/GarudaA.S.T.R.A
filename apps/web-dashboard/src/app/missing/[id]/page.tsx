@@ -33,6 +33,8 @@ export default function CaseDetailPage() {
   const [person, setPerson] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'evidence' | 'timeline' | 'overview'>('evidence')
+  const [evidenceList, setEvidenceList] = useState<SightingEvidence[]>([])
+  const [selectedSightingId, setSelectedSightingId] = useState<string | null>(null)
   const [confirmedCount, setConfirmedCount] = useState(0)
   const [isSearching, setIsSearching] = useState(false)
 
@@ -43,6 +45,7 @@ export default function CaseDetailPage() {
       setPerson(data)
 
       const evidence = await getCaseEvidence(id)
+      setEvidenceList(evidence)
       const confirmed = evidence.filter((s: SightingEvidence) => s.verification_status === 'Confirmed').length
       setConfirmedCount(confirmed)
     } catch (err) {
@@ -192,7 +195,10 @@ export default function CaseDetailPage() {
         <button
           role="tab"
           aria-selected={activeTab === 'evidence'}
-          onClick={() => setActiveTab('evidence')}
+          onClick={() => {
+            setSelectedSightingId(null)
+            setActiveTab('evidence')
+          }}
           className={`pb-3 text-xs font-semibold flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${
             activeTab === 'evidence'
               ? 'border-primary text-primary'
@@ -242,12 +248,17 @@ export default function CaseDetailPage() {
             full_name: person.full_name,
             photo_path: person.photo_path,
           }}
+          initialEvidence={evidenceList}
+          selectedSightingId={selectedSightingId}
           onEvidenceChange={(count) => setConfirmedCount(count)}
         />
       ) : activeTab === 'timeline' ? (
         <InvestigationTimelineTab
           caseId={id}
-          onNavigateToEvidence={() => setActiveTab('evidence')}
+          onNavigateToEvidence={(sightingId) => {
+            setSelectedSightingId(sightingId || null)
+            setActiveTab('evidence')
+          }}
         />
       ) : (
         <Card>

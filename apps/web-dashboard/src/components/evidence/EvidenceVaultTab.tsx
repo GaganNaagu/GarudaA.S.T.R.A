@@ -15,20 +15,24 @@ interface EvidenceVaultTabProps {
     full_name: string
     photo_path?: string | null
   }
+  initialEvidence?: SightingEvidence[]
+  selectedSightingId?: string | null
   onEvidenceChange?: (confirmedCount: number) => void
 }
 
 export function EvidenceVaultTab({
   caseId,
   person,
+  initialEvidence,
+  selectedSightingId,
   onEvidenceChange,
 }: EvidenceVaultTabProps) {
-  const [sightings, setSightings] = useState<SightingEvidence[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [sightings, setSightings] = useState<SightingEvidence[]>(initialEvidence || [])
+  const [isLoading, setIsLoading] = useState(!initialEvidence || initialEvidence.length === 0)
   const [filter, setFilter] = useState<'ALL' | 'Unreviewed' | 'Confirmed' | 'Rejected'>('ALL')
 
-  const fetchEvidence = async () => {
-    setIsLoading(true)
+  const fetchEvidence = async (showSpinner: boolean = true) => {
+    if (showSpinner) setIsLoading(true)
     try {
       const data = await getCaseEvidence(caseId)
       setSightings(data)
@@ -42,8 +46,21 @@ export function EvidenceVaultTab({
   }
 
   useEffect(() => {
-    fetchEvidence()
+    if (initialEvidence && initialEvidence.length > 0) {
+      setSightings(initialEvidence)
+      setIsLoading(false)
+      fetchEvidence(false)
+    } else {
+      fetchEvidence(true)
+    }
   }, [caseId])
+
+  useEffect(() => {
+    if (initialEvidence && initialEvidence.length > 0) {
+      setSightings(initialEvidence)
+      setIsLoading(false)
+    }
+  }, [initialEvidence])
 
   const handleStatusUpdated = (updated: SightingEvidence) => {
     setSightings((prev) => {
@@ -58,6 +75,27 @@ export function EvidenceVaultTab({
     if (filter === 'ALL') return sightings
     return sightings.filter((s) => s.verification_status === filter)
   }, [sightings, filter])
+
+  // Automatically adjust filter if selected sighting belongs to another category
+  useEffect(() => {
+    if (!selectedSightingId || sightings.length === 0) return
+    const target = sightings.find((s) => s.id === selectedSightingId)
+    if (target && filter !== 'ALL' && target.verification_status !== filter) {
+      setFilter('ALL')
+    }
+  }, [selectedSightingId, sightings, filter])
+
+  // Smooth scroll and focus target card
+  useEffect(() => {
+    if (!selectedSightingId || isLoading) return
+    const timer = setTimeout(() => {
+      const element = document.getElementById(`sighting-card-${selectedSightingId}`)
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    }, 150)
+    return () => clearTimeout(timer)
+  }, [selectedSightingId, isLoading, filteredSightings])
 
   const counts = useMemo(() => {
     return {
@@ -118,7 +156,7 @@ export function EvidenceVaultTab({
         <Button
           variant="ghost"
           size="sm"
-          onClick={fetchEvidence}
+          onClick={() => fetchEvidence(true)}
           disabled={isLoading}
           className="text-xs text-muted-foreground hover:text-foreground"
         >
@@ -155,6 +193,7 @@ export function EvidenceVaultTab({
               personName={person.full_name}
               referencePhotoUrl={referencePhotoUrl}
               onStatusUpdated={handleStatusUpdated}
+              isHighlighted={sighting.id === selectedSightingId}
             />
           ))}
         </div>

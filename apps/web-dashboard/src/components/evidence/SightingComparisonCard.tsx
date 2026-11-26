@@ -24,6 +24,7 @@ interface SightingComparisonCardProps {
   referencePhotoUrl: string | null
   personName: string
   onStatusUpdated: (updated: SightingEvidence) => void
+  isHighlighted?: boolean
 }
 
 export function SightingComparisonCard({
@@ -32,6 +33,7 @@ export function SightingComparisonCard({
   referencePhotoUrl,
   personName,
   onStatusUpdated,
+  isHighlighted = false,
 }: SightingComparisonCardProps) {
   const [lightboxState, setLightboxState] = useState<{
     isOpen: boolean
@@ -74,8 +76,27 @@ export function SightingComparisonCard({
 
   return (
     <>
-      <Card className="hover:border-border/80 transition-all shadow-sm overflow-hidden">
-        {/* Card Header */}
+      <div id={`sighting-card-${sighting.id}`} className="scroll-mt-24 transition-all duration-300">
+        <Card className={`transition-all shadow-sm overflow-hidden ${
+          isHighlighted
+            ? 'border-primary ring-2 ring-primary/60 shadow-lg shadow-primary/10'
+            : 'hover:border-border/80'
+        }`}>
+          {isHighlighted && (
+            <div className="bg-primary/15 border-b border-primary/30 px-4 py-2 flex items-center justify-between text-xs text-primary font-medium">
+              <span className="flex items-center gap-2">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                </span>
+                <span><strong>Timeline Sighting Target:</strong> #{sighting.id.slice(0, 8)}</span>
+              </span>
+              <Badge variant="outline" className="text-[10px] font-mono border-primary/40 bg-primary/20 text-primary uppercase tracking-wider">
+                Focused Crop
+              </Badge>
+            </div>
+          )}
+          {/* Card Header */}
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 bg-secondary/40 border-b border-border">
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="font-mono text-xs">
@@ -241,6 +262,7 @@ export function SightingComparisonCard({
           </div>
         </CardContent>
       </Card>
+    </div>
 
       {/* Lightbox Modal */}
       <EvidenceLightbox
