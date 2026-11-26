@@ -46,10 +46,10 @@ export async function playTacticalChime(force = false): Promise<void> {
     if (!createAudioPlayer) return;
 
     if (!activePlayer) {
-      // Pure, warm single acoustic bell chime (D5: 587.33 Hz)
-      activePlayer = createAudioPlayer(require('../../assets/audio/tactical_ping.wav'));
+      // Official mobile tactical sighting alert sound from sfx/Mobile Alert.wav
+      activePlayer = createAudioPlayer(require('../../assets/audio/mobile_alert.wav'));
       activePlayer.loop = false;
-      activePlayer.volume = 0.70;
+      activePlayer.volume = 0.75;
     }
 
     try {
@@ -63,9 +63,9 @@ export async function playTacticalChime(force = false): Promise<void> {
         if (activePlayer.release) activePlayer.release();
         if (activePlayer.remove) activePlayer.remove();
       } catch (e) {}
-      activePlayer = createAudioPlayer(require('../../assets/audio/tactical_ping.wav'));
+      activePlayer = createAudioPlayer(require('../../assets/audio/mobile_alert.wav'));
       activePlayer.loop = false;
-      activePlayer.volume = 0.70;
+      activePlayer.volume = 0.75;
       activePlayer.play();
     }
   } catch (err) {

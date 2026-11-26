@@ -18,12 +18,29 @@ export function ClientLayoutContent({ children }: { children: React.ReactNode })
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { lastMessage } = useWebSocket()
   
-  // Audio context ref
+  // Audio element ref for Garuda_Detect_Webapp.wav & audio context
   const audioContextRef = useRef<AudioContext | null>(null)
+  const alertAudioRef = useRef<HTMLAudioElement | null>(null)
 
-  // Pre-warm AudioContext on first user interaction (browser autoplay policy)
+  // Pre-warm and unlock audio on first user interaction (browser autoplay policy)
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const audio = new Audio('/sounds/Garuda_Detect_Webapp.wav')
+      audio.preload = 'auto'
+      audio.volume = 0.85
+      alertAudioRef.current = audio
+    }
+
     const unlock = () => {
+      if (alertAudioRef.current) {
+        alertAudioRef.current
+          .play()
+          .then(() => {
+            alertAudioRef.current?.pause()
+            if (alertAudioRef.current) alertAudioRef.current.currentTime = 0
+          })
+          .catch(() => {})
+      }
       if (!audioContextRef.current) {
         audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)()
       }
@@ -59,34 +76,25 @@ export function ClientLayoutContent({ children }: { children: React.ReactNode })
     setMobileMenuOpen(false)
   }, [pathname])
 
-  // Global alert sound
+  // Global alert sound using official Garuda_Detect_Webapp.wav from sfx/
   useEffect(() => {
     if (lastMessage && lastMessage.event === 'possible_match_detected') {
-      const ctx = audioContextRef.current
-      if (!ctx) return // Not yet unlocked by user interaction
-      
-      const play = () => {
-        const playBeep = (freq: number, startTime: number, duration: number) => {
-          const osc = ctx.createOscillator()
-          const gain = ctx.createGain()
-          osc.type = 'square'
-          osc.frequency.setValueAtTime(freq, startTime)
-          gain.gain.setValueAtTime(0.1, startTime)
-          gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration)
-          osc.connect(gain)
-          gain.connect(ctx.destination)
-          osc.start(startTime)
-          osc.stop(startTime + duration)
+      try {
+        if (alertAudioRef.current) {
+          alertAudioRef.current.currentTime = 0
+          alertAudioRef.current.play().catch((err) => {
+            console.warn('Pre-warmed audio play blocked, attempting fallback:', err)
+            const fallbackAudio = new Audio('/sounds/Garuda_Detect_Webapp.wav')
+            fallbackAudio.volume = 0.85
+            fallbackAudio.play().catch((e) => console.error('Failed to play Garuda_Detect_Webapp.wav', e))
+          })
+        } else {
+          const fallbackAudio = new Audio('/sounds/Garuda_Detect_Webapp.wav')
+          fallbackAudio.volume = 0.85
+          fallbackAudio.play().catch((e) => console.error('Failed to play Garuda_Detect_Webapp.wav', e))
         }
-        const now = ctx.currentTime
-        playBeep(880, now, 0.15)
-        playBeep(1108, now + 0.2, 0.3)
-      }
-
-      if (ctx.state === 'suspended') {
-        ctx.resume().then(play).catch(e => console.error('Audio resume failed', e))
-      } else {
-        try { play() } catch (e) { console.error('Failed to play alert sound', e) }
+      } catch (e) {
+        console.error('Failed to play alert sound', e)
       }
     }
   }, [lastMessage])
