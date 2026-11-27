@@ -86,9 +86,9 @@ async def clear_database(session: AsyncSession):
     for table_name in reversed(table_names):
         try:
             await session.execute(text(f'TRUNCATE TABLE "{table_name}" CASCADE;'))
+            await session.commit()
         except Exception:
-            pass
-    await session.commit()
+            await session.rollback()
     print("Database cleaned.")
 
 async def seed():
@@ -273,6 +273,7 @@ async def seed():
                 description=d["desc"],
                 last_seen_location=d["loc"],
                 last_seen_at=d["time"],
+                created_at=d["time"] + timedelta(minutes=30),
                 priority=d["priority"],
                 status=d["status"],
                 photo_path=f"uploads/missing_persons/{d['img_slug']}"
