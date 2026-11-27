@@ -29,7 +29,7 @@ warn() {
 # 1. System updates & Dependencies
 log "Step 1: Installing system packages, compilers, and OpenCV graphics libraries..."
 export DEBIAN_FRONTEND=noninteractive
-sudo apt-get update -y
+sudo apt-get update -y || warn "Some third-party apt repositories (e.g. cloudflareclient) had GPG warnings. Continuing..."
 sudo apt-get install -y \
   git curl wget build-essential software-properties-common \
   python3 python3-pip python3-venv python3-dev \
@@ -37,16 +37,18 @@ sudo apt-get install -y \
   nginx \
   libgl1 libglib2.0-0 libsm6 libxext6 libxrender-dev
 
-# 2. Install Node.js 20 LTS
+# 2. Install Node.js 20 LTS (skip if Node >= 18 is already installed)
 if ! command -v node &> /dev/null; then
   log "Step 2: Installing Node.js 20 LTS..."
-  curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+  curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - || warn "NodeSource repo setup had warnings"
   sudo apt-get install -y nodejs
+else
+  log "Step 2: Node.js $(node -v) is already installed. Skipping."
 fi
 
 # 3. Setup Project Directory & Permissions
 log "Step 3: Setting up repository in $INSTALL_DIR..."
-CURRENT_USER=$(whoami)
+CURRENT_USER="${SUDO_USER:-$(whoami)}"
 if [ ! -d "$INSTALL_DIR" ]; then
   sudo mkdir -p "$INSTALL_DIR"
   sudo chown -R "$CURRENT_USER:$CURRENT_USER" "$INSTALL_DIR"
@@ -140,6 +142,11 @@ RestartSec=3
 WantedBy=multi-user.target
 EOF
 
+# Ensure directory ownership belongs to non-root user before starting services
+sudo chown -R "$CURRENT_USER:$CURRENT_USER" "$INSTALL_DIR"
+sudo -u "$CURRENT_USER" git config --global --add safe.directory "$INSTALL_DIR" || true
+NPM_BIN=$(command -v npm || echo "/usr/bin/npm")
+
 # Frontend service
 cat <<EOF | sudo tee /etc/systemd/system/garuda-frontend.service > /dev/null
 [Unit]
@@ -152,7 +159,7 @@ User=$CURRENT_USER
 WorkingDirectory=$INSTALL_DIR/apps/web-dashboard
 Environment=PORT=3000
 Environment=NODE_ENV=production
-ExecStart=/usr/bin/npm start
+ExecStart=$NPM_BIN start
 Restart=always
 RestartSec=3
 
