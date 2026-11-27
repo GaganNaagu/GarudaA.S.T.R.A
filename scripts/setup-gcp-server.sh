@@ -171,13 +171,57 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now garuda-backend
 sudo systemctl enable --now garuda-frontend
 
-# 9. Configure Nginx Reverse Proxy
-log "Step 9: Configuring Nginx reverse proxy on port 80..."
+# 9. Configure Nginx Reverse Proxy (Domains + IP Fallback)
+log "Step 9: Configuring Nginx reverse proxy for Garuda A.S.T.R.A domains..."
 cat <<EOF | sudo tee /etc/nginx/sites-available/garuda-astra > /dev/null
+# 1. Mobile App Direct APK Download (app.garudaastra.dpdns.org)
+server {
+    listen 80;
+    listen [::]:80;
+    server_name app.garudaastra.dpdns.org;
+
+    root $INSTALL_DIR/apps/mobile-app/dist;
+
+    location / {
+        default_type application/vnd.android.package-archive;
+        add_header Content-Disposition 'attachment; filename="GarudaASTRA.apk"';
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+        try_files /garudaastra-release.apk =404;
+    }
+}
+
+# 2. FastAPI Backend API & WebSockets (backend.garudaastra.dpdns.org)
+server {
+    listen 80;
+    listen [::]:80;
+    server_name backend.garudaastra.dpdns.org;
+
+    client_max_body_size 500M;
+
+    location /uploads/ {
+        alias $INSTALL_DIR/services/backend/uploads/;
+        expires 7d;
+        add_header Cache-Control "public, no-transform";
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_read_timeout 86400;
+    }
+}
+
+# 3. Next.js Web Dashboard + Default IP Fallback (frontend.garudaastra.dpdns.org)
 server {
     listen 80 default_server;
     listen [::]:80 default_server;
-    server_name _;
+    server_name frontend.garudaastra.dpdns.org _;
 
     client_max_body_size 500M;
 
