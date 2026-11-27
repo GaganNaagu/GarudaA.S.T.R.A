@@ -273,7 +273,7 @@ async def seed():
                 description=d["desc"],
                 last_seen_location=d["loc"],
                 last_seen_at=d["time"],
-                created_at=d["time"] + timedelta(minutes=30),
+                created_at=(d["time"] + timedelta(minutes=30)).replace(tzinfo=None),
                 priority=d["priority"],
                 status=d["status"],
                 photo_path=f"uploads/missing_persons/{d['img_slug']}"
