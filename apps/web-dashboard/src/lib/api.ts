@@ -1,10 +1,12 @@
 export function getApiUrl(): string {
   if (typeof window !== 'undefined') {
     const host = window.location.hostname;
-    if (host && host !== 'localhost' && host !== '127.0.0.1') {
-      const protocol = window.location.protocol;
-      return `${protocol}//${host}:8000/api/v1`;
+    if (host === 'localhost' || host === '127.0.0.1') {
+      const envUrl = process.env.NEXT_PUBLIC_API_URL;
+      return envUrl && envUrl.startsWith('http') ? envUrl : 'http://localhost:8000/api/v1';
     }
+    // On deployed domain (frontend.garudaastra.dpdns.org) or GCP IP: use same-origin Nginx reverse proxy
+    return '/api/v1';
   }
   return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 }
@@ -161,14 +163,19 @@ const MOCK_DATA: Record<string, any> = {
 }
 
 export async function fetchApi(endpoint: string, options: RequestInit = {}) {
+  const controller = !options.signal ? new AbortController() : null;
+  const timeoutId = controller ? setTimeout(() => controller.abort(), 8000) : null;
+
   try {
-    const response = await fetch(`${API_URL}${endpoint}`, {
+    const response = await fetch(`${getApiUrl()}${endpoint}`, {
       ...options,
+      signal: options.signal || controller?.signal,
       headers: {
         ...getHeaders(),
         ...options.headers,
       },
     })
+    if (timeoutId) clearTimeout(timeoutId);
     
     if (response.status === 401 && typeof window !== 'undefined') {
       localStorage.removeItem('astra_token')
@@ -191,6 +198,8 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
       return MOCK_DATA['/alerts']
     }
     throw err
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
   }
 }
 
@@ -400,7 +409,7 @@ export interface SightingStatusUpdate {
 export function getSafeEvidenceUrl(rawPath: string | null): string {
   if (!rawPath) return ''
   if (rawPath.startsWith('http')) return rawPath
-  const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1').replace(/\/api\/v1\/?$/, '')
+  const baseUrl = getApiUrl().replace(/\/api\/v1\/?$/, '')
   let cleanPath = rawPath.replace(/\\/g, '/')
   const uploadsIdx = cleanPath.indexOf('uploads/')
   if (uploadsIdx > -1) {

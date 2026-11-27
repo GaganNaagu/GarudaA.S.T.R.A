@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card"
 import { Badge } from "@/components/ui/Badge"
 import { useAuth } from '@/lib/auth-context'
+import { getApiUrl } from '@/lib/api'
 import { Plus, Edit, Shield, Mail, User, Clock, Loader2, X } from 'lucide-react'
 
 // Dialog mock (we might not have a generic Dialog component yet, so using native prompt/state for MVP)
@@ -40,7 +41,7 @@ export default function UserManagementPage() {
   const fetchUsers = async () => {
     try {
       setIsLoading(true)
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
+      const API_URL = getApiUrl()
       const res = await fetch(`${API_URL}/admin/users`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -81,7 +82,7 @@ export default function UserManagementPage() {
     setIsSubmitting(true)
     setError(null)
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
+      const API_URL = getApiUrl()
       const url = modalMode === 'create' 
         ? `${API_URL}/admin/users` 
         : `${API_URL}/admin/users/${editingUserId}`

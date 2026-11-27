@@ -20,7 +20,7 @@ import {
 } from 'lucide-react'
 import { cn } from "@/lib/utils"
 import { useToast } from "@/components/ui/Toast"
-import { uploadFootage, uploadFootageWithProgress, getUploads, analyzeVideo, batchAnalyzeVideos } from "@/lib/api"
+import { uploadFootage, uploadFootageWithProgress, getUploads, analyzeVideo, batchAnalyzeVideos, getSafeEvidenceUrl } from "@/lib/api"
 
 export default function UploadsPage() {
   const { toast } = useToast()
@@ -213,7 +213,7 @@ export default function UploadsPage() {
                  <div className="space-y-3 max-h-[32rem] overflow-y-auto pr-1">
                     {uploads.map(u => {
                       const ext = u.filename.substring(u.filename.lastIndexOf('.'))
-                      const staticUrl = `${process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:8000'}/uploads/videos/${u.id}${ext}`
+                      const staticUrl = getSafeEvidenceUrl(`uploads/videos/${u.id}${ext}`)
                       
                       return (
                       <div key={u.id} className="flex flex-col p-3 rounded-lg bg-secondary/20 border border-border gap-2.5">

@@ -5,10 +5,12 @@ import { createContext, useContext, useEffect, useRef, useState, useCallback } f
 const getWsUrl = () => {
   if (typeof window !== 'undefined') {
     const host = window.location.hostname;
-    if (host && host !== 'localhost' && host !== '127.0.0.1') {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      return `${protocol}//${host}:8000/api/v1/ws/connect`;
+    if (host === 'localhost' || host === '127.0.0.1') {
+      const envWs = process.env.NEXT_PUBLIC_WS_URL;
+      return envWs && envWs.startsWith('ws') ? envWs : 'ws://localhost:8000/api/v1/ws/connect';
     }
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    return `${protocol}//${window.location.host}/api/v1/ws/connect`;
   }
   return process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000/api/v1/ws/connect';
 };

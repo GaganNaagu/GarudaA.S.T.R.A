@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button"
 import { ShieldAlert, ScanLine } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { useToast } from '@/components/ui/Toast'
+import { getApiUrl } from '@/lib/api'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('admin@astra.gov')
@@ -20,7 +21,7 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
+      const baseUrl = getApiUrl()
       
       const normalizedEmail = email.trim().toLowerCase()
       const formData = new URLSearchParams()
