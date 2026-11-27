@@ -1,0 +1,71 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: garuda-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-garuda_astra}
+      POSTGRES_USER: ${POSTGRES_USER:-astra_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-astra_secure_pass_2026}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-astra_user} -d ${POSTGRES_DB:-garuda_astra}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: services/backend/Dockerfile
+    container_name: garuda-backend
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-astra_user}:${POSTGRES_PASSWORD:-astra_secure_pass_2026}@postgres:5432/${POSTGRES_DB:-garuda_astra}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-garuda_astra}
+      POSTGRES_USER: ${POSTGRES_USER:-astra_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-astra_secure_pass_2026}
+      SECRET_KEY: ${SECRET_KEY:-astra_jwt_production_secret_key_college_eval_2026}
+      ALLOWED_ORIGINS: "*"
+    volumes:
+      - uploads_data:/app/services/backend/uploads
+    expose:
+      - "8000"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/web-dashboard/Dockerfile
+    container_name: garuda-frontend
+    restart: always
+    depends_on:
+      - backend
+    environment:
+      NEXT_PUBLIC_API_URL: /api/v1
+    expose:
+      - "3000"
+
+  nginx:
+    image: nginx:alpine
+    container_name: garuda-nginx
+    restart: always
+    depends_on:
+      - backend
+      - frontend
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - uploads_data:/var/www/uploads:ro
+
+volumes:
+  postgres_data:
+  uploads_data:

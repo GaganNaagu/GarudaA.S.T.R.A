@@ -1,55 +1,44 @@
-name: Deploy
+name: Continuous Automated Deployment
 
 on:
   push:
     branches:
+      - phase-2
       - main
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to deploy onto Linux server'
+        required: true
+        default: 'phase-2'
+        type: choice
+        options:
+          - phase-2
+          - main
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   deploy:
+    name: Deploy to GCP Linux Server
     runs-on: self-hosted
 
     steps:
-      - name: Deploy
+      - name: Selective Zero-Downtime Deployment
+        shell: bash
         run: |
-          cd /opt/garuda-astra
+          TARGET_BRANCH="${{ github.event.inputs.branch || github.ref_name }}"
+          echo "=========================================================="
+          echo "Triggering deployment for branch: $TARGET_BRANCH"
+          echo "Commit: ${{ github.sha }} by ${{ github.actor }}"
+          echo "=========================================================="
 
-          git fetch origin
-
-          CHANGED=$(git diff --name-only HEAD origin/main)
-
-          echo "Changed files:"
-          echo "$CHANGED"
-
-          git pull origin main
-
-          # Frontend dependencies
-          if echo "$CHANGED" | grep -E "apps/web-dashboard/package.json|apps/web-dashboard/package-lock.json"; then
-            cd apps/web-dashboard
-            npm install
-            cd ../..
-          fi
-
-          # Frontend
-          if echo "$CHANGED" | grep "^apps/web-dashboard/"; then
-            cd apps/web-dashboard
-            npm run build
-            cd ../..
-            sudo systemctl restart garuda-frontend
-          fi
-
-          # Backend dependencies
-          if echo "$CHANGED" | grep "services/requirements.txt"; then
-            source services/venv/bin/activate
-            pip install -r services/requirements.txt
-          fi
-
-          # Backend
-          if echo "$CHANGED" | grep "^services/backend/"; then
-            sudo systemctl restart garuda-backend
-          fi
-
-          # AI Services
-          if echo "$CHANGED" | grep "^services/ai/"; then
-            echo "AI service changed"
+          # Execute centralized selective deploy script
+          if [ -f "/opt/garuda-astra/scripts/deploy.sh" ]; then
+            bash /opt/garuda-astra/scripts/deploy.sh "$TARGET_BRANCH"
+          else
+            echo "Error: /opt/garuda-astra/scripts/deploy.sh not found on runner host!"
+            exit 1
           fi
