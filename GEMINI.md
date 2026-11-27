@@ -328,3 +328,42 @@ cd apps/web-dashboard && npm run dev
 - Links to FastAPI Swagger UI (`http://localhost:8000/docs`) highlighting the new endpoints.
 - Sample cURL or Swagger test payloads.
 - Database query to verify table persistence.
+
+---
+
+## 🌐 GCP HOSTING, DUAL-ENV ROUTING & AUTOMATED CI/CD (MANDATORY KNOWLEDGE FOR ALL AGENTS)
+
+This project is hosted on a **GCP Ubuntu Linux VM** (`/opt/garuda-astra`) behind **Nginx** and **Cloudflare**, with automated selective CI/CD via GitHub Actions. All agents (Dev 1 & Dev 2) MUST respect these production/dev rules:
+
+### 1. Subdomain & Nginx Architecture
+- **`https://frontend.garudaastra.dpdns.org`** → Next.js Web Dashboard (`127.0.0.1:3000`) + same-origin reverse proxy for `/api/`, `/ws/`, and `/uploads/`.
+- **`https://backend.garudaastra.dpdns.org`** → FastAPI Backend (`127.0.0.1:8000`) + `/docs` (Swagger UI), `/health/live`, and `/uploads/`.
+- **`https://app.garudaastra.dpdns.org`** → Direct APK download (`apps/mobile-app/dist/garudaastra-release.apk` served as `GarudaASTRA.apk`).
+- **Cloudflare DNS/SSL:** All 3 `A` records point to the GCP VM External IP (Proxied), with SSL/TLS mode set to **Flexible** (Cloudflare terminates HTTPS and talks to GCP Nginx on Port 80).
+
+### 2. Dual-Environment API & WebSocket Rule (CRITICAL — NEVER HARDCODE `:8000`)
+- Port `8000` is NOT exposed through GCP Firewall or Cloudflare Proxy.
+- **ALWAYS** use `getApiUrl()` and `getSafeEvidenceUrl()` from `apps/web-dashboard/src/lib/api.ts`, and `getWsUrl()` in `apps/web-dashboard/src/lib/websocket.tsx`:
+  - **Local / Offline Demo (`localhost` / `127.0.0.1`):** Routes to `http://localhost:8000/api/v1` and `ws://localhost:8000/api/v1/ws/connect`.
+  - **Hosted / GCP / Cloudflare:** Routes to same-origin `/api/v1`, `/uploads/...`, and `wss://` / `ws://` through Nginx on Port 80/443.
+- **NEVER** hardcode `:8000` or raw `process.env.NEXT_PUBLIC_API_URL` directly inside new pages or components.
+
+### 3. Automated Selective CI/CD & Branch Switching
+- **Workflow:** `.github/workflows/deploy.yml` triggers on `main` and `phase-*` (`phase-2`, `phase-3`, `phase-4`, etc.).
+- **Branch Pinning (`.deploy-branch`):** The GCP VM tracks whichever branch is recorded in `/opt/garuda-astra/.deploy-branch`. Pushes to other branches are safely ignored until switched:
+  - Switch via GitHub UI: **Actions ➔ Continuous Automated Deployment ➔ Run workflow ➔ enter target branch (`main`, `phase-3`, etc.)**.
+  - Switch via SSH: `bash /opt/garuda-astra/scripts/deploy.sh <branch> --switch`.
+- **Selective Restarts (`scripts/deploy.sh`):**
+  - `database/` changes → runs `alembic upgrade head` + restarts `garuda-backend`.
+  - `services/backend/` or `services/requirements.txt` changes → restarts `garuda-backend`.
+  - `apps/web-dashboard/` changes → runs `npm run build` + restarts `garuda-frontend`.
+  - `services/ai/` changes → restarts `garuda-ai` (heavy AI models are NOT restarted on frontend-only pushes).
+  - `apps/mobile-app/` changes → builds release Android APK on GitHub's `ubuntu-latest` cloud runner (`npx expo prebuild` + `./gradlew assembleRelease`) and publishes it to `app.garudaastra.dpdns.org`.
+
+### 4. GCP Server Consoles, Bootstrap & Docker Stack
+- **Fresh Server Bootstrap:** `scripts/setup-gcp-server.sh` (installs Python, Node, Postgres, Nginx, systemd daemons, and domain configs).
+- **Phase 4.3 Docker Stack (Alternative):** `docker-compose.yml`, `services/backend/Dockerfile`, `apps/web-dashboard/Dockerfile`, `docker/nginx/nginx.conf`.
+- **Live Server Consoles (on GCP VM):**
+  - Backend + AI logs: `sudo journalctl -u garuda-backend -f`
+  - Frontend logs: `sudo journalctl -u garuda-frontend -f`
+  - Nginx logs: `sudo tail -f /var/log/nginx/access.log /var/log/nginx/error.log`
