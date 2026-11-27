@@ -136,7 +136,7 @@ User=$CURRENT_USER
 WorkingDirectory=$INSTALL_DIR
 Environment=PYTHONPATH=.
 EnvironmentFile=$INSTALL_DIR/.env
-ExecStart=$INSTALL_DIR/services/venv/bin/python3 -m uvicorn services.backend.main:app --host 127.0.0.1 --port 8000 --workers 2
+ExecStart=$INSTALL_DIR/services/venv/bin/python3 -m uvicorn services.backend.main:app --host 127.0.0.1 --port 8000 --workers 1
 Restart=always
 RestartSec=3
 
