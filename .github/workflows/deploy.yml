@@ -3,18 +3,15 @@ name: Continuous Automated Deployment
 on:
   push:
     branches:
-      - phase-2
       - main
+      - 'phase-*'
   workflow_dispatch:
     inputs:
       branch:
-        description: 'Branch to deploy onto Linux server'
+        description: 'Branch to deploy & pin on Linux server (e.g. main, phase-2, phase-3, phase-4)'
         required: true
-        default: 'phase-2'
-        type: choice
-        options:
-          - phase-2
-          - main
+        default: 'main'
+        type: string
       force_build_apk:
         description: 'Force rebuild Android APK'
         required: false
@@ -113,7 +110,11 @@ jobs:
           echo "=========================================================="
 
           if [ -f "/opt/garuda-astra/scripts/deploy.sh" ]; then
-            bash /opt/garuda-astra/scripts/deploy.sh "$TARGET_BRANCH"
+            if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+              bash /opt/garuda-astra/scripts/deploy.sh "$TARGET_BRANCH" --switch
+            else
+              bash /opt/garuda-astra/scripts/deploy.sh "$TARGET_BRANCH"
+            fi
           else
             echo "Error: /opt/garuda-astra/scripts/deploy.sh not found on runner host!"
             exit 1

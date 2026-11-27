@@ -8,6 +8,8 @@ set -euo pipefail
 
 APP_DIR="/opt/garuda-astra"
 TARGET_BRANCH="${1:-}"
+FORCE_SWITCH="${2:-}"
+BRANCH_PIN_FILE="$APP_DIR/.deploy-branch"
 
 # Log with timestamp
 log() {
@@ -24,9 +26,25 @@ success() {
 
 cd "$APP_DIR"
 
-# 1. Determine active branch
+# 1. Determine active & pinned branch
 if [ -z "$TARGET_BRANCH" ]; then
-  TARGET_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+  if [ -f "$BRANCH_PIN_FILE" ]; then
+    TARGET_BRANCH=$(tr -d '[:space:]' < "$BRANCH_PIN_FILE")
+  else
+    TARGET_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+  fi
+fi
+
+if [ "$FORCE_SWITCH" = "--switch" ] || [ ! -f "$BRANCH_PIN_FILE" ]; then
+  echo "$TARGET_BRANCH" > "$BRANCH_PIN_FILE"
+  log "Pinned server deployment branch to: \033[1;32m$TARGET_BRANCH\033[0m"
+else
+  PINNED_BRANCH=$(tr -d '[:space:]' < "$BRANCH_PIN_FILE")
+  if [ "$TARGET_BRANCH" != "$PINNED_BRANCH" ]; then
+    log "Server is pinned to '\033[1;33m$PINNED_BRANCH\033[0m'. Ignoring push to '$TARGET_BRANCH'."
+    log "To switch the server to '$TARGET_BRANCH', run: bash /opt/garuda-astra/scripts/deploy.sh $TARGET_BRANCH --switch"
+    exit 0
+  fi
 fi
 
 log "Starting deployment on branch: \033[1;32m$TARGET_BRANCH\033[0m"
