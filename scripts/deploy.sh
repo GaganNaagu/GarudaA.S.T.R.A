@@ -32,18 +32,19 @@ fi
 log "Starting deployment on branch: \033[1;32m$TARGET_BRANCH\033[0m"
 
 # 2. Fetch latest changes
+git config core.fileMode false || true
 git fetch origin "$TARGET_BRANCH"
 
 # Ensure we are on the target branch
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 if [ "$CURRENT_BRANCH" != "$TARGET_BRANCH" ]; then
   log "Switching active branch from $CURRENT_BRANCH to $TARGET_BRANCH..."
-  git checkout "$TARGET_BRANCH"
+  git checkout -f "$TARGET_BRANCH"
 fi
 
 # 3. Detect file changes between local HEAD and remote branch
 PREV_COMMIT=$(git rev-parse HEAD)
-git pull --rebase origin "$TARGET_BRANCH"
+git reset --hard "origin/$TARGET_BRANCH"
 NEW_COMMIT=$(git rev-parse HEAD)
 
 if [ "$PREV_COMMIT" = "$NEW_COMMIT" ]; then

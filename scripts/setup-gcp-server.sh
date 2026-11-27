@@ -56,9 +56,10 @@ if [ ! -d "$INSTALL_DIR" ]; then
 else
   sudo chown -R "$CURRENT_USER:$CURRENT_USER" "$INSTALL_DIR"
   cd "$INSTALL_DIR"
-  git fetch origin "$BRANCH" || true
-  git checkout "$BRANCH" || true
-  git pull --rebase origin "$BRANCH" || true
+  git config core.fileMode false || true
+  git fetch origin "$BRANCH"
+  git checkout -f "$BRANCH"
+  git reset --hard "origin/$BRANCH"
 fi
 
 cd "$INSTALL_DIR"
