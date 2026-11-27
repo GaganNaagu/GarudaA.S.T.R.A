@@ -77,6 +77,13 @@ jobs:
         working-directory: apps/mobile-app
         run: npm install --prefer-offline --no-audit
 
+      - name: Generate Native Android Project (Expo Prebuild)
+        working-directory: apps/mobile-app
+        run: |
+          if [ ! -d "android" ]; then
+            npx expo prebuild --platform android --non-interactive
+          fi
+
       - name: Build Android Release APK
         working-directory: apps/mobile-app/android
         run: |
