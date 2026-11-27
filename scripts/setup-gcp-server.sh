@@ -58,6 +58,7 @@ else
   cd "$INSTALL_DIR"
   git fetch origin "$BRANCH" || true
   git checkout "$BRANCH" || true
+  git pull --rebase origin "$BRANCH" || true
 fi
 
 cd "$INSTALL_DIR"
@@ -109,7 +110,7 @@ pip install --no-cache-dir -r services/requirements.txt
 export PYTHONPATH="."
 python3 -m alembic -c database/alembic.ini upgrade head || warn "Alembic upgrade completed with warnings."
 # Seed essential initial data if needed
-python3 -m services.backend.core.seed_demo_data || true
+python3 -m database.scripts.seed_demo_data || true
 deactivate
 
 # 7. Build Next.js Web Dashboard
@@ -168,8 +169,10 @@ WantedBy=multi-user.target
 EOF
 
 sudo systemctl daemon-reload
-sudo systemctl enable --now garuda-backend
-sudo systemctl enable --now garuda-frontend
+sudo systemctl enable garuda-backend
+sudo systemctl enable garuda-frontend
+sudo systemctl restart garuda-backend
+sudo systemctl restart garuda-frontend
 
 # 9. Configure Nginx Reverse Proxy (Domains + IP Fallback)
 log "Step 9: Configuring Nginx reverse proxy for Garuda A.S.T.R.A domains..."
