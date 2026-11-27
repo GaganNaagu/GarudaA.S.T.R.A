@@ -21,7 +21,7 @@ GARUDA A.S.T.R.A transitions from a core face-recognition pipeline into an AI-as
 - [x] **Phase 1: Database Foundation, Core APIs & Mobile Baseline** - Initial monorepo scaffolding, FastAPI REST & WebSocket server, YOLOv8 face detector, and Expo patrol app.
 - [x] **Phase 2.1: Evidence Vault & Verification Architecture (Track A)** - Full forensic record per sighting and interactive verification workflow.
 - [ ] **Phase 2.2: Smart Match Ranking & Composite Scoring Engine (Track B)** - Replace binary match with transparent, weighted candidate leaderboard.
-- [ ] **Phase 2.3: AI Investigation Timeline (Track A)** - Chronological reconstruction of all events in a missing person case.
+- [x] **Phase 2.3: AI Investigation Timeline (Track A)** - Chronological reconstruction of all events in a missing person case.
 - [ ] **Phase 2.4: Intelligent Alert Center (Track B)** - Automated priority triage, multi-attribute filtering, and batch operations.
 - [ ] **Phase 3.1: AI Search Session Wizard & WebSocket Progress (Track A)** - Active investigator search console with real-time percentage progress.
 - [ ] **Phase 3.2: Sighting Heatmap & Leaflet Spatial Layer (Track B)** - Sighting concentration density visualized over the city map.
@@ -85,8 +85,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 02.3-01: Timeline event aggregation API querying system and case activity
-- [ ] 02.3-02: Interactive vertical timeline component on case details page
+- [x] 02.3-01: Timeline event aggregation API querying system and case activity
+- [x] 02.3-02: Interactive vertical timeline component on case details page
 
 ---
 
