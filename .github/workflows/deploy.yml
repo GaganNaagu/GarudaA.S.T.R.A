@@ -91,7 +91,7 @@ jobs:
           EXPO_PUBLIC_WS_URL: wss://backend.garudaastra.dpdns.org/api/v1/ws/connect
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease
+          ./gradlew assembleRelease -Pandroid.enableMinifyInReleaseBuilds=false
 
       - name: Upload Release APK Artifact
         uses: actions/upload-artifact@v4
