@@ -2,13 +2,17 @@ import os
 import uuid
 import shutil
 import asyncio
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, BackgroundTasks
+from pathlib import Path
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, BackgroundTasks, status
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from typing import List, Optional
 
 from database.db.session import get_db
-from database.models.infrastructure import VideoFootage
+from database.models.auth import User
+from database.models.infrastructure import VideoFootage, FaceCrop
+from services.backend.api import deps
 from services.backend.core.video_processor import process_video_task
 
 router = APIRouter()
@@ -149,3 +153,143 @@ async def get_uploads(db: AsyncSession = Depends(get_db)):
             "updated_at": v.updated_at.isoformat() if v.updated_at else None
         })
     return results
+
+
+class BulkDeleteFootagesRequest(BaseModel):
+    ids: List[uuid.UUID]
+
+
+def _resolve_upload_file(raw_path: Optional[str]) -> Optional[Path]:
+    if not raw_path:
+        return None
+    p = Path(raw_path)
+    if p.exists() and p.is_file():
+        return p
+    clean = raw_path.replace("\\", "/").lstrip("/")
+    if not clean.startswith("services/backend/"):
+        candidate = Path("services/backend") / clean
+        if candidate.exists() and candidate.is_file():
+            return candidate
+    return None
+
+
+async def _cascade_delete_footages(db: AsyncSession, videos: List[VideoFootage]) -> int:
+    """Permanently delete video footages, their FaceCrops, linked SightingEvidence, and files on disk."""
+    if not videos:
+        return 0
+
+    from sqlalchemy import delete as sa_delete
+    from database.models.system import SightingEvidence
+
+    video_ids = [v.id for v in videos]
+
+    # 1. Fetch FaceCrops for these videos so we can delete linked SightingEvidence & crop files
+    crops_res = await db.execute(select(FaceCrop).where(FaceCrop.video_id.in_(video_ids)))
+    crops = crops_res.scalars().all()
+    crop_paths = [c.image_path for c in crops if c.image_path]
+
+    if crop_paths:
+        await db.execute(sa_delete(SightingEvidence).where(SightingEvidence.crop_image_path.in_(crop_paths)))
+
+    # 2. Delete FaceCrops from DB
+    await db.execute(sa_delete(FaceCrop).where(FaceCrop.video_id.in_(video_ids)))
+
+    # 3. Delete crop image files on disk
+    for crop_path in crop_paths:
+        resolved = _resolve_upload_file(crop_path)
+        if resolved:
+            try:
+                resolved.unlink()
+            except Exception:
+                pass
+
+    # 4. Delete extracted frame files and original video files on disk, then DB records
+    frames_dir = Path("services/backend/uploads/frames")
+    for video in videos:
+        if frames_dir.exists():
+            for frame_file in frames_dir.glob(f"{video.id}_*"):
+                try:
+                    if frame_file.is_file():
+                        frame_file.unlink()
+                except Exception:
+                    pass
+
+        resolved_video = _resolve_upload_file(video.file_path)
+        if resolved_video:
+            try:
+                resolved_video.unlink()
+            except Exception:
+                pass
+
+        await db.delete(video)
+
+    await db.commit()
+    return len(videos)
+
+
+@router.post("/bulk-delete")
+async def bulk_delete_footages(
+    payload: BulkDeleteFootagesRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user),
+):
+    """
+    Admin-only endpoint to permanently delete multiple stored video footages and all
+    associated face crops, extracted frames, and sighting evidence.
+    """
+    if not current_user.role or current_user.role.name != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only administrators can delete stored footages.",
+        )
+
+    if not payload.ids:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No footage IDs provided.",
+        )
+
+    result = await db.execute(select(VideoFootage).where(VideoFootage.id.in_(payload.ids)))
+    videos = result.scalars().all()
+    if not videos:
+        raise HTTPException(status_code=404, detail="No matching video footages found")
+
+    deleted_count = await _cascade_delete_footages(db, videos)
+    return {
+        "status": "success",
+        "deleted_count": deleted_count,
+        "message": f"Deleted {deleted_count} stored footage(s) and all related data.",
+    }
+
+
+@router.delete("/{video_id}")
+async def delete_footage(
+    video_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user),
+):
+    """
+    Admin-only endpoint to permanently delete a stored video footage and all
+    associated face crops, extracted frames, and sighting evidence.
+    """
+    if not current_user.role or current_user.role.name != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only administrators can delete stored footages.",
+        )
+
+    try:
+        video_uuid = uuid.UUID(video_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid video ID format")
+
+    video = await db.get(VideoFootage, video_uuid)
+    if not video:
+        raise HTTPException(status_code=404, detail="Video not found")
+
+    filename = video.filename
+    await _cascade_delete_footages(db, [video])
+    return {
+        "status": "success",
+        "message": f"Footage '{filename}' and all related data deleted.",
+    }

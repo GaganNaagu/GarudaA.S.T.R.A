@@ -391,6 +391,21 @@ export async function batchAnalyzeVideos() {
   return fetchApi('/uploads/batch-analyze', { method: 'POST' })
 }
 
+export async function deleteUpload(id: string) {
+  const res = await fetchApi(`/uploads/${id}`, { method: 'DELETE' })
+  invalidateClientCache()
+  return res
+}
+
+export async function bulkDeleteUploads(ids: string[]) {
+  const res = await fetchApi('/uploads/bulk-delete', {
+    method: 'POST',
+    body: JSON.stringify({ ids }),
+  })
+  invalidateClientCache()
+  return res
+}
+
 export async function searchPerson(id: string) {
   const res = await fetchApi(`/search/person/${id}`, { method: 'POST' })
   invalidateClientCache('evidence')

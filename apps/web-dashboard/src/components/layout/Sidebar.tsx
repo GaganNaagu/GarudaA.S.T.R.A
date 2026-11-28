@@ -27,7 +27,8 @@ const operationsNavigation = [
   { name: 'Surveillance Feeds', href: '/uploads', icon: Upload },
   { name: 'Footage Archive', href: '/surveillance', icon: History },
   { name: 'Patrol & Telemetry', href: '/patrol', icon: ShieldAlert },
-  { name: 'Response Board', href: '/status', icon: CheckCircle2 },
+  // Hidden for now
+  // { name: 'Response Board', href: '/status', icon: CheckCircle2 },
 ]
 
 const systemNavigation = [
