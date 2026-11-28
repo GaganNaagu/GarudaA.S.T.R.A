@@ -25,6 +25,7 @@ if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
 
 import cv2
+import torch
 from services.ai.detection.face_cropper import FaceCropper
 from services.ai.detection.face_detection import FaceDetector
 from services.ai.detection.preprocessing import Preprocessor
@@ -67,9 +68,15 @@ class AIInspectorApp:
         self.is_running = False
 
         self.threshold_var = tk.DoubleVar(value=0.30)
+        self.matches_only_var = tk.BooleanVar(value=False)
+        self.has_cuda = torch.cuda.is_available()
+        self.gpu_name = torch.cuda.get_device_name(0) if self.has_cuda else "No CUDA GPU"
+        self.engine_var = tk.StringVar(value="gpu" if self.has_cuda else "cpu")
+        os.environ["GARUDA_PROCESSING_ENGINE"] = self.engine_var.get()
         self.source_mode_var = tk.StringVar(value="video")
         self.rtsp_url_var = tk.StringVar(value="rtsp://")
         self.max_frames_var = tk.IntVar(value=200)
+        self.live_frame_info = ""
 
         self._configure_styles()
         self._build_ui()
@@ -209,7 +216,34 @@ class AIInspectorApp:
             act_row, from_=0.10, to=0.90, resolution=0.05, orient=tk.HORIZONTAL,
             variable=self.threshold_var, command=self._on_threshold_change,
             bg=BG_CARD, fg=FG_TEXT, troughcolor=BG_INPUT, highlightthickness=0, showvalue=False, length=160
-        ).pack(side=tk.LEFT, padx=(4, 16))
+        ).pack(side=tk.LEFT, padx=(4, 12))
+
+        tk.Checkbutton(
+            act_row, text="Matches Only", variable=self.matches_only_var,
+            command=self._render_crop_grid, bg=BG_CARD, fg=FG_TEXT, selectcolor=BG_DARK,
+            activebackground=BG_CARD, activeforeground=FG_TEXT, font=("Segoe UI", 9, "bold")
+        ).pack(side=tk.LEFT, padx=(0, 12))
+
+        tk.Label(act_row, text="Engine:", bg=BG_CARD, fg=FG_MUTED, font=("Segoe UI", 9)).pack(side=tk.LEFT)
+        tk.Radiobutton(
+            act_row,
+            text=f"GPU ({self.gpu_name})" if self.has_cuda else "GPU (Unavailable)",
+            variable=self.engine_var,
+            value="gpu",
+            state=tk.NORMAL if self.has_cuda else tk.DISABLED,
+            command=self._on_engine_change,
+            bg=BG_CARD, fg=ACCENT_GREEN if self.has_cuda else FG_MUTED, selectcolor=BG_DARK,
+            activebackground=BG_CARD, activeforeground=ACCENT_GREEN, font=("Segoe UI", 9, "bold")
+        ).pack(side=tk.LEFT, padx=(2, 6))
+        tk.Radiobutton(
+            act_row,
+            text="CPU",
+            variable=self.engine_var,
+            value="cpu",
+            command=self._on_engine_change,
+            bg=BG_CARD, fg=FG_TEXT, selectcolor=BG_DARK,
+            activebackground=BG_CARD, activeforeground=FG_TEXT, font=("Segoe UI", 9, "bold")
+        ).pack(side=tk.LEFT, padx=(0, 8))
 
         self.run_btn = tk.Button(
             act_row,
@@ -250,6 +284,14 @@ class AIInspectorApp:
 
         self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        # Enable smooth mouse-wheel scrolling over the crops grid
+        def _on_mousewheel(event):
+            if event.delta:
+                self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+        self.canvas.bind_all("<MouseWheel>", _on_mousewheel)
+        self.canvas.bind_all("<Button-4>", lambda _e: self.canvas.yview_scroll(-1, "units"))
+        self.canvas.bind_all("<Button-5>", lambda _e: self.canvas.yview_scroll(1, "units"))
 
     def _toggle_source_mode(self):
         if self.source_mode_var.get() == "video":
@@ -299,6 +341,13 @@ class AIInspectorApp:
         if self.scored_results and not self.is_running:
             self._render_crop_grid()
 
+    def _on_engine_change(self):
+        engine = self.engine_var.get()
+        os.environ["GARUDA_PROCESSING_ENGINE"] = engine
+        if getattr(FaceDetector, "_current_engine", None) != engine:
+            FaceDetector._model = None
+            FaceDetector._current_engine = None
+
     def _set_emb_details(self, text: str):
         self.emb_details_box.config(state=tk.NORMAL)
         self.emb_details_box.delete("1.0", tk.END)
@@ -346,34 +395,57 @@ class AIInspectorApp:
     def _worker_video(self, video_path: str):
         crops_dir = os.path.join(REPO_ROOT, "tmp_ai_gui_crops")
         os.makedirs(crops_dir, exist_ok=True)
+        cap = cv2.VideoCapture(video_path)
+        if not cap.isOpened():
+            self.ui_queue.put(("analysis_done", [], f"Could not open video: {video_path}"))
+            return
+        scored = []
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 1
+        fps = cap.get(cv2.CAP_PROP_FPS) or 25.0
+        # Sample ~2 frames per second for snappy live inspection
+        frame_step = max(1, int(round(fps / 2.0)))
+        frame_idx = 0
+        crop_counter = 0
         try:
-            results = run_analysis_pipeline(
-                video_path=video_path,
-                video_id="gui_test",
-                crops_dir=crops_dir,
-                progress_callback=lambda p: self.ui_queue.put(("video_progress", p)),
-                save_crops=True,
-            )
-            self.ui_queue.put(("video_status", f"Comparing {len(results)} extracted face crops against reference embedding..."))
-            scored = []
-            for idx, res in enumerate(results, start=1):
-                emb = res.get("embedding")
-                if not emb:
-                    continue
-                sim = float(calculate_cosine_similarity(self.ref_embedding, emb))
-                item = {
-                    "idx": idx,
-                    "frame_idx": res.get("frame_idx", 0),
-                    "similarity": sim,
-                    "confidence_pct": _format_confidence(sim),
-                    "crop_path": res.get("crop_path", ""),
-                }
-                scored.append(item)
-                self.ui_queue.put(("crop_compared", item))
+            while True:
+                ok, frame = cap.read()
+                if not ok or frame is None:
+                    break
+                if frame_idx % frame_step == 0:
+                    pct = min(99.0, (frame_idx / total_frames) * 100.0)
+                    self.ui_queue.put(("video_progress", pct, f"Frame {frame_idx}/{total_frames} | Crops: {crop_counter}"))
+                    faces = FaceDetector.detect_faces(frame)
+                    for f_idx, face in enumerate(faces):
+                        crop = FaceCropper.crop_face(frame, face["facial_area"])
+                        if crop is None or crop.size == 0:
+                            continue
+                        pre_bytes = Preprocessor.preprocess_face(crop)
+                        if not pre_bytes:
+                            continue
+                        emb = generate_embedding(pre_bytes)
+                        if not emb:
+                            continue
+                        crop_counter += 1
+                        crop_path = os.path.join(crops_dir, f"vid_frame_{frame_idx}_face_{f_idx}.jpg")
+                        with open(crop_path, "wb") as out:
+                            out.write(pre_bytes)
+                        sim = float(calculate_cosine_similarity(self.ref_embedding, emb))
+                        item = {
+                            "idx": crop_counter,
+                            "frame_idx": frame_idx,
+                            "similarity": sim,
+                            "confidence_pct": _format_confidence(sim),
+                            "crop_path": crop_path,
+                        }
+                        scored.append(item)
+                        self.ui_queue.put(("crop_compared", item))
+                frame_idx += 1
             scored.sort(key=lambda r: r["similarity"], reverse=True)
             self.ui_queue.put(("analysis_done", scored, None))
         except Exception as e:
-            self.ui_queue.put(("analysis_done", [], str(e)))
+            self.ui_queue.put(("analysis_done", scored, str(e)))
+        finally:
+            cap.release()
 
     def _worker_rtsp(self, rtsp_url: str):
         crops_dir = os.path.join(REPO_ROOT, "tmp_ai_gui_crops")
@@ -450,13 +522,22 @@ class AIInspectorApp:
                         )
                 elif kind == "video_progress":
                     pct = msg[1]
+                    extra = f" — {msg[2]}" if len(msg) > 2 else ""
                     self.video_progress["value"] = pct
-                    self.video_status_lbl.config(text=f"Extracting & tracking faces... {pct:.0f}%", fg=ACCENT_GOLD)
+                    matches = sum(1 for r in self.scored_results if r["similarity"] >= self.threshold_var.get())
+                    self.video_status_lbl.config(
+                        text=f"Scanning live ({pct:.0f}%){extra} | Matches: {matches}",
+                        fg=ACCENT_GREEN if matches > 0 else ACCENT_GOLD,
+                    )
                 elif kind == "video_status":
                     self.video_status_lbl.config(text=msg[1], fg=ACCENT_GOLD)
                 elif kind == "crop_compared":
-                    self.scored_results.append(msg[1])
-                    self._append_crop_card(msg[1], len(self.scored_results) - 1)
+                    item = msg[1]
+                    self.scored_results.append(item)
+                    is_match = item["similarity"] >= self.threshold_var.get()
+                    if not self.matches_only_var.get() or is_match:
+                        visible_idx = len(self.crops_frame.winfo_children())
+                        self._append_crop_card(item, visible_idx)
                 elif kind == "analysis_done":
                     _, scored, err = msg
                     self.is_running = False
@@ -515,7 +596,8 @@ class AIInspectorApp:
             text=f"✅ Done — {len(self.scored_results)} face crops compared | {matches} MATCH (>= {thresh:.2f})",
             fg=ACCENT_GREEN if matches > 0 else FG_TEXT,
         )
-        for pos, item in enumerate(self.scored_results):
+        items = [r for r in self.scored_results if (not self.matches_only_var.get() or r["similarity"] >= thresh)]
+        for pos, item in enumerate(items):
             self._append_crop_card(item, pos)
 
 

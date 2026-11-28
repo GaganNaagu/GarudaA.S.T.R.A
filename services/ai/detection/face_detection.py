@@ -26,15 +26,17 @@ class FaceDetector:
             logger.warning("Ultralytics or Torch is not installed. Face detection will fail.")
             return
 
-        import httpx
-        engine = "cpu"
-        try:
-            # Sync fetch settings from backend
-            resp = httpx.get("http://localhost:8000/api/v1/settings/", timeout=2.0)
-            if resp.status_code == 200:
-                engine = resp.json().get("processing_engine", "cpu")
-        except Exception:
-            logger.warning("Could not reach backend API for settings. Defaulting to CPU.")
+        engine = os.environ.get("GARUDA_PROCESSING_ENGINE", "").strip().lower()
+        if engine not in ("gpu", "cpu"):
+            import httpx
+            engine = "cpu"
+            try:
+                # Sync fetch settings from backend
+                resp = httpx.get("http://localhost:8000/api/v1/settings/", timeout=2.0)
+                if resp.status_code == 200:
+                    engine = resp.json().get("processing_engine", "cpu")
+            except Exception:
+                logger.warning("Could not reach backend API for settings. Defaulting to CPU.")
 
         model_path = os.path.join(os.path.dirname(__file__), "..", "models", "yolov8n-face.pt")
         onnx_path = model_path.replace(".pt", ".onnx")
