@@ -9,10 +9,12 @@ from datetime import datetime
 
 from database.db.session import get_db
 from database.models.registry import MissingPerson
-from database.models.infrastructure import FaceCrop, CameraFeed
+from database.models.infrastructure import FaceCrop, CameraFeed, VideoFootage
 from database.models.ai_events import DetectionEvent, Alert
 from database.models.system import SightingEvidence
 from services.backend.core.websocket_manager import manager
+from pathlib import Path
+import cv2
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -24,6 +26,32 @@ def _normalize_upload_path(path: str | None) -> str:
     norm = path.replace("\\", "/")
     idx = norm.find("uploads/")
     return norm[idx:] if idx != -1 else norm
+
+
+async def _extract_full_frame(db: AsyncSession, video_id: uuid.UUID, frame_idx: int, fallback: str) -> str:
+    """Extract the full CCTV context frame at frame_idx from the source video on-demand."""
+    frames_dir = Path("services/backend/uploads/frames")
+    frames_dir.mkdir(parents=True, exist_ok=True)
+    out_file = frames_dir / f"{video_id}_frame_{frame_idx}.jpg"
+    rel_out = f"uploads/frames/{video_id}_frame_{frame_idx}.jpg"
+    if out_file.exists():
+        return rel_out
+    try:
+        video = await db.get(VideoFootage, video_id)
+        if video and video.file_path:
+            cap = cv2.VideoCapture(video.file_path)
+            if cap.isOpened():
+                cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
+                ok, frame = cap.read()
+                cap.release()
+                if ok and frame is not None:
+                    cv2.imwrite(str(out_file), frame)
+                    return rel_out
+            else:
+                cap.release()
+    except Exception as e:
+        logger.warning(f"Could not extract full frame {frame_idx} for video {video_id}: {e}")
+    return fallback
 
 def cosine_similarity(v1: list, v2: list) -> float:
     try:
@@ -119,11 +147,12 @@ async def search_person_against_crops(person_id: uuid.UUID, threshold: float = 0
 
             # Record SightingEvidence so it appears in the Evidence Vault
             rel_crop = _normalize_upload_path(crop.image_path)
+            full_frame = await _extract_full_frame(db, crop.video_id, crop.frame_idx, rel_crop)
             db.add(SightingEvidence(
                 missing_person_id=person.id,
                 detection_event_id=new_event.id,
                 crop_image_path=rel_crop,
-                full_frame_path=rel_crop,
+                full_frame_path=full_frame,
                 similarity_score=round(confidence_percentage, 1),
                 quality_score=85.0,
                 model_version="AdaFace-IR50",
@@ -222,11 +251,12 @@ async def mass_search_all(threshold: float = 0.30, db: AsyncSession = Depends(ge
 
                 # Record SightingEvidence so it appears in the Evidence Vault
                 rel_crop = _normalize_upload_path(crop.image_path)
+                full_frame = await _extract_full_frame(db, crop.video_id, crop.frame_idx, rel_crop)
                 db.add(SightingEvidence(
                     missing_person_id=person.id,
                     detection_event_id=new_event.id,
                     crop_image_path=rel_crop,
-                    full_frame_path=rel_crop,
+                    full_frame_path=full_frame,
                     similarity_score=round(confidence_percentage, 1),
                     quality_score=85.0,
                     model_version="AdaFace-IR50",
