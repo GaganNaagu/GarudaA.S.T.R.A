@@ -232,6 +232,14 @@ export async function createMissingPerson(data: any) {
   })
 }
 
+export async function deleteMissingPerson(id: string) {
+  const res = await fetchApi(`/missing-persons/${id}`, {
+    method: 'DELETE',
+  })
+  invalidateClientCache()
+  return res
+}
+
 export async function uploadMissingPersonImage(id: string, file: File) {
   const formData = new FormData()
   formData.append('image', file)

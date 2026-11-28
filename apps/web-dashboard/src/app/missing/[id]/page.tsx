@@ -17,17 +17,20 @@ import {
   FileBox, 
   User,
   Info,
-  Clock
+  Clock,
+  Trash2
 } from 'lucide-react'
 import { 
   getMissingPerson, 
   searchPerson, 
+  deleteMissingPerson,
   getSafeEvidenceUrl, 
   SightingEvidence, 
   getCaseEvidence, 
   getCaseTimeline, 
   CaseTimelineResponse 
 } from '@/lib/api'
+import { useAuth } from '@/lib/auth-context'
 import { EvidenceVaultTab } from '@/components/evidence/EvidenceVaultTab'
 import { InvestigationTimelineTab } from '@/components/timeline/InvestigationTimelineTab'
 
@@ -35,6 +38,7 @@ export default function CaseDetailPage() {
   const params = useParams()
   const router = useRouter()
   const { toast } = useToast()
+  const { role } = useAuth()
 
   const id = Array.isArray(params.id) ? params.id[0] : (params.id as string)
 
@@ -46,6 +50,8 @@ export default function CaseDetailPage() {
   const [selectedSightingId, setSelectedSightingId] = useState<string | null>(null)
   const [confirmedCount, setConfirmedCount] = useState(0)
   const [isSearching, setIsSearching] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const fetchCase = async () => {
     setIsLoading(true)
@@ -94,6 +100,20 @@ export default function CaseDetailPage() {
     }
   }
 
+  const handleDeleteCase = async () => {
+    if (!person) return
+    setIsDeleting(true)
+    try {
+      await deleteMissingPerson(person.id)
+      toast(`Case ${person.case_number} and all related records permanently deleted.`, 'success')
+      setShowDeleteModal(false)
+      router.push('/missing')
+    } catch (err: any) {
+      toast(err.message || 'Failed to delete case', 'error')
+      setIsDeleting(false)
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="py-20 text-center text-muted-foreground">
@@ -132,14 +152,26 @@ export default function CaseDetailPage() {
           Back to Case Registry
         </Button>
 
-        <Button
-          size="sm"
-          onClick={handleRunSearch}
-          disabled={isSearching}
-        >
-          <Search className={`w-3.5 h-3.5 mr-1.5 ${isSearching ? 'animate-spin' : ''}`} />
-          {isSearching ? 'Scanning CCTV Archive...' : 'Scan Video Archive'}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            onClick={handleRunSearch}
+            disabled={isSearching}
+          >
+            <Search className={`w-3.5 h-3.5 mr-1.5 ${isSearching ? 'animate-spin' : ''}`} />
+            {isSearching ? 'Scanning CCTV Archive...' : 'Scan Video Archive'}
+          </Button>
+          {role === 'admin' && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setShowDeleteModal(true)}
+            >
+              <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+              Delete Case
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Case Header Dossier Card */}
@@ -294,6 +326,56 @@ export default function CaseDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Admin Delete Case Confirmation Modal */}
+      {showDeleteModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-case-title"
+        >
+          <Card className="w-full max-w-md border-destructive/40 shadow-2xl">
+            <CardHeader>
+              <CardTitle id="delete-case-title" className="text-base flex items-center gap-2 text-destructive">
+                <ShieldAlert className="w-5 h-5" />
+                Delete Missing Person Case?
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                You are about to permanently delete <strong className="text-foreground">{person.full_name}</strong>{' '}
+                (<span className="font-mono">{person.case_number}</span>). This action cannot be undone and will remove:
+              </p>
+              <ul className="text-xs text-muted-foreground space-y-1 list-disc pl-5">
+                <li>Case dossier and uploaded reference photo</li>
+                <li>All Sighting Evidence records in the Evidence Vault</li>
+                <li>All Detection Events, Alerts, and Patrol Assignments</li>
+                <li>Associated Investigation Timeline case logs</li>
+              </ul>
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowDeleteModal(false)}
+                  disabled={isDeleting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleDeleteCase}
+                  disabled={isDeleting}
+                >
+                  <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                  {isDeleting ? 'Deleting...' : 'Permanently Delete'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }
