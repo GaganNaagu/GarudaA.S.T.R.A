@@ -118,6 +118,12 @@ fi
 
 if [ "$BACKEND_CHANGED" = true ]; then
   log "Restarting FastAPI Backend service (garuda-backend)..."
+  # Ensure systemd unit uses --workers 1 so in-memory WebSocket broadcasts reach all connected clients
+  if [ -f "/etc/systemd/system/garuda-backend.service" ] && grep -q -- "--workers 2" /etc/systemd/system/garuda-backend.service; then
+    sudo sed -i 's/--workers 2/--workers 1/g' /etc/systemd/system/garuda-backend.service
+    sudo systemctl daemon-reload
+    log "Updated garuda-backend.service from --workers 2 to --workers 1."
+  fi
   if systemctl is-active --quiet garuda-backend; then
     sudo systemctl restart garuda-backend
     success "garuda-backend restarted successfully."

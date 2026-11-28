@@ -47,7 +47,6 @@ class DispatchService:
 
         # Broadcast to all connected clients (patrols, admins, dispatchers)
         await manager.broadcast_global_alert(dispatch_payload)
-        await manager.broadcast_to_patrols(dispatch_payload)
 
         return None
 
