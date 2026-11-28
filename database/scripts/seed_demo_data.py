@@ -182,87 +182,50 @@ async def seed():
         session.add_all(cams)
         await session.flush()
         
-        # 6. Physical Sample Images & Missing Persons
+        # 6. Minimal LOTM Missing Persons (2 cases with real character portraits)
         mp_data = [
             {
-                "case_number": "MP-2026-0891",
-                "name": "Aarav Sharma",
-                "age": 10,
-                "gender": "Male",
-                "desc": "Wearing blue school uniform with navy backpack and Marvel stickers. Last seen near school bus pickup.",
-                "loc": "Majestic City Railway Bus Terminal",
-                "time": now - timedelta(hours=6),
-                "priority": "Critical",
-                "status": "Reported",
-                "img_slug": "aarav_sharma.jpg"
-            },
-            {
-                "case_number": "MP-2026-0884",
-                "name": "Priya Patel",
+                "case_number": "MP-LOTM-0001",
+                "name": "Klein Moretti",
                 "age": 22,
-                "gender": "Female",
-                "desc": "College student, black spectacles, dark green jacket, blue jeans. Tan canvas tote bag.",
-                "loc": "Indiranagar Metro Station",
-                "time": now - timedelta(hours=14),
-                "priority": "High",
-                "status": "Investigating",
-                "img_slug": "priya_patel.jpg"
-            },
-            {
-                "case_number": "MP-2026-0872",
-                "name": "Rohan Verma",
-                "age": 74,
                 "gender": "Male",
-                "desc": "Senior citizen with mild Alzheimer's. Beige kurta and brown sandals. Responds slowly to name.",
-                "loc": "Cubbon Park Walkway",
-                "time": now - timedelta(days=2),
+                "desc": "Dark brown hair, gentle brown eyes, Victorian-era black trench coat and top hat.",
+                "loc": "Tingen City Central Terminal",
+                "time": now - timedelta(hours=4),
                 "priority": "Critical",
                 "status": "Reported",
-                "img_slug": "rohan_verma.jpg"
+                "img_slug": "klein_moretti.jpg",
+                "img_url": "https://s4.anilist.co/file/anilistcdn/character/large/b192557-Wp2FI69LBV8z.png"
             },
             {
-                "case_number": "MP-2026-0865",
-                "name": "Ananya Reddy",
-                "age": 16,
+                "case_number": "MP-LOTM-0002",
+                "name": "Audrey Hall",
+                "age": 17,
                 "gender": "Female",
-                "desc": "Yellow hoodie, blue jeans, white sneakers. Last seen near coaching center.",
-                "loc": "Koramangala 4th Block",
-                "time": now - timedelta(hours=18),
+                "desc": "Blonde hair, emerald eyes, noble Victorian attire. Last seen near Empress Borough Plaza.",
+                "loc": "Empress Borough Plaza",
+                "time": now - timedelta(hours=8),
                 "priority": "High",
                 "status": "Reported",
-                "img_slug": "ananya_reddy.jpg"
+                "img_slug": "audrey_hall.jpg",
+                "img_url": "https://s4.anilist.co/file/anilistcdn/character/large/b277993-Mmydgswx1vlV.png"
             },
-            {
-                "case_number": "MP-2026-0849",
-                "name": "Vikram Malhotra",
-                "age": 34,
-                "gender": "Male",
-                "desc": "Software engineer, athletic build, grey windcheater and black track pants.",
-                "loc": "ITPL Main Gate, Whitefield",
-                "time": now - timedelta(days=3),
-                "priority": "Normal",
-                "status": "Reported",
-                "img_slug": "vikram_malhotra.jpg"
-            },
-            {
-                "case_number": "MP-2026-0810",
-                "name": "Meera Joshi",
-                "age": 29,
-                "gender": "Female",
-                "desc": "Safely located at family residence. Case resolved.",
-                "loc": "Jayanagar 4th Block",
-                "time": now - timedelta(days=5),
-                "priority": "Normal",
-                "status": "Found",
-                "img_slug": "meera_joshi.jpg"
-            }
         ]
         
         missing_persons = []
         for d in mp_data:
-            # Generate profile mugshot
             photo_path = UPLOADS_DIR / "missing_persons" / d["img_slug"]
-            generate_tactical_image(photo_path, d["name"], f"CASE // {d['case_number']} (AGE {d['age']})")
+            photo_path.parent.mkdir(parents=True, exist_ok=True)
+            if d.get("img_url"):
+                try:
+                    import urllib.request
+                    req = urllib.request.Request(d["img_url"], headers={"User-Agent": "Mozilla/5.0"})
+                    with urllib.request.urlopen(req, timeout=10) as resp:
+                        photo_path.write_bytes(resp.read())
+                except Exception:
+                    pass
+            if not photo_path.exists():
+                generate_tactical_image(photo_path, d["name"], f"CASE // {d['case_number']} (AGE {d['age']})")
             
             mp = MissingPerson(
                 id=uuid.uuid4(),
@@ -282,311 +245,52 @@ async def seed():
             missing_persons.append(mp)
         await session.flush()
         
-        # 7. Detection Events, Sighting Evidences (Phase 2.1), & Alerts
-        p_aarav = missing_persons[0]
-        p_priya = missing_persons[1]
-        p_rohan = missing_persons[2]
-        p_ananya = missing_persons[3]
-        
-        # Sighting Evidence 1: Aarav at Majestic (Confirmed)
-        frame1 = UPLOADS_DIR / "frames" / "frame_majestic_01.jpg"
-        crop1 = UPLOADS_DIR / "crops" / "crop_aarav_01.jpg"
-        generate_tactical_image(frame1, "CCTV FRAME // CAM-BLR-METRO-04", "MAJESTIC INTER-TERMINAL")
-        generate_crop_image(crop1, "Aarav Sharma", 94.2)
-        
+        # 7. Minimal Sample Sighting & Pending Alert for Klein Moretti
+        p_klein = missing_persons[0]
+
         det1 = DetectionEvent(
             id=uuid.uuid4(),
             camera_id=cams[0].id,
-            timestamp=now - timedelta(minutes=45),
+            timestamp=now - timedelta(minutes=30),
             confidence_score=94.2,
             match_type="Facial Match",
-            person_id=p_aarav.id,
+            person_id=p_klein.id,
             bounding_box_json='{"ymin": 80, "xmin": 120, "ymax": 260, "xmax": 240}',
-            image_path="uploads/crops/crop_aarav_01.jpg"
+            image_path="uploads/missing_persons/klein_moretti.jpg"
         )
         session.add(det1)
         await session.flush()
-        
+
         sighting1 = SightingEvidence(
             id=uuid.uuid4(),
             detection_event_id=det1.id,
-            missing_person_id=p_aarav.id,
-            crop_image_path="uploads/crops/crop_aarav_01.jpg",
-            full_frame_path="uploads/frames/frame_majestic_01.jpg",
+            missing_person_id=p_klein.id,
+            crop_image_path="uploads/missing_persons/klein_moretti.jpg",
+            full_frame_path="uploads/missing_persons/klein_moretti.jpg",
             similarity_score=94.2,
             quality_score=88.5,
-            model_version="Facenet512-v1",
-            verification_status="Confirmed",
-            reviewed_by_id=user_map["officer1@astra.gov"].id,
-            reviewed_at=now - timedelta(minutes=30),
-            review_notes="Subject matches description. Dispatched Chetak-1 patrol unit.",
+            model_version="AdaFace-IR50",
+            verification_status="Unreviewed",
             bounding_box={"ymin": 80, "xmin": 120, "ymax": 260, "xmax": 240}
         )
         session.add(sighting1)
-        
+
         alert1 = Alert(
             id=uuid.uuid4(),
             detection_event_id=det1.id,
-            missing_person_id=p_aarav.id,
-            status="Dispatched",
-            severity="High",
-            acknowledged_at=now - timedelta(minutes=35)
+            missing_person_id=p_klein.id,
+            status="Pending",
+            severity="High"
         )
         session.add(alert1)
-        
-        # Sighting Evidence 2: Aarav at Railway Station (Unreviewed)
-        frame2 = UPLOADS_DIR / "frames" / "frame_majestic_02.jpg"
-        crop2 = UPLOADS_DIR / "crops" / "crop_aarav_02.jpg"
-        generate_tactical_image(frame2, "CCTV FRAME // CAM-BLR-RAIL-01", "CITY RAILWAY STATION")
-        generate_crop_image(crop2, "Aarav Sharma", 89.1)
-        
-        det2 = DetectionEvent(
-            id=uuid.uuid4(),
-            camera_id=cams[1].id,
-            timestamp=now - timedelta(minutes=15),
-            confidence_score=89.1,
-            match_type="Facial Match",
-            person_id=p_aarav.id,
-            bounding_box_json='{"ymin": 140, "xmin": 210, "ymax": 300, "xmax": 310}',
-            image_path="uploads/crops/crop_aarav_02.jpg"
-        )
-        session.add(det2)
-        await session.flush()
-        
-        sighting2 = SightingEvidence(
-            id=uuid.uuid4(),
-            detection_event_id=det2.id,
-            missing_person_id=p_aarav.id,
-            crop_image_path="uploads/crops/crop_aarav_02.jpg",
-            full_frame_path="uploads/frames/frame_majestic_02.jpg",
-            similarity_score=89.1,
-            quality_score=74.0,
-            model_version="Facenet512-v1",
-            verification_status="Unreviewed",
-            bounding_box={"ymin": 140, "xmin": 210, "ymax": 300, "xmax": 310}
-        )
-        session.add(sighting2)
-        
-        # Sighting Evidence 3: Aarav at Cubbon Park (Rejected False Positive)
-        frame3 = UPLOADS_DIR / "frames" / "frame_cubbon_01.jpg"
-        crop3 = UPLOADS_DIR / "crops" / "crop_aarav_03.jpg"
-        generate_tactical_image(frame3, "CCTV FRAME // CAM-BLR-CUBB-02", "CUBBON PARK SOUTH GATE")
-        generate_crop_image(crop3, "Aarav Sharma", 68.4)
-        
-        det3 = DetectionEvent(
-            id=uuid.uuid4(),
-            camera_id=cams[6].id,
-            timestamp=now - timedelta(hours=2),
-            confidence_score=68.4,
-            match_type="Facial Match",
-            person_id=p_aarav.id,
-            bounding_box_json='{"ymin": 90, "xmin": 150, "ymax": 240, "xmax": 270}',
-            image_path="uploads/crops/crop_aarav_03.jpg"
-        )
-        session.add(det3)
-        await session.flush()
-        
-        sighting3 = SightingEvidence(
-            id=uuid.uuid4(),
-            detection_event_id=det3.id,
-            missing_person_id=p_aarav.id,
-            crop_image_path="uploads/crops/crop_aarav_03.jpg",
-            full_frame_path="uploads/frames/frame_cubbon_01.jpg",
-            similarity_score=68.4,
-            quality_score=62.0,
-            model_version="Facenet512-v1",
-            verification_status="Rejected",
-            reviewed_by_id=user_map["officer1@astra.gov"].id,
-            reviewed_at=now - timedelta(hours=1, minutes=45),
-            review_notes="Rejected: Lighting glare distortion and wrong subject build.",
-            bounding_box={"ymin": 90, "xmin": 150, "ymax": 240, "xmax": 270}
-        )
-        session.add(sighting3)
-        
-        # Sighting Evidence 4: Priya Patel at Phoenix Marketcity (Confirmed)
-        frame4 = UPLOADS_DIR / "frames" / "frame_marketcity_01.jpg"
-        crop4 = UPLOADS_DIR / "crops" / "crop_priya_01.jpg"
-        generate_tactical_image(frame4, "CCTV FRAME // CAM-BLR-MALL-09", "PHOENIX MARKETCITY CONCOURSE")
-        generate_crop_image(crop4, "Priya Patel", 91.8)
-        
-        det4 = DetectionEvent(
-            id=uuid.uuid4(),
-            camera_id=cams[2].id,
-            timestamp=now - timedelta(hours=1),
-            confidence_score=91.8,
-            match_type="Facial Match",
-            person_id=p_priya.id,
-            bounding_box_json='{"ymin": 150, "xmin": 95, "ymax": 270, "xmax": 280}',
-            image_path="uploads/crops/crop_priya_01.jpg"
-        )
-        session.add(det4)
-        await session.flush()
-        
-        sighting4 = SightingEvidence(
-            id=uuid.uuid4(),
-            detection_event_id=det4.id,
-            missing_person_id=p_priya.id,
-            crop_image_path="uploads/crops/crop_priya_01.jpg",
-            full_frame_path="uploads/frames/frame_marketcity_01.jpg",
-            similarity_score=91.8,
-            quality_score=92.0,
-            model_version="Facenet512-v1",
-            verification_status="Confirmed",
-            reviewed_by_id=user_map["officer2@astra.gov"].id,
-            reviewed_at=now - timedelta(minutes=40),
-            review_notes="Visual confirmation at mall entrance. Dispatched Garuda-2 unit.",
-            bounding_box={"ymin": 150, "xmin": 95, "ymax": 270, "xmax": 280}
-        )
-        session.add(sighting4)
-        
-        alert2 = Alert(
-            id=uuid.uuid4(),
-            detection_event_id=det4.id,
-            missing_person_id=p_priya.id,
-            status="Verified",
-            severity="High",
-            acknowledged_at=now - timedelta(minutes=45)
-        )
-        session.add(alert2)
-        
-        # Sighting Evidence 5: Rohan Verma at Cubbon Park (Confirmed)
-        crop5 = UPLOADS_DIR / "crops" / "crop_rohan_01.jpg"
-        generate_crop_image(crop5, "Rohan Verma", 96.1)
-        
-        det5 = DetectionEvent(
-            id=uuid.uuid4(),
-            camera_id=cams[6].id,
-            timestamp=now - timedelta(hours=3),
-            confidence_score=96.1,
-            match_type="Facial Match",
-            person_id=p_rohan.id,
-            bounding_box_json='{"ymin": 130, "xmin": 70, "ymax": 250, "xmax": 270}',
-            image_path="uploads/crops/crop_rohan_01.jpg"
-        )
-        session.add(det5)
-        await session.flush()
-        
-        sighting5 = SightingEvidence(
-            id=uuid.uuid4(),
-            detection_event_id=det5.id,
-            missing_person_id=p_rohan.id,
-            crop_image_path="uploads/crops/crop_rohan_01.jpg",
-            full_frame_path="uploads/frames/frame_cubbon_01.jpg",
-            similarity_score=96.1,
-            quality_score=85.0,
-            model_version="Facenet512-v1",
-            verification_status="Confirmed",
-            reviewed_by_id=user_map["officer1@astra.gov"].id,
-            reviewed_at=now - timedelta(hours=2, minutes=30),
-            review_notes="Confirmed by field officer. Subject safe at park help desk.",
-            bounding_box={"ymin": 130, "xmin": 70, "ymax": 250, "xmax": 270}
-        )
-        session.add(sighting5)
-        
-        alert3 = Alert(
-            id=uuid.uuid4(),
-            detection_event_id=det5.id,
-            missing_person_id=p_rohan.id,
-            status="Dispatched",
-            severity="High",
-            acknowledged_at=now - timedelta(hours=2, minutes=45)
-        )
-        session.add(alert3)
-        
-        # Sighting Evidence 6: Ananya Reddy at Koramangala (Unreviewed)
-        frame6 = UPLOADS_DIR / "frames" / "frame_koramangala_01.jpg"
-        crop6 = UPLOADS_DIR / "crops" / "crop_ananya_01.jpg"
-        generate_tactical_image(frame6, "CCTV FRAME // CAM-BLR-KORM-05", "KORAMANGALA SONY WORLD")
-        generate_crop_image(crop6, "Ananya Reddy", 88.2)
-        
-        det6 = DetectionEvent(
-            id=uuid.uuid4(),
-            camera_id=cams[5].id,
-            timestamp=now - timedelta(minutes=25),
-            confidence_score=88.2,
-            match_type="Facial Match",
-            person_id=p_ananya.id,
-            bounding_box_json='{"ymin": 160, "xmin": 100, "ymax": 280, "xmax": 290}',
-            image_path="uploads/crops/crop_ananya_01.jpg"
-        )
-        session.add(det6)
-        await session.flush()
-        
-        sighting6 = SightingEvidence(
-            id=uuid.uuid4(),
-            detection_event_id=det6.id,
-            missing_person_id=p_ananya.id,
-            crop_image_path="uploads/crops/crop_ananya_01.jpg",
-            full_frame_path="uploads/frames/frame_koramangala_01.jpg",
-            similarity_score=88.2,
-            quality_score=81.0,
-            model_version="Facenet512-v1",
-            verification_status="Unreviewed",
-            bounding_box={"ymin": 160, "xmin": 100, "ymax": 280, "xmax": 290}
-        )
-        session.add(sighting6)
-        
-        alert4 = Alert(
-            id=uuid.uuid4(),
-            detection_event_id=det6.id,
-            missing_person_id=p_ananya.id,
-            status="Pending",
-            severity="Medium"
-        )
-        session.add(alert4)
-        
-        # 8. Incidents & Assignments
-        inc1 = Incident(
-            id=uuid.uuid4(),
-            title="Critical Search — Aarav Sharma (Majestic Metro Hub)",
-            description="Active tactical search operation for missing minor Aarav Sharma. Confirmed CCTV sighting at Footover Bridge.",
-            severity="High",
-            status="In Progress",
-            location_id=locs[0].id,
-            camera_id=cams[0].id
-        )
-        inc2 = Incident(
-            id=uuid.uuid4(),
-            title="Assisted Recovery — Rohan Verma (Cubbon Park)",
-            description="Elderly Alzheimer's patient detected at park gate. Chetak-3 on scene.",
-            severity="High",
-            status="Active",
-            location_id=locs[5].id,
-            camera_id=cams[6].id
-        )
-        session.add_all([inc1, inc2])
-        await session.flush()
-        
-        asgn1 = Assignment(
-            id=uuid.uuid4(),
-            officer_id=officers[0].id,
-            dispatch_unit_id=u1.id,
-            incident_id=inc1.id,
-            alert_id=alert1.id,
-            status="Dispatched"
-        )
-        asgn2 = Assignment(
-            id=uuid.uuid4(),
-            officer_id=officers[1].id,
-            dispatch_unit_id=u2.id,
-            incident_id=inc1.id,
-            alert_id=alert2.id,
-            status="On Scene"
-        )
-        session.add_all([asgn1, asgn2])
-        
-        # 9. Activity Logs (Audit Trail)
+
+        # 8. Minimal Activity Logs
         logs = [
-            ActivityLog(id=uuid.uuid4(), user_id=user_map["dispatcher@astra.gov"].id, action="CASE_REGISTERED", entity_type="MissingPerson", entity_id=p_aarav.id, details='{"case_number": "MP-2026-0891", "priority": "Critical"}'),
+            ActivityLog(id=uuid.uuid4(), user_id=user_map["dispatcher@astra.gov"].id, action="CASE_REGISTERED", entity_type="MissingPerson", entity_id=p_klein.id, details='{"case_number": "MP-LOTM-0001", "priority": "Critical"}'),
             ActivityLog(id=uuid.uuid4(), user_id=user_map["admin@astra.gov"].id, action="AI_DETECTION_TRIGGERED", entity_type="DetectionEvent", entity_id=det1.id, details='{"camera": "CAM-BLR-METRO-04", "confidence": 94.2}'),
-            ActivityLog(id=uuid.uuid4(), user_id=user_map["officer1@astra.gov"].id, action="LEAD_VERIFIED", entity_type="SightingEvidence", entity_id=sighting1.id, details='{"status": "Confirmed", "notes": "Subject matches description"}'),
-            ActivityLog(id=uuid.uuid4(), user_id=user_map["dispatcher@astra.gov"].id, action="UNIT_DISPATCHED", entity_type="DispatchUnit", entity_id=u1.id, details='{"unit": "Chetak-1", "target_location": "Majestic"}'),
-            ActivityLog(id=uuid.uuid4(), user_id=user_map["officer1@astra.gov"].id, action="LEAD_REJECTED", entity_type="SightingEvidence", entity_id=sighting3.id, details='{"status": "Rejected", "reason": "Lighting glare distortion"}'),
-            ActivityLog(id=uuid.uuid4(), user_id=user_map["dispatcher@astra.gov"].id, action="ALERT_ACKNOWLEDGED", entity_type="Alert", entity_id=alert2.id, details='{"status": "Verified", "severity": "High"}'),
-            ActivityLog(id=uuid.uuid4(), user_id=user_map["admin@astra.gov"].id, action="SYSTEM_HEALTH_CHECK", entity_type="System", entity_id=None, details='{"status": "All core services operational"}')
         ]
         session.add_all(logs)
-        
+
         # 10. System Status & Health
         health = AIHealthStatus(id=uuid.uuid4(), status="Online", last_ping=now)
         settings_rec = SystemSettings(
