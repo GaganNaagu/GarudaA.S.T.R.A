@@ -34,3 +34,4 @@ transformers
 huggingface-hub
 tqdm
 omegaconf
+fvcore
