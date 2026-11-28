@@ -55,14 +55,18 @@ def init_adaface_model():
             original_cwd = os.getcwd()
             try:
                 os.chdir(local_model_path)
-                adaface_model = AutoModel.from_pretrained(
-                    local_model_path, 
-                    trust_remote_code=True,
-                    local_files_only=True
-                )
+                import yaml
+                from omegaconf import OmegaConf
+                from models import get_model
+                with open('pretrained_model/model.yaml', 'r') as yf:
+                    model_conf = OmegaConf.create(dict(yaml.safe_load(yf)))
+                adaface_model = get_model(model_conf)
+                adaface_model.load_state_dict_from_path('pretrained_model/model.pt')
             finally:
                 os.chdir(original_cwd)
-                
+
+            if torch.cuda.is_available() and os.environ.get("GARUDA_PROCESSING_ENGINE", "").lower() != "cpu":
+                adaface_model = adaface_model.to("cuda")
             adaface_model.eval()
             logger.info("AdaFace model loaded successfully from local directory.")
             adaface_load_error = None
@@ -78,13 +82,18 @@ def init_adaface_model():
             original_cwd = os.getcwd()
             try:
                 os.chdir(model_dir)
-                adaface_model = AutoModel.from_pretrained(
-                    model_dir, 
-                    trust_remote_code=True
-                )
+                import yaml
+                from omegaconf import OmegaConf
+                from models import get_model
+                with open('pretrained_model/model.yaml', 'r') as yf:
+                    model_conf = OmegaConf.create(dict(yaml.safe_load(yf)))
+                adaface_model = get_model(model_conf)
+                adaface_model.load_state_dict_from_path('pretrained_model/model.pt')
             finally:
                 os.chdir(original_cwd)
-                
+
+            if torch.cuda.is_available() and os.environ.get("GARUDA_PROCESSING_ENGINE", "").lower() != "cpu":
+                adaface_model = adaface_model.to("cuda")
             adaface_model.eval()
             logger.info("AdaFace model downloaded and loaded successfully.")
             adaface_load_error = None
@@ -164,7 +173,8 @@ def generate_embedding(image_bytes: bytes) -> Optional[List[float]]:
         img_tensor = img_normalized.transpose(2, 0, 1)
         
         # Convert to tensor and add batch dimension -> (1, 3, 112, 112)
-        tensor = torch.tensor(img_tensor).unsqueeze(0)
+        model_device = next(adaface_model.parameters()).device
+        tensor = torch.tensor(img_tensor).unsqueeze(0).to(model_device)
         
         with torch.no_grad():
             output = adaface_model(tensor)
