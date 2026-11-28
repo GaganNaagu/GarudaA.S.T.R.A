@@ -525,8 +525,9 @@ class AIInspectorApp:
                     extra = f" — {msg[2]}" if len(msg) > 2 else ""
                     self.video_progress["value"] = pct
                     matches = sum(1 for r in self.scored_results if r["similarity"] >= self.threshold_var.get())
+                    best = max((r["similarity"] for r in self.scored_results), default=0.0)
                     self.video_status_lbl.config(
-                        text=f"Scanning live ({pct:.0f}%){extra} | Matches: {matches}",
+                        text=f"Scanning live ({pct:.0f}%){extra} | Matches: {matches} | Best: {best:.3f}",
                         fg=ACCENT_GREEN if matches > 0 else ACCENT_GOLD,
                     )
                 elif kind == "video_status":
@@ -556,28 +557,45 @@ class AIInspectorApp:
         thresh = self.threshold_var.get()
         is_match = item["similarity"] >= thresh
         border = ACCENT_GREEN if is_match else BORDER_COLOR
-        card = tk.Frame(self.crops_frame, bg=BG_CARD, width=230, height=235, highlightbackground=border, highlightthickness=2 if is_match else 1)
+        card = tk.Frame(self.crops_frame, bg=BG_CARD, width=230, height=265, highlightbackground=border, highlightthickness=2 if is_match else 1)
         row, col = divmod(pos, 3)
         card.grid(row=row, column=col, padx=8, pady=8, sticky="nw")
         card.pack_propagate(False)
 
-        crop_lbl = tk.Label(card, bg=BG_DARK, width=140, height=130)
+        crop_lbl = tk.Label(card, bg=BG_DARK, width=140, height=120)
         crop_lbl.pack(pady=(8, 4))
         if item["crop_path"] and os.path.exists(item["crop_path"]):
             im = Image.open(item["crop_path"]).convert("RGB")
-            im.thumbnail((135, 125))
+            im.thumbnail((135, 115))
             tk_im = ImageTk.PhotoImage(im)
             self.crop_images_tk.append(tk_im)
             crop_lbl.config(image=tk_im)
 
+        raw_pct = max(0.0, min(100.0, item["similarity"] * 100.0))
         tk.Label(card, text=f"Frame #{item['frame_idx']}", bg=BG_CARD, fg=FG_MUTED, font=("Consolas", 9)).pack()
         tk.Label(
             card,
-            text=f"Sim: {item['similarity']:.4f} ({item['confidence_pct']:.1f}%)",
+            text=f"Similarity: {raw_pct:.1f}%  (UI: {item['confidence_pct']:.0f}%)",
             bg=BG_CARD,
             fg=ACCENT_GREEN if is_match else FG_TEXT,
-            font=("Consolas", 9, "bold"),
+            font=("Consolas", 10, "bold"),
         ).pack()
+        tk.Label(
+            card,
+            text=f"Cosine Score: {item['similarity']:.4f}",
+            bg=BG_CARD,
+            fg=FG_MUTED,
+            font=("Consolas", 8),
+        ).pack()
+
+        # Visual similarity bar
+        bar_bg = tk.Frame(card, bg=BG_DARK, width=180, height=7)
+        bar_bg.pack(pady=(3, 2))
+        bar_bg.pack_propagate(False)
+        bar_w = max(2, int(180 * (raw_pct / 100.0)))
+        bar_color = ACCENT_GREEN if is_match else (ACCENT_GOLD if item["similarity"] >= (thresh * 0.7) else FG_MUTED)
+        tk.Frame(bar_bg, bg=bar_color, width=bar_w, height=7).pack(side=tk.LEFT)
+
         tk.Label(
             card,
             text="● MATCH" if is_match else "○ NO MATCH",
@@ -592,8 +610,9 @@ class AIInspectorApp:
             w.destroy()
         thresh = self.threshold_var.get()
         matches = sum(1 for r in self.scored_results if r["similarity"] >= thresh)
+        best = max((r["similarity"] for r in self.scored_results), default=0.0)
         self.video_status_lbl.config(
-            text=f"✅ Done — {len(self.scored_results)} face crops compared | {matches} MATCH (>= {thresh:.2f})",
+            text=f"✅ Done — {len(self.scored_results)} crops compared | {matches} MATCH (>= {thresh:.2f}) | Best: {best*100:.1f}% ({best:.4f})",
             fg=ACCENT_GREEN if matches > 0 else FG_TEXT,
         )
         items = [r for r in self.scored_results if (not self.matches_only_var.get() or r["similarity"] >= thresh)]
