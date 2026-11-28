@@ -117,6 +117,7 @@ async def search_person_against_crops(person_id: uuid.UUID, threshold: float = 0
                 "frame_idx": crop.frame_idx,
                 "similarity": similarity,
                 "crop_image_path": crop.image_path,
+                "alert_id": str(new_alert.id),
             })
             
             confidence_percentage = similarity * 100.0
@@ -166,6 +167,7 @@ async def search_person_against_crops(person_id: uuid.UUID, threshold: float = 0
             ws_payload = {
                 "event": "possible_match_detected",
                 "data": {
+                    "alert_id": m.get("alert_id"),
                     "missing_person_id": str(person.id),
                     "person_name": person.full_name,
                     "case_number": person.case_number,

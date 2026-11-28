@@ -208,10 +208,13 @@ export async function getAlerts() {
 }
 
 export async function updateAlertStatus(id: string, status: string) {
-  return fetchApi(`/alerts/${id}/status`, { 
+  const res = await fetchApi(`/alerts/${id}/status`, { 
     method: 'PATCH',
     body: JSON.stringify({ status })
   })
+  invalidateClientCache('evidence')
+  invalidateClientCache('timeline')
+  return res
 }
 
 export async function getMissingPersons() {
@@ -372,11 +375,17 @@ export async function batchAnalyzeVideos() {
 }
 
 export async function searchPerson(id: string) {
-  return fetchApi(`/search/person/${id}`, { method: 'POST' })
+  const res = await fetchApi(`/search/person/${id}`, { method: 'POST' })
+  invalidateClientCache('evidence')
+  invalidateClientCache('timeline')
+  return res
 }
 
 export async function massSearch() {
-  return fetchApi('/search/mass', { method: 'POST' })
+  const res = await fetchApi('/search/mass', { method: 'POST' })
+  invalidateClientCache('evidence')
+  invalidateClientCache('timeline')
+  return res
 }
 
 // ----------------------------------------------------

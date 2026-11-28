@@ -1,6 +1,7 @@
 "use client"
 
 import { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react'
+import { invalidateClientCache } from './api'
 
 const getWsUrl = () => {
   if (typeof window !== 'undefined') {
@@ -103,6 +104,10 @@ export function WebSocketProvider({ children, token, onAuthExpired }: WebSocketP
           const data = JSON.parse(event.data)
           // Ignore pong responses from heartbeat
           if (data.type === 'pong') return
+          if (data.event === 'possible_match_detected' || data.event === 'alert_status_updated') {
+            invalidateClientCache('evidence')
+            invalidateClientCache('timeline')
+          }
           console.log('[WebSocket] Received message:', data)
           setLastMessage(data)
         } catch (e) {

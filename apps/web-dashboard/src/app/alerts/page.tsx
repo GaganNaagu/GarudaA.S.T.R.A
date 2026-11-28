@@ -98,7 +98,10 @@ export default function AlertsPage() {
   useEffect(() => {
     if (lastMessage && lastMessage.event === 'possible_match_detected') {
       const d = lastMessage.data || (lastMessage.alert_id ? lastMessage : null)
-      if (!d) return
+      if (!d || !d.alert_id) {
+        setTimeout(() => fetchAlerts(true), 300)
+        return
+      }
       const rawConf = typeof d.confidence === 'number' ? d.confidence : parseFloat(d.confidence || '0')
       const confPercent = rawConf > 1 ? Math.round(rawConf) : Math.round(rawConf * 100)
       const optimistic = {
