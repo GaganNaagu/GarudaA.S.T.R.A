@@ -110,16 +110,6 @@ async def search_person_against_crops(person_id: uuid.UUID, threshold: float = 0
         if similarity >= threshold:
             # We intentionally allow duplicate DetectionEvents here if the user manually triggers a search, 
             # so the UI correctly reports the matches instead of returning 0 matches.
-
-            matches.append({
-                "crop_id": str(crop.id),
-                "video_id": str(crop.video_id),
-                "frame_idx": crop.frame_idx,
-                "similarity": similarity,
-                "crop_image_path": crop.image_path,
-                "alert_id": str(new_alert.id),
-            })
-            
             confidence_percentage = similarity * 100.0
             if confidence_percentage < 40.0:
                 confidence_percentage = min(confidence_percentage + 30.0, 100.0)
@@ -145,6 +135,16 @@ async def search_person_against_crops(person_id: uuid.UUID, threshold: float = 0
                 missing_person_id=person.id
             )
             db.add(new_alert)
+            await db.flush()
+
+            matches.append({
+                "crop_id": str(crop.id),
+                "video_id": str(crop.video_id),
+                "frame_idx": crop.frame_idx,
+                "similarity": similarity,
+                "crop_image_path": crop.image_path,
+                "alert_id": str(new_alert.id),
+            })
 
             # Record SightingEvidence so it appears in the Evidence Vault
             rel_crop = _normalize_upload_path(crop.image_path)
