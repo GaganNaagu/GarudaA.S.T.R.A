@@ -11,9 +11,29 @@ logger = logging.getLogger(__name__)
 
 import os
 
-# Initialize AdaFace model globally to keep it in memory
+# Initialize AdaFace model & InsightFace 5-point aligner globally to keep them in memory
 adaface_model = None
 adaface_load_error = None
+face_aligner_app = None
+
+
+def init_face_aligner():
+    global face_aligner_app
+    if face_aligner_app is not None:
+        return
+    try:
+        from insightface.app import FaceAnalysis
+        app = FaceAnalysis(
+            name="buffalo_l",
+            allowed_modules=["detection"],
+            providers=["CPUExecutionProvider"],
+        )
+        app.prepare(ctx_id=-1, det_size=(320, 320), det_thresh=0.3)
+        face_aligner_app = app
+        logger.info("InsightFace 5-point landmark aligner (det_10g) initialized.")
+    except Exception as e:
+        logger.warning(f"InsightFace aligner unavailable, falling back to unaligned crop: {e}")
+        face_aligner_app = None
 
 def init_adaface_model():
     global adaface_model, adaface_load_error
@@ -106,6 +126,7 @@ def init_adaface_model():
 
 # Initialize on module import
 init_adaface_model()
+init_face_aligner()
 
 def generate_embedding(image_bytes: bytes) -> Optional[List[float]]:
     """
@@ -137,31 +158,52 @@ def generate_embedding(image_bytes: bytes) -> Optional[List[float]]:
             return None
             
         h, w = img.shape[:2]
-        
-        # If the image is large (e.g. a raw passport photo upload), run detection and crop first
-        if w > 150 or h > 150:
-            from services.ai.detection.face_detection import FaceDetector
-            from services.ai.detection.face_cropper import FaceCropper
-            FaceDetector._initialize_model()
-            faces = FaceDetector.detect_faces(img)
-            if faces:
-                cropped = FaceCropper.crop_face(img, faces[0]["facial_area"])
-                if cropped is not None and cropped.size > 0:
-                    img = cropped
-                    h, w = img.shape[:2]
-        
-        face_size = f"{w}x{h}"
-        
-        # Calculate blur score defensively (check if image is already grayscale)
-        if len(img.shape) == 2:
-            gray = img
+        aligned_112 = None
+
+        # Prefer 5-point landmark similarity alignment (ArcFace/AdaFace canonical 112x112 template)
+        if face_aligner_app is not None:
+            try:
+                from insightface.utils import face_align
+                # Add border padding so RetinaFace (det_10g) detects landmarks even on tight face crops
+                pad = 40 if max(h, w) < 300 else 0
+                probe = cv2.copyMakeBorder(img, pad, pad, pad, pad, cv2.BORDER_CONSTANT, value=(0, 0, 0)) if pad else img
+                det_faces = face_aligner_app.get(probe)
+                if det_faces:
+                    best_face = max(det_faces, key=lambda x: x.det_score)
+                    aligned_112 = face_align.norm_crop(probe, best_face.kps, image_size=112)
+            except Exception as align_err:
+                logger.debug(f"5-point alignment fallback: {align_err}")
+
+        if aligned_112 is not None:
+            img_resized = aligned_112
+            face_size = f"{w}x{h} (5pt-aligned)"
+            gray = cv2.cvtColor(img_resized, cv2.COLOR_BGR2GRAY)
+            blur_score = float(cv2.Laplacian(gray, cv2.CV_64F).var())
         else:
-            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            
-        blur_score = float(cv2.Laplacian(gray, cv2.CV_64F).var())
-        
-        # Resize to 112x112 (AdaFace standard input size)
-        img_resized = cv2.resize(img, (112, 112))
+            # Fallback: if the image is large (e.g. a raw passport photo upload), run detection and crop first
+            if w > 150 or h > 150:
+                from services.ai.detection.face_detection import FaceDetector
+                from services.ai.detection.face_cropper import FaceCropper
+                FaceDetector._initialize_model()
+                faces = FaceDetector.detect_faces(img)
+                if faces:
+                    cropped = FaceCropper.crop_face(img, faces[0]["facial_area"])
+                    if cropped is not None and cropped.size > 0:
+                        img = cropped
+                        h, w = img.shape[:2]
+
+            face_size = f"{w}x{h}"
+
+            # Calculate blur score defensively (check if image is already grayscale)
+            if len(img.shape) == 2:
+                gray = img
+            else:
+                gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+            blur_score = float(cv2.Laplacian(gray, cv2.CV_64F).var())
+
+            # Resize to 112x112 (AdaFace standard input size)
+            img_resized = cv2.resize(img, (112, 112))
         
         # Convert BGR to RGB
         img_rgb = cv2.cvtColor(img_resized, cv2.COLOR_BGR2RGB)
