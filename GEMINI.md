@@ -367,3 +367,17 @@ This project is hosted on a **GCP Ubuntu Linux VM** (`/opt/garuda-astra`) behind
   - Backend + AI logs: `sudo journalctl -u garuda-backend -f`
   - Frontend logs: `sudo journalctl -u garuda-frontend -f`
   - Nginx logs: `sudo tail -f /var/log/nginx/access.log /var/log/nginx/error.log`
+
+---
+
+## 🔬 STANDALONE AI DEBUG & INSPECTION TOOLS (MANDATORY FOR DEV 1 & DEV 2)
+
+Whenever **any AI model, pipeline, scoring/ranking engine, or inference feature** is added or updated (e.g., face detection, 5-point alignment, AdaFace embedding, composite scoring, RTSP live stream ingestion, alert classification):
+
+1. **Always Provide a Standalone Local Debug/Test Tool (No Backend / No DB / No Frontend Required):**
+   - **Existing tools in `services/ai/`:**
+     - **CLI Tester:** `services/ai/test_ai_match.py` (`python -m services.ai.test_ai_match --photo ... --video ...` or `--rtsp ...`)
+     - **Visual GUI Inspector:** `services/ai/test_ai_gui.py` (`python -m services.ai.test_ai_gui`) — live crop-by-crop comparison, similarity % & cosine score, threshold slider, GPU/CPU toggle, and RTSP mode.
+   - **Rule for Future Phases & Dev 2 (Track B):**
+     - When completing any AI-related feature (such as Phase 2.2 Composite Match Scoring or Phase 3+ RTSP/tracking upgrades), **extend these standalone tools or add a dedicated `services/ai/test_*.py` script/GUI tab** so developers can directly feed raw inputs (photos, videos, embeddings, score vectors, RTSP URLs) and visually inspect intermediate outputs, scores, and failure cases **without** needing FastAPI, PostgreSQL, or Next.js running.
+2. **Document Launch Commands:** Include the exact PowerShell / CMD / Git Bash commands to run the standalone debug tool in the phase completion summary.
