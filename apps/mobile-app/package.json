@@ -6,6 +6,7 @@
     "@expo/vector-icons": "^15.0.2",
     "expo": "~58.0.26",
     "expo-application": "~58.1.2",
+    "expo-asset": "~58.0.21",
     "expo-audio": "~58.0.12",
     "expo-battery": "~58.0.4",
     "expo-intent-launcher": "~58.0.3",
@@ -31,6 +32,9 @@
     "web": "expo start --web",
     "deploy:apk": "node scripts/deploy-apk.js",
     "postinstall": "node postinstall-patches.js"
+  },
+  "overrides": {
+    "expo-asset": "~58.0.21"
   },
   "private": true
 }
