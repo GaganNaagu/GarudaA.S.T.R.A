@@ -111,7 +111,7 @@ export async function goOnDuty(config: DutyConfig): Promise<boolean> {
         try {
           const wsUrlObj = new URL(config.wsUrl);
           let host = wsUrlObj.host;
-          if (host.includes('dpdns.org') || !host) {
+          if (!host) {
             host = 'localhost:8000';
           }
           const httpProtocol = wsUrlObj.protocol === 'wss:' && !host.includes('localhost') ? 'https:' : 'http:';

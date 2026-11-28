@@ -13,6 +13,7 @@
  * This module only handles alert normalization, injection, and callbacks.
  */
 
+import { Platform } from 'react-native';
 import { AlertItem } from './mockState';
 
 // ---------- Types ----------
@@ -60,6 +61,9 @@ export interface AlertServiceCallbacks {
 
 let callbacks: AlertServiceCallbacks | null = null;
 const pendingAlertsQueue: BackendAlertPayload[] = [];
+const recentAlertIds = new Map<string, number>();
+const DEDUPE_WINDOW_MS = 60000;
+const CRITICAL_CHANNEL_ID = 'critical-alerts';
 
 const FALLBACK_LAT = 18.9431;
 const FALLBACK_LON = 72.8246;
@@ -101,11 +105,30 @@ function getNotificationModule() {
       if (Notifications?.setNotificationHandler) {
         Notifications.setNotificationHandler({
           handleNotification: async () => ({
-            shouldShowBanner: true,
+            // Foreground only: TacticalAlertPopup already plays the in-app chime,
+            // so suppress the system notification sound/banner while in foreground.
+            // When app is backgrounded, Android uses the 'critical-alerts' MAX channel directly.
+            shouldShowBanner: false,
             shouldShowList: true,
-            shouldPlaySound: false, // Prevent overlapping system notification ringtone with in-app chime
+            shouldPlaySound: false,
             shouldSetBadge: true,
           }),
+        });
+      }
+      if (Platform.OS === 'android' && Notifications?.setNotificationChannelAsync) {
+        Notifications.setNotificationChannelAsync(CRITICAL_CHANNEL_ID, {
+          name: 'Critical Tactical Alerts',
+          description: 'High-priority heads-up alerts for confirmed missing person sightings.',
+          importance: Notifications.AndroidImportance?.MAX ?? 5,
+          vibrationPattern: [0, 300, 200, 300],
+          lightColor: '#DC2626',
+          lockscreenVisibility: Notifications.AndroidNotificationVisibility?.PUBLIC ?? 1,
+          bypassDnd: true,
+          sound: 'default',
+          enableVibrate: true,
+          showBadge: true,
+        }).catch((err: any) => {
+          console.warn('⚠️ [ALERT SERVICE] Failed to create critical-alerts channel:', err);
         });
       }
     } catch (err) {
@@ -130,23 +153,44 @@ export function injectAlert(payload: BackendAlertPayload): AlertItem | null {
 
   const alert = normalizeAlert(payload);
 
+  // Deduplicate rapid duplicate WebSocket events (e.g. assignment + alert_status_updated) for the same alert ID
+  const dedupeKey = String(alert.id);
+  const now = Date.now();
+  const lastSeen = recentAlertIds.get(dedupeKey);
+  if (lastSeen && now - lastSeen < DEDUPE_WINDOW_MS) {
+    console.log(`🔁 [ALERT SERVICE] Duplicate alert suppressed (${dedupeKey})`);
+    return null;
+  }
+  recentAlertIds.set(dedupeKey, now);
+  if (recentAlertIds.size > 100) {
+    for (const [k, ts] of recentAlertIds.entries()) {
+      if (now - ts >= DEDUPE_WINDOW_MS) recentAlertIds.delete(k);
+    }
+  }
+
   // Inject into alert feed
   callbacks.onNewAlert(alert);
 
   // Trigger full-screen tactical popup + audio
   callbacks.onTacticalPopup(alert);
 
-  // Send local push notification if native module is available
+  // Send high-priority heads-up local push notification if native module is available
   try {
     const notif = getNotificationModule();
     if (notif?.scheduleNotificationAsync) {
       notif.scheduleNotificationAsync({
+        identifier: dedupeKey,
         content: {
           title: `🚨 ${alert.threatLevel} THREAT DETECTED`,
           body: `Match for ${alert.title} at ${alert.lastSeenLocation}`,
           data: { alertId: alert.id },
+          sound: 'default',
+          priority: notif.AndroidNotificationPriority?.MAX ?? 'max',
+          vibrate: [0, 300, 200, 300],
+          color: '#DC2626',
+          autoDismiss: false,
         },
-        trigger: null, // trigger immediately
+        trigger: Platform.OS === 'android' ? { channelId: CRITICAL_CHANNEL_ID } : null,
       }).catch((err: any) => {
         console.warn('⚠️ [ALERT SERVICE] Failed to send push notification:', err);
       });
@@ -175,6 +219,8 @@ export function injectAlert(payload: BackendAlertPayload): AlertItem | null {
  */
 export function registerAlertCallbacks(cbs: AlertServiceCallbacks) {
   callbacks = cbs;
+  // Pre-register the high-priority Android notification channel on startup
+  getNotificationModule();
   console.log('✅ [ALERT SERVICE] Callbacks registered.');
   // Flush any queued alerts
   while (pendingAlertsQueue.length > 0) {
