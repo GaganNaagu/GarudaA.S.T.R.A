@@ -240,6 +240,15 @@ export async function deleteMissingPerson(id: string) {
   return res
 }
 
+export async function bulkDeleteMissingPersons(ids: string[]) {
+  const res = await fetchApi('/missing-persons/bulk-delete', {
+    method: 'POST',
+    body: JSON.stringify({ ids }),
+  })
+  invalidateClientCache()
+  return res
+}
+
 export async function uploadMissingPersonImage(id: string, file: File) {
   const formData = new FormData()
   formData.append('image', file)

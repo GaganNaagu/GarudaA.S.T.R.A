@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -174,6 +175,89 @@ async def update_missing_person_status(
     return person
 
 
+class BulkDeleteMissingPersonsRequest(BaseModel):
+    ids: List[uuid.UUID]
+
+
+async def _cascade_delete_missing_persons(db: AsyncSession, persons: List[MissingPerson]) -> int:
+    """Permanently delete missing person records and all related data and photo files."""
+    if not persons:
+        return 0
+
+    from sqlalchemy import delete as sa_delete
+    from database.models.ai_events import Alert, DetectionEvent
+    from database.models.operations import Assignment
+    from database.models.system import SightingEvidence, ActivityLog
+
+    person_ids = [p.id for p in persons]
+
+    # 1. Delete Assignments linked to Alerts for these persons
+    alert_ids_res = await db.execute(select(Alert.id).where(Alert.missing_person_id.in_(person_ids)))
+    alert_ids = [row[0] for row in alert_ids_res.all()]
+    if alert_ids:
+        await db.execute(sa_delete(Assignment).where(Assignment.alert_id.in_(alert_ids)))
+
+    # 2. Delete SightingEvidence, Alerts, DetectionEvents, and Case ActivityLogs
+    await db.execute(sa_delete(SightingEvidence).where(SightingEvidence.missing_person_id.in_(person_ids)))
+    await db.execute(sa_delete(Alert).where(Alert.missing_person_id.in_(person_ids)))
+    await db.execute(sa_delete(DetectionEvent).where(DetectionEvent.person_id.in_(person_ids)))
+    await db.execute(
+        sa_delete(ActivityLog).where(
+            ActivityLog.entity_type == "MissingPerson",
+            ActivityLog.entity_id.in_(person_ids),
+        )
+    )
+
+    # 3. Clean up uploaded reference photos on disk and delete MissingPerson rows
+    for person in persons:
+        if person.photo_path and "missing_persons/" in person.photo_path.replace("\\", "/"):
+            try:
+                photo_file = Path("services/backend") / person.photo_path.replace("\\", "/").lstrip("/")
+                if photo_file.exists() and photo_file.is_file():
+                    photo_file.unlink()
+            except Exception:
+                pass
+        await db.delete(person)
+
+    await db.commit()
+    return len(persons)
+
+
+@router.post("/bulk-delete")
+async def bulk_delete_missing_persons(
+    payload: BulkDeleteMissingPersonsRequest,
+    db: AsyncSession = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user),
+):
+    """
+    Admin-only endpoint to permanently delete multiple missing person cases and all
+    related SightingEvidence, Alerts, Assignments, DetectionEvents, and ActivityLogs.
+    """
+    if not current_user.role or current_user.role.name != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only administrators can delete missing person cases.",
+        )
+
+    if not payload.ids:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No missing person IDs provided.",
+        )
+
+    result = await db.execute(select(MissingPerson).where(MissingPerson.id.in_(payload.ids)))
+    persons = result.scalars().all()
+    if not persons:
+        raise HTTPException(status_code=404, detail="No matching missing person cases found")
+
+    deleted_count = await _cascade_delete_missing_persons(db, persons)
+    return {
+        "status": "success",
+        "deleted_count": deleted_count,
+        "message": f"Deleted {deleted_count} missing person case(s) and all related records.",
+    }
+
+
 @router.delete("/{person_id}")
 async def delete_missing_person(
     person_id: uuid.UUID,
@@ -194,40 +278,8 @@ async def delete_missing_person(
     if not person:
         raise HTTPException(status_code=404, detail="Missing person not found")
 
-    from sqlalchemy import delete as sa_delete
-    from database.models.ai_events import Alert, DetectionEvent
-    from database.models.operations import Assignment
-    from database.models.system import SightingEvidence, ActivityLog
-
-    # 1. Delete Assignments linked to Alerts for this person
-    alert_ids_res = await db.execute(select(Alert.id).where(Alert.missing_person_id == person_id))
-    alert_ids = [row[0] for row in alert_ids_res.all()]
-    if alert_ids:
-        await db.execute(sa_delete(Assignment).where(Assignment.alert_id.in_(alert_ids)))
-
-    # 2. Delete SightingEvidence, Alerts, DetectionEvents, and Case ActivityLogs
-    await db.execute(sa_delete(SightingEvidence).where(SightingEvidence.missing_person_id == person_id))
-    await db.execute(sa_delete(Alert).where(Alert.missing_person_id == person_id))
-    await db.execute(sa_delete(DetectionEvent).where(DetectionEvent.person_id == person_id))
-    await db.execute(
-        sa_delete(ActivityLog).where(
-            ActivityLog.entity_type == "MissingPerson",
-            ActivityLog.entity_id == person_id,
-        )
-    )
-
-    # 3. Clean up uploaded reference photo on disk if present
-    if person.photo_path and "missing_persons/" in person.photo_path.replace("\\", "/"):
-        try:
-            photo_file = Path("services/backend") / person.photo_path.replace("\\", "/").lstrip("/")
-            if photo_file.exists() and photo_file.is_file():
-                photo_file.unlink()
-        except Exception:
-            pass
-
     case_number = person.case_number
-    await db.delete(person)
-    await db.commit()
+    await _cascade_delete_missing_persons(db, [person])
 
     return {
         "status": "success",

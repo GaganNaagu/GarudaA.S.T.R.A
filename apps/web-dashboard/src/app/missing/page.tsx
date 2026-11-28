@@ -15,7 +15,10 @@ import {
   ShieldAlert,
   FolderOpen,
   Filter,
-  X
+  X,
+  Trash2,
+  CheckSquare,
+  Square
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useToast } from "@/components/ui/Toast"
@@ -23,8 +26,10 @@ import {
   getMissingPersons, 
   createMissingPerson, 
   uploadMissingPersonImage, 
+  bulkDeleteMissingPersons,
   API_URL 
 } from "@/lib/api"
+import { useAuth } from "@/lib/auth-context"
 
 function getSafePhotoUrl(path: string | null) {
   if (!path) return '';
@@ -42,10 +47,18 @@ function getSafePhotoUrl(path: string | null) {
 export default function MissingPersonsPage() {
   const router = useRouter()
   const { toast } = useToast()
+  const { role } = useAuth()
+  const isAdmin = role === 'admin'
   const [persons, setPersons] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'CRITICAL' | 'FOUND'>('ACTIVE')
+
+  // Admin Bulk Selection State
+  const [selectionMode, setSelectionMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false)
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false)
   
   // Registration Modal State
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -108,6 +121,46 @@ export default function MissingPersonsPage() {
     )
   }, [searchQuery, persons, statusFilter])
 
+  const toggleSelectId = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }
+
+  const toggleSelectAllFiltered = () => {
+    const filteredIds = filteredPersons.map(p => p.id)
+    const allSelected = filteredIds.length > 0 && filteredIds.every(id => selectedIds.has(id))
+    if (allSelected) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(filteredIds))
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return
+    setIsBulkDeleting(true)
+    try {
+      const idsToDelete = Array.from(selectedIds)
+      await bulkDeleteMissingPersons(idsToDelete)
+      toast(`Deleted ${idsToDelete.length} missing person case(s) and related records`, 'success')
+      setSelectedIds(new Set())
+      setSelectionMode(false)
+      setShowBulkDeleteModal(false)
+      await fetchPersons()
+    } catch (err: any) {
+      toast(err?.message || 'Failed to delete selected cases', 'error')
+    } finally {
+      setIsBulkDeleting(false)
+    }
+  }
+
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
@@ -145,6 +198,23 @@ export default function MissingPersonsPage() {
         </div>
 
         <div className="flex items-center gap-3">
+          {isAdmin && (
+            <Button
+              variant={selectionMode ? "secondary" : "outline"}
+              size="sm"
+              onClick={() => {
+                if (selectionMode) {
+                  setSelectionMode(false)
+                  setSelectedIds(new Set())
+                } else {
+                  setSelectionMode(true)
+                }
+              }}
+            >
+              <CheckSquare className="w-4 h-4 mr-2" />
+              {selectionMode ? 'Done Selecting' : 'Select Cases'}
+            </Button>
+          )}
           <Button onClick={() => setIsModalOpen(true)} size="sm">
             <UserPlus className="w-4 h-4 mr-2" />
             Register Case
@@ -186,6 +256,50 @@ export default function MissingPersonsPage() {
         </div>
       </div>
 
+      {/* Admin Bulk Action Bar */}
+      {isAdmin && (selectionMode || selectedIds.size > 0) && (
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 rounded-lg border border-destructive/30 bg-destructive/5">
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-semibold text-foreground">
+              {selectedIds.size} of {filteredPersons.length} case(s) selected
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={toggleSelectAllFiltered}
+              disabled={filteredPersons.length === 0}
+            >
+              {filteredPersons.length > 0 && filteredPersons.every(p => selectedIds.has(p.id))
+                ? 'Deselect All'
+                : `Select All (${filteredPersons.length})`}
+            </Button>
+          </div>
+          <div className="flex items-center gap-2">
+            {selectedIds.size > 0 && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedIds(new Set())}
+              >
+                Clear
+              </Button>
+            )}
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              disabled={selectedIds.size === 0}
+              onClick={() => setShowBulkDeleteModal(true)}
+            >
+              <Trash2 className="w-4 h-4 mr-1.5" />
+              Delete Selected ({selectedIds.size})
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Case Dossier Cards Grid */}
       {loading ? (
         <div className="flex justify-center py-20 text-muted-foreground">
@@ -203,12 +317,21 @@ export default function MissingPersonsPage() {
             const isCritical = person.priority === 'Critical' || person.priority === 'URGENT'
             const isFound = person.status === 'Found'
             const photoUrl = getSafePhotoUrl(person.photoPath)
+            const isSelected = selectedIds.has(person.id)
 
             return (
               <Card 
                 key={person.id} 
-                className="flex flex-col justify-between hover:border-border transition-colors group cursor-pointer"
-                onClick={() => router.push(`/missing/${person.id}`)}
+                className={`flex flex-col justify-between transition-colors group cursor-pointer ${
+                  isSelected ? 'border-destructive ring-2 ring-destructive/30' : 'hover:border-border'
+                }`}
+                onClick={() => {
+                  if (selectionMode) {
+                    toggleSelectId(person.id)
+                  } else {
+                    router.push(`/missing/${person.id}`)
+                  }
+                }}
               >
                 <div>
                   {/* Clean Photographic Surface with Single Subtle Badge */}
@@ -231,6 +354,24 @@ export default function MissingPersonsPage() {
                         {isFound ? 'RESOLVED' : `${person.priority} PRIORITY`}
                       </Badge>
                     </div>
+
+                    {isAdmin && (selectionMode || selectedIds.size > 0) && (
+                      <button
+                        type="button"
+                        aria-label={`Select ${person.name}`}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          toggleSelectId(person.id)
+                        }}
+                        className={`absolute top-2.5 right-2.5 p-1 rounded-md border backdrop-blur-sm transition-colors ${
+                          isSelected
+                            ? 'bg-destructive text-destructive-foreground border-destructive'
+                            : 'bg-background/85 text-muted-foreground border-border hover:text-foreground'
+                        }`}
+                      >
+                        {isSelected ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+                      </button>
+                    )}
 
                     <div className="absolute bottom-2.5 right-2.5 px-2 py-0.5 rounded bg-background/80 text-[10px] font-mono text-muted-foreground border border-border/60 backdrop-blur-sm">
                       {person.caseNumber}
@@ -344,6 +485,47 @@ export default function MissingPersonsPage() {
                 </Button>
               </CardFooter>
             </form>
+          </Card>
+        </div>
+      )}
+      {/* Admin Bulk Delete Confirmation Modal */}
+      {showBulkDeleteModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="bulk-delete-title"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4"
+        >
+          <Card className="max-w-md w-full border-destructive/40">
+            <CardHeader className="pb-3">
+              <CardTitle id="bulk-delete-title" className="text-lg flex items-center gap-2 text-destructive">
+                <Trash2 className="w-5 h-5" />
+                Delete {selectedIds.size} Missing Person Case(s)?
+              </CardTitle>
+              <CardDescription className="text-xs leading-relaxed pt-1">
+                This action is permanent and cannot be undone. All {selectedIds.size} selected case(s) along with their sighting evidence, alerts, patrol assignments, detection events, activity logs, and uploaded reference photos will be permanently deleted.
+              </CardDescription>
+            </CardHeader>
+            <CardFooter className="flex justify-end gap-2 pt-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isBulkDeleting}
+                onClick={() => setShowBulkDeleteModal(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                disabled={isBulkDeleting}
+                onClick={handleBulkDelete}
+              >
+                {isBulkDeleting ? 'Deleting...' : `Permanently Delete (${selectedIds.size})`}
+              </Button>
+            </CardFooter>
           </Card>
         </div>
       )}
