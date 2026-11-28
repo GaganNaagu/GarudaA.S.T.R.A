@@ -11,9 +11,18 @@ from database.db.session import get_db
 from database.models.registry import MissingPerson
 from database.models.infrastructure import FaceCrop, CameraFeed
 from database.models.ai_events import DetectionEvent, Alert
+from database.models.system import SightingEvidence
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+
+def _normalize_upload_path(path: str | None) -> str:
+    if not path:
+        return ""
+    norm = path.replace("\\", "/")
+    idx = norm.find("uploads/")
+    return norm[idx:] if idx != -1 else norm
 
 def cosine_similarity(v1: list, v2: list) -> float:
     try:
@@ -105,6 +114,19 @@ async def search_person_against_crops(person_id: uuid.UUID, threshold: float = 0
                 missing_person_id=person.id
             )
             db.add(new_alert)
+
+            # Record SightingEvidence so it appears in the Evidence Vault
+            rel_crop = _normalize_upload_path(crop.image_path)
+            db.add(SightingEvidence(
+                missing_person_id=person.id,
+                detection_event_id=new_event.id,
+                crop_image_path=rel_crop,
+                full_frame_path=rel_crop,
+                similarity_score=round(confidence_percentage, 1),
+                quality_score=85.0,
+                model_version="AdaFace-IR50",
+                verification_status="Unreviewed",
+            ))
             events_created += 1
             
     if events_created > 0:
@@ -180,6 +202,19 @@ async def mass_search_all(threshold: float = 0.30, db: AsyncSession = Depends(ge
                     missing_person_id=person.id
                 )
                 db.add(new_alert)
+
+                # Record SightingEvidence so it appears in the Evidence Vault
+                rel_crop = _normalize_upload_path(crop.image_path)
+                db.add(SightingEvidence(
+                    missing_person_id=person.id,
+                    detection_event_id=new_event.id,
+                    crop_image_path=rel_crop,
+                    full_frame_path=rel_crop,
+                    similarity_score=round(confidence_percentage, 1),
+                    quality_score=85.0,
+                    model_version="AdaFace-IR50",
+                    verification_status="Unreviewed",
+                ))
                 total_matches += 1
                 break # Move to next crop once matched to avoid duplicate alerts for same face crop
                 

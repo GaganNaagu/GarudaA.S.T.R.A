@@ -5,6 +5,7 @@ from services.backend.api import deps
 from database.models.ai_events import DetectionEvent, Alert
 from database.models.registry import MissingPerson
 from database.models.infrastructure import CameraFeed
+from database.models.system import SightingEvidence
 from services.ai.recognition.embedding_service import generate_embedding
 from services.ai.recognition.ranking_service import get_best_match
 from services.backend.api.v1.endpoints.websockets import manager
@@ -138,6 +139,16 @@ async def ingest_ai_event(
                 severity="High"
             )
             db.add(alert)
+            db.add(SightingEvidence(
+                missing_person_id=missing_person_id,
+                detection_event_id=event.id,
+                crop_image_path=relative_path,
+                full_frame_path=relative_path,
+                similarity_score=round(confidence_percentage, 1),
+                quality_score=85.0,
+                model_version="AdaFace-IR50",
+                verification_status="Unreviewed",
+            ))
             await db.commit()
             await db.refresh(alert)
             
@@ -233,6 +244,16 @@ async def test_alert(db: AsyncSession = Depends(deps.get_db)):
                 severity="High"
             )
             db.add(alert)
+            db.add(SightingEvidence(
+                missing_person_id=person.id,
+                detection_event_id=event.id,
+                crop_image_path=photo_path,
+                full_frame_path=photo_path,
+                similarity_score=round(confidence, 1),
+                quality_score=90.0,
+                model_version="AdaFace-IR50",
+                verification_status="Unreviewed",
+            ))
             await db.commit()
             await db.refresh(alert)
             alert_id = str(alert.id)
