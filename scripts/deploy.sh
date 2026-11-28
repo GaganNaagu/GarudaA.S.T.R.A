@@ -112,7 +112,7 @@ if echo "$CHANGED_FILES" | grep -qE "^services/requirements.txt"; then
   BACKEND_CHANGED=true
 fi
 
-if echo "$CHANGED_FILES" | grep -qE "^services/backend/|^database/|^core_config.py"; then
+if echo "$CHANGED_FILES" | grep -qE "^services/backend/|^services/ai/|^database/|^core_config.py"; then
   BACKEND_CHANGED=true
 fi
 
