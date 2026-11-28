@@ -401,9 +401,8 @@ class AIInspectorApp:
             return
         scored = []
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 1
-        fps = cap.get(cv2.CAP_PROP_FPS) or 25.0
-        # Sample ~2 frames per second for snappy live inspection
-        frame_step = max(1, int(round(fps / 2.0)))
+        # Match production pipeline skip_interval=5 so fast-moving faces aren't missed
+        frame_step = 5
         frame_idx = 0
         crop_counter = 0
         try:
