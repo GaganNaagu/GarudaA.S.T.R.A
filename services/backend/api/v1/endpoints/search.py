@@ -12,6 +12,7 @@ from database.models.registry import MissingPerson
 from database.models.infrastructure import FaceCrop, CameraFeed
 from database.models.ai_events import DetectionEvent, Alert
 from database.models.system import SightingEvidence
+from services.backend.core.websocket_manager import manager
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -86,7 +87,8 @@ async def search_person_against_crops(person_id: uuid.UUID, threshold: float = 0
                 "crop_id": str(crop.id),
                 "video_id": str(crop.video_id),
                 "frame_idx": crop.frame_idx,
-                "similarity": similarity
+                "similarity": similarity,
+                "crop_image_path": crop.image_path,
             })
             
             confidence_percentage = similarity * 100.0
@@ -131,6 +133,21 @@ async def search_person_against_crops(person_id: uuid.UUID, threshold: float = 0
             
     if events_created > 0:
         await db.commit()
+        for m in matches:
+            ws_payload = {
+                "event": "possible_match_detected",
+                "data": {
+                    "missing_person_id": str(person.id),
+                    "person_name": person.full_name,
+                    "case_number": person.case_number,
+                    "camera_id": str(default_cam.name),
+                    "confidence": round(m["similarity"] * 100.0, 1),
+                    "image_path": person.photo_path,
+                    "crop_image_path": _normalize_upload_path(m.get("crop_image_path", "")),
+                },
+            }
+            await manager.broadcast_to_dispatchers(ws_payload)
+            await manager.broadcast_to_admins(ws_payload)
         
     return {
         "message": f"Search complete. Found {events_created} matches.",
