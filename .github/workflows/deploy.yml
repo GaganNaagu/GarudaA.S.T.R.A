@@ -42,8 +42,8 @@ jobs:
             exit 0
           fi
           CHANGED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
-          if echo "$CHANGED" | grep "^apps/mobile-app/" | grep -qv "^apps/mobile-app/dist/"; then
-            echo "Mobile source files changed -> triggering APK cloud build."
+          if echo "$CHANGED" | grep -E "^(apps/mobile-app/|\.github/workflows/deploy\.yml$)" | grep -qv "^apps/mobile-app/dist/"; then
+            echo "Mobile source or build workflow changed -> triggering APK cloud build."
             echo "mobile=true" >> "$GITHUB_OUTPUT"
           else
             echo "No mobile source changes -> skipping APK build."

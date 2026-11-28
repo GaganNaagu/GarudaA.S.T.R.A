@@ -61,16 +61,30 @@ if [ "$CURRENT_BRANCH" != "$TARGET_BRANCH" ]; then
 fi
 
 # 3. Detect file changes between local HEAD and remote branch
+# Preserve any cloud-built APK in dist/ so git reset --hard doesn't revert it to an older git-tracked APK
+APK_DIST_PATH="$APP_DIR/apps/mobile-app/dist/garudaastra-release.apk"
+APK_BACKUP_PATH="/tmp/garudaastra-release.apk.bak"
+if [ -f "$APK_DIST_PATH" ]; then
+  cp -f "$APK_DIST_PATH" "$APK_BACKUP_PATH"
+fi
+
 PREV_COMMIT=$(git rev-parse HEAD)
 git reset --hard "origin/$TARGET_BRANCH"
 NEW_COMMIT=$(git rev-parse HEAD)
 
 if [ "$PREV_COMMIT" = "$NEW_COMMIT" ]; then
+  rm -f "$APK_BACKUP_PATH"
   log "Repository already up-to-date at commit $NEW_COMMIT. No restarts needed."
   exit 0
 fi
 
 CHANGED_FILES=$(git diff --name-only "$PREV_COMMIT" "$NEW_COMMIT")
+if [ -f "$APK_BACKUP_PATH" ] && ! echo "$CHANGED_FILES" | grep -qE "^apps/mobile-app/dist/garudaastra-release\.apk$"; then
+  mkdir -p "$(dirname "$APK_DIST_PATH")"
+  mv -f "$APK_BACKUP_PATH" "$APK_DIST_PATH"
+else
+  rm -f "$APK_BACKUP_PATH"
+fi
 log "Changed files detected:"
 echo "$CHANGED_FILES" | sed 's/^/  - /'
 
